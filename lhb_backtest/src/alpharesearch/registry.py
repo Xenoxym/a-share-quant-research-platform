@@ -114,6 +114,7 @@ class FeatureRegistry:
 
 
 SCHEMAS = {
+    'daily-observation-primitives-v1': ('daily','stock_day',['src/alpharesearch/features/primitives.py']),
     'legacy-price-volume16-v1': ('pv16','stock_day',['src/mlresearch/dataset.py','src/mlresearch/contracts.py']),
     'daily-structure-boards-v1': ('boards','stock_day',['src/alpharesearch/features/boards.py']),
     'lhb-report-features-v1': ('lhb_report','report',['src/alpharesearch/features/lhb.py','src/alpharesearch/panel.py']),
@@ -137,6 +138,9 @@ def implementation_hashes(paths):
 
 def _description(namespace,name):
     from ..mlresearch.contracts import FEATURES
+    if namespace=='daily':
+        descriptions={'open':'供应商未复权日开盘价','high':'供应商未复权日最高价','low':'供应商未复权日最低价','close':'供应商未复权日收盘价','pre_close':'供应商当日参考前收价；不猜作昨日实际收盘','high_limit':'明确有效源涨停价','low_limit':'明确有效源跌停价','volume':'源声明的成交股数，允许合法0','amount':'源声明的人民币成交金额，允许合法0','source_limit_valid':'源价格限制有效性标记；0不代表市场没有涨跌幅限制','positive_volume_observed':'观察成交量是否正；不证明订单可成交'}
+        return descriptions[name]
     if namespace=='pv16':return FEATURES[name]+'；保留原算法兼容口径'
     if namespace=='lhb_latest':
         match=re.fullmatch(r'lhb_w(0|1|3|10|30)_(.*)',name)
@@ -194,6 +198,7 @@ def definitions_for_block(block: FeatureBlock):
     timing=str(block.metadata.get('timing',block.metadata.get('clock',block.metadata.get('availability',block.metadata.get('availability_basis','declared per-row clocks')))))
     missing=str(block.metadata.get('missing','explicit reasons; finite values exactly match present'))
     limitations={
+        'daily':('Unadjusted prices may contain corporate-action gaps; zero-volume quotes do not prove tradability',),
         'pv16':('Legacy quote-row windows preserved; not a new strict-calendar algorithm','Flat-range close location is 0.5; cumulative index fills missing daily returns with zero internally'),
         'boards':('Daily OHLC cannot reveal intraday ordering or queue position',),
         'lhb_report':('Disclosed labels are not beneficial-owner IDs; report windows may overlap',),
@@ -202,6 +207,7 @@ def definitions_for_block(block: FeatureBlock):
         'market':('Mean log-return proxy is not a tradable index account return',),
     }
     dependencies={
+        'daily':('daily.reported_ohlcv_amount_reference_close','daily.declared_valid_price_limits'),
         'pv16':('daily.ohlcv_amount_reference_close','market.calendar'),
         'boards':('daily.ohlcv_reference_close','daily.validated_price_limits','market.calendar'),
         'lhb_report':('lhb.original_report_headers','lhb.original_disclosed_occurrences'),
