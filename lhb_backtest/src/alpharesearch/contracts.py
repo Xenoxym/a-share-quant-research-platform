@@ -26,6 +26,7 @@ class MissingReason(str, Enum):
     NO_EVENT = 'verified_no_event'
     UNCOVERED = 'source_uncovered'
     INVALID = 'invalid_record'
+    UNDEFINED = 'undefined_value'
     INCOMPLETE = 'incomplete_window'
     NOT_KNOWN = 'not_yet_known'
     HISTORY = 'insufficient_history'
