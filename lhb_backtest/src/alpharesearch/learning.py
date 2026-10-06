@@ -321,7 +321,7 @@ def _prepare(spec, model, decisions, assembly, labels):
     pred_content = pred_content.merge(scoped.values[KEYS + ["observed_end", "known_at"]],
                                       on=KEYS, validate="one_to_one", sort=False)
     receipt = dict(
-        schema="causal-learning-receipt-v1", protocol_id=spec.protocol_id,
+        schema="causal-learning-receipt-v2", protocol_id=spec.protocol_id,
         fit_id=content_id(fit_identity), fit_identity=fit_identity,
         model_id=model.model_id, retained_features=retained, excluded_train_empty=excluded,
         training_decisions=int(train.sum()), mature_training_rows=len(t),
@@ -329,6 +329,7 @@ def _prepare(spec, model, decisions, assembly, labels):
         observed_but_immature_labels=int((observed & ~mature).sum()),
         latest_training_label_known_at=t.label_known_at.max().isoformat(),
         prediction_rows=len(P), prediction_inputs=_fingerprint(pred_content),
+        prediction_membership=_fingerprint(p.loc[pred, KEYS + CLOCKS].reset_index(drop=True)),
         prediction_missing=_fingerprint(x_pred[KEYS].merge(
             scoped.missing[KEYS + retained], on=KEYS, validate="one_to_one", sort=False)),
         full_assembly_version=block.metadata["version_id"],
@@ -343,6 +344,7 @@ def _prepare(spec, model, decisions, assembly, labels):
         "fit_id": receipt["fit_id"], "protocol_id": spec.protocol_id,
         "prediction_inputs": receipt["prediction_inputs"],
         "prediction_missing": receipt["prediction_missing"],
+        "prediction_membership": receipt["prediction_membership"],
     })
     return X, y, weights, P, p.loc[pred].reset_index(drop=True), receipt
 
