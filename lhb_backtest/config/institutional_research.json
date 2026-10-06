@@ -1,0 +1,20 @@
+{
+  "name": "机构披露净买额 · 五日研究",
+  "start_date": "2019-01-01",
+  "end_date": "latest",
+  "initial_cash": 1000000,
+  "holding_days": 5,
+  "max_positions": 10,
+  "position_fraction": 0.1,
+  "min_inst_ratio": 0,
+  "min_avg_amount": 20000000,
+  "max_participation": 0.001,
+  "commission_rate": 0.0003,
+  "minimum_commission": 5,
+  "other_fee_rate": 0.00002,
+  "slippage_bps": 10,
+  "dividend_tax_reserve": 0.2,
+  "match_caliper": 0.6,
+  "bootstrap_samples": 500,
+  "seed": 20260926
+}

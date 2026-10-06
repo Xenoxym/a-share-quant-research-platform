@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Data files (large, not versioned)
+data/raw/
+data/clean/
+data/factor/
+data/output/
+data/validation/
+data/backups/
+data/workbench/
+data/quality_repair/
+*.parquet
+*.duckdb
+
+# Keep directory structure placeholders
+!data/raw/.gitkeep
+!data/clean/.gitkeep
+!data/factor/.gitkeep
+!data/output/.gitkeep
+!data/failures/.gitkeep
+# Failure CSVs are small runtime artifacts — tracked intentionally for restore/audit
+# (remove the line below if you prefer not to version-control them)
+# data/failures/*.csv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+*.token
+
+# Bounded official update workspace and machine-specific reports
+data/update_work/
+data/update_reports/
+data/technical/

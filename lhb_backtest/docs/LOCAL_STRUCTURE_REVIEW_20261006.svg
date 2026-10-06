@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="770" viewBox="0 0 1100 770" role="img" aria-labelledby="title desc">
+<title id="title">当前数据、机器学习、账户与事件接入结构</title><desc id="desc">实线为现有数据发布、快照、ML、账户与研究证据；虚线为龙虎榜接入、特征目录和批量发现建设。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4b6d90"/></marker><marker id="dasharrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#aa6b13"/></marker></defs>
+<rect width="1100" height="770" rx="16" fill="#f5f8fc"/>
+<style>text{font-family:Segoe UI,Microsoft YaHei,sans-serif;fill:#1d3552}.title{font-size:23px;font-weight:700}.label{font-size:17px;font-weight:600}.sub{font-size:13px;fill:#49627c}.edge{fill:none;stroke:#4b6d90;stroke-width:2;marker-end:url(#arrow)}.future{fill:none;stroke:#aa6b13;stroke-width:2;stroke-dasharray:7 5;marker-end:url(#dasharrow)}</style>
+<text x="30" y="40" class="title">当前架构：数据已经存在，特征接入还未完全贯通</text>
+<text x="30" y="65" class="sub">实线：已有链路　虚线：待建设接口　外部源码仅核对入口与数据元数据</text>
+<rect x="18" y="88" width="324" height="560" rx="12" fill="#e9eef5"/><text x="38" y="118" class="label">项目外供应与本机依赖</text>
+<rect x="358" y="88" width="724" height="560" rx="12" fill="#e9f3ef"/><text x="378" y="118" class="label">当前项目内</text>
+<rect x="36" y="140" width="287" height="94" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="50" y="168" class="label">SimTradeDataRepo</text>
+<text x="50" y="192" class="sub">本地修复的获取 / 导出代码</text>
+<text x="50" y="212" class="sub">供应环境与 cn.duckdb 状态</text>
+<rect x="36" y="285" width="287" height="95" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="50" y="313" class="label">SimTradeData 正式发布</text>
+<text x="50" y="337" class="sub">export/cn：当前读取源</text>
+<text x="50" y="357" class="sub">rollback：受控回滚，不是缓存</text>
+<rect x="36" y="432" width="287" height="105" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="50" y="460" class="label">Codex / Python / 浏览器</text>
+<text x="50" y="484" class="sub">AI 循环 / 运行环境 / 可选 QA</text>
+<text x="50" y="504" class="sub">认证与机器配置保留本机</text>
+<rect x="382" y="140" width="310" height="94" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="396" y="168" class="label">行情与元数据 → 独立快照</text>
+<text x="396" y="192" class="sub">data_sources / ingestion / technical</text>
+<text x="396" y="212" class="sub">历史证券、公司行动、来源身份</text>
+<rect x="748" y="140" width="310" height="94" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="762" y="168" class="label">当前 ML / 组合 / 账户</text>
+<text x="762" y="192" class="sub">mlresearch → technical</text>
+<text x="762" y="212" class="sub">固定研究方案；资金与权益路径</text>
+<rect x="748" y="285" width="310" height="96" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="762" y="313" class="label">研究治理与本地工作台</text>
+<text x="762" y="337" class="sub">researchops / SQLite / 冻结执行</text>
+<text x="762" y="357" class="sub">账户、输入、模型与核查证据</text>
+<rect x="382" y="285" width="310" height="96" rx="9" fill="#ffffff" stroke="#c1cddd"/><text x="396" y="313" class="label">龙虎榜归档与旧事件路线</text>
+<text x="396" y="337" class="sub">cleaning / features / labels / backtest</text>
+<text x="396" y="357" class="sub">报告、席位、事件字段与事后标签</text>
+<rect x="382" y="442" width="310" height="118" rx="9" fill="#fff5df" stroke="#c99b45"/><text x="396" y="470" class="label">待建：时点面板与特征目录</text>
+<text x="396" y="494" class="sub">因果板型 / 龙虎榜 / 财务市场</text>
+<text x="396" y="514" class="sub">共同主键、单位、可用性与缺失</text>
+<text x="396" y="534" class="sub">过去可知的 X 与未来 Y 分开</text>
+<rect x="748" y="442" width="310" height="118" rx="9" fill="#fff5df" stroke="#c99b45"/><text x="762" y="470" class="label">待建：批量发现与模型接口</text>
+<text x="762" y="494" class="sub">DSL → DAG/cache → 数值批次</text>
+<text x="762" y="514" class="sub">模型适配 / 搜索账本 / 账户桥接</text>
+<text x="762" y="534" class="sub">收益、回撤与前瞻评价</text>
+<path d="M 180 234 V 285" class="edge"/>
+<path d="M 323 330 H 348 V 186 H 382" class="edge"/>
+<path d="M 692 187 H 748" class="edge"/>
+<path d="M 904 234 V 285" class="edge"/>
+<path d="M 323 485 H 345 V 407 H 904 V 381" class="edge"/>
+<path d="M 535 381 V 442" class="future"/>
+<path d="M 692 501 H 748" class="future"/>
+<path d="M 904 442 V 407 H 1070 V 186 H 1058" class="future"/>
+<text x="36" y="603" class="sub">外部位置不会随 GitHub clone 自动获得。</text>
+<text x="382" y="603" class="sub">复用账户底座；先修复改名身份，再扩展信息与规模。</text>
+<rect x="25" y="665" width="1050" height="77" rx="9" fill="#fbeeea" stroke="#d6b2a4"/><text x="39" y="693" class="label">本轮验证：内容完整，逻辑迁移未完成</text>
+<text x="39" y="717" class="sub">37 个证据包哈希正确；33 个任务核查因旧根路径失败；pip/editable 残留旧位置。</text>
+</svg>

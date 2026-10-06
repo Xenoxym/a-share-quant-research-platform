@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>龙虎榜研究工作台</title><style>/*APP_STYLE*/</style></head>
+<body><aside><a class="brand" href="#overview"><span class="brandmark">研</span><span>龙虎榜研究工作台<small>RESEARCH / DAILY / V1</small></span></a>
+<nav aria-label="主导航"><button data-page="overview" class="active">研究概览</button><button data-page="create">创建研究</button><button data-page="events">事件与交易</button><button data-page="archive">实验档案</button><button data-page="contract">数据与假设</button></nav>
+<div class="side-note">沪深主板 · 日频研究<br>本地数据 / 可追溯实验<div id="connection"></div></div></aside>
+<main><header><div><span class="eyebrow">从研究问题，到可检查的证据</span><h1 id="page-title">研究概览</h1></div><button class="primary" id="new-study">＋ 创建研究</button></header>
+<div id="message" role="status" hidden></div>
+<section id="job" hidden class="panel"><strong id="job-title">正在计算</strong><progress></progress><pre id="job-log"></pre></section>
+<section data-view="overview"><div id="empty" class="panel empty"><h2>建立你的第一个可复现实验</h2><p>使用机构披露净买额模板，比较同日市值、动量和流动性相近的事件，并检查资金约束后的组合表现。</p><button class="primary" id="empty-create">配置研究</button></div><div id="overview-result" hidden></div></section>
+<section data-view="create" hidden><div class="intro"><h2>机构披露净买额 · 固定假设模板</h2><p>当前页面配置一个后台固定的研究模板。默认参数用于演示研究流程，未经策略有效性验证；这里尚不能自由组合价量选股、排序和退出规则。</p></div>
+<div class="panel" id="template-logic"><h3>这个模板实际买什么、何时卖</h3><ol class="assumptions">
+<li>候选：当日已上龙虎榜的沪深主板普通单日榜事件；通过历史非 ST、席位、行情、估值和连续 20 日流动性检查。上榜本身不等于买入信号。</li>
+<li>信号：（买榜机构买额 − 卖榜机构卖额）÷ 当日成交额，大于下方设置的门槛，默认大于 0。这是披露部分的金额口径。</li>
+<li>排序：机构组合按上述占比从高到低安排买入；基础事件组和配对对照组按固定种子生成的顺序安排买入。</li>
+<li>入场：假设信息在下一交易日开盘前可用，尝试在下一交易日开盘成交；资金、持仓、限价和流动性检查可能使订单无法成交。</li>
+<li>退出：入场日之后第 H 个市场交易日开盘尝试卖出，H 为下方持有期。默认 H = 5；无节假日时，周一买入对应下周一开盘尝试卖出。无法成交会延期。</li>
+<li>此模板没有均线买卖、市场趋势过滤或止损规则；允许空仓，最大持仓数和单股比例是上限。</li>
+</ol><p class="muted">这五组共享事件模板，其中“基础事件组合”仍然只选龙虎榜股票。它不能作为独立于龙虎榜的全市场价量基线。</p></div>
+<form id="strategy-form"><div class="panel"><h3>研究范围</h3><div class="form-grid">
+<label class="wide">实验名称<input name="name" maxlength="100" required></label>
+<label>起始日期<input name="start_date" type="date" min="2019-01-01" required></label>
+<label>结束日期<input name="end_date" placeholder="latest = 已覆盖数据最新日" required></label>
+<label>初始资金（元）<input name="initial_cash" type="number" min="1000" max="10000000000" step="1000" required></label>
+<label>持有期（交易日）<input name="holding_days" type="number" min="1" max="60" required></label>
+<label>最大持仓数<input name="max_positions" type="number" min="1" max="100" required></label>
+<label>每只股票资金上限（%）<input name="position_fraction" type="number" min="0.1" max="100" step="0.1" required></label>
+<label>机构净买额 / 成交额下限（%）<input name="min_inst_ratio" type="number" min="0" max="100" step="0.1" required></label>
+<label>20 日均成交额下限（万元）<input name="min_avg_amount" type="number" min="0" step="100" required></label>
+</div></div>
+<details class="panel"><summary>专业参数：成本、成交容量与对照方法</summary><div class="form-grid">
+<label>成交参与率上限（%）<input name="max_participation" type="number" min="0.0001" max="5" step="0.0001" required></label>
+<label>单边滑点成本（基点）<input name="slippage_bps" type="number" min="0" max="500" step="1" required></label>
+<label>佣金费率（万分之）<input name="commission_rate" type="number" min="0" max="100" step="0.1" required></label>
+<label>每笔最低佣金（元）<input name="minimum_commission" type="number" min="0" max="1000" step="0.1" required></label>
+<label>其他单边费用（万分之）<input name="other_fee_rate" type="number" min="0" max="100" step="0.1" required></label>
+<label>分红税准备金（%）<input name="dividend_tax_reserve" type="number" min="0" max="100" step="1" required></label>
+<label>配对距离上限（0–3）<input name="match_caliper" type="number" min="0" max="3" step="0.05" required></label>
+<label>时间块重采样次数<input name="bootstrap_samples" type="number" min="100" max="5000" step="100" required></label>
+<label>固定随机种子<input name="seed" type="number" min="0" max="4294967295" required></label>
+</div></details>
+<div class="panel"><h3>五组比较分别代表什么</h3><div id="template-comparison"></div><p class="muted">历史数据已经被研究过。本次不会自动优化参数，也不会将历史分段描述为未见测试集。披露发布时间和日线成交存在明确假设，见“数据与假设”。</p><button class="primary" type="submit" id="run-button">固定模板参数并运行研究</button></div></form></section>
+<section data-view="events" hidden><div class="panel"><div class="section-top"><div><h2>从事件追溯到交易</h2><p class="muted" id="event-scope"></p></div><a id="events-download" class="button">下载完整事件 CSV</a></div><div class="toolbar"><input id="event-query" placeholder="股票代码、名称或事件日期" aria-label="搜索事件"><select id="event-kind" aria-label="事件分类"><option value="signal">机构信号</option><option value="matched">配对机构组</option><option value="control">配对对照组</option><option value="rejected">未纳入事件</option><option value="all">全部事件</option></select><button id="event-search">查询</button></div><div id="events-table" class="table-wrap"></div><div class="pagination"><button id="previous-events">上一页</button><span id="event-page"></span><button id="next-events">下一页</button></div></div><div id="event-detail"></div></section>
+<section data-view="archive" hidden><div class="intro"><h2>每一次尝试，都留下记录</h2><p>参数相同也保留独立运行。失败实验不会覆盖上一份完成的报告。</p></div><div id="archive-list"></div></section>
+<section data-view="contract" hidden><div id="contract-content" class="panel"></div></section>
+<footer>结果用于检查研究假设。净值属于明确成交与权益假设下的模拟；价格标签、区间估计和测试通过均不构成盈利证明。</footer>
+</main><script>window.WORKBENCH=/*BOOTSTRAP*/;</script><script>/*APP_SCRIPT*/</script></body></html>

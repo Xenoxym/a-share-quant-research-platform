@@ -1,0 +1,88 @@
+# Main configuration for the LHB Backtesting System
+
+paths:
+  data_root: "data"
+  raw_dir: "data/raw"
+  clean_dir: "data/clean"
+  factor_dir: "data/factor"
+  output_dir: "data/output"
+
+storage:
+  format: "parquet"            # parquet | duckdb
+  duckdb_path: "data/lhb.duckdb"
+  compression: "snappy"
+
+defaults:
+  start_date: "2019-01-01"
+  end_date: "latest"        # CLI reads the published SimTradeData manifest date
+
+data_source:
+  # K-line (Step 1): simtradedata reads pre-exported Parquet (fast, no network).
+  # Switch to "akshare" or "baostock" to fall back to live HTTP fetch.
+  kline_source: "simtradedata"   # simtradedata | akshare | baostock
+  # LHB summary/detail (Steps 2-3): EastMoney data only available via AKShare.
+  lhb_source: "akshare"          # current ingestion supports akshare only
+  # Legacy key kept for any code that still reads data_source.primary directly.
+  # Points to the live HTTP fallback used when simtradedata export dir is absent.
+  primary: "akshare"             # akshare | baostock | tushare
+
+tushare:
+  token: ""                    # set via env var TUSHARE_TOKEN or here
+  daily_call_limit: 200
+
+stock_code:
+  format: "dotted"             # "000001.SZ" style
+  exchange_suffix:
+    shanghai: ".SH"
+    shenzhen: ".SZ"
+    beijing: ".BJ"
+
+limit_up:
+  main_board_pct: 9.8
+  chinext_star_pct: 19.5
+  st_pct: 4.8
+
+analysis:
+  default_horizons: [1, 2, 3, 5, 10]
+  default_filters:
+    only_a_shares: true
+    exclude_ST: true
+    include_only_limit_up_event: true   # 上榜日涨停（优先精确 high_limit 判定）
+    include_only_first_board: true    # 只要首板
+    exclude_consecutive_lhb_day: true # 去掉连续上榜重复日
+    only_single_day_board: true       # 剔除三日榜/混合窗口事件（因子量纲一致）
+    exclude_untradable_next_day: true # 剔除 T+1 无法买入的事件（一字板/停牌/无K线）
+    exclude_lhb_reason: "无价格涨跌幅限制"  # 剔除新股/无涨跌幅事件（无high_limit，收益分布异常）
+  # 样本外验证：该日期前为训练集（样本内），之后为验证集（样本外）
+  oos_split_date: "2024-07-01"
+  # 单边买入+卖出的往返交易成本（小数）：佣金+印花税+滑点，约 0.2%
+  round_trip_cost: 0.002
+  # 网格搜索中样本内事件数低于该值的组合不参与排名
+  min_sample_count: 30
+
+logging:
+  level: "INFO"
+  log_file: "data/output/lhb_backtest.log"
+  rotation: "10 MB"
+
+# SimTradeData integration (Step 1 - daily K-line source)
+# Parallel repo setup: D:\Projects\SimTradeData\ sits next to this project.
+# export_dir can be absolute or relative to the lhb_backtest/ project root.
+# Default assumes: D:\Projects\A-Share_Dragon-Tiger_Event_Backtesting_System\lhb_backtest\
+#   → ../../SimTradeData/data/export/cn  =  D:\Projects\SimTradeData\data\export\cn
+simtradedata:
+  # Complete upstream checkout used for official DuckDB incremental download.
+  project_dir: "../../SimTradeDataRepo"
+  export_dir: "../../SimTradeData/data/export/cn"
+  include_valuation: true    # join turnover_rate from valuation/ parquet files
+  # README Option 2 through the locally repaired native downloader/exporter.
+  # Reuse accepted Parquet when current; missing dates use daily APIs, no TDX ZIP.
+  # Includes dated status, publication-date joins and selective export fixes.
+  # Exact acquisition and field contracts: docs/DATA_CONTRACT.md.
+  # See research/update_redesign_20260924/DESIGN.md for qualification status.
+  market_data_only: false
+  download_args: []
+
+# Failure tracking (Step 2/3 retry & restore)
+failures:
+  dir: "data/failures"

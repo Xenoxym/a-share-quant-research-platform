@@ -1,0 +1,1272 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>量化机器学习系统蓝图 · 2026-10-05</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f4f7fb;color:#1d3045;font-family:"Microsoft YaHei",system-ui,sans-serif;line-height:1.9}aside{position:fixed;left:0;top:0;bottom:0;width:265px;background:#152d45;padding:24px 17px;overflow-y:auto;color:white}aside strong{display:block;font-size:21px;line-height:1.5;margin-bottom:15px}aside a{display:block;color:#c9d9e9;text-decoration:none;font-size:13px;padding:6px 8px;line-height:1.5;border-radius:5px}aside a:hover{background:#27465f;color:white}main{margin-left:265px;padding:38px 4vw 70px;max-width:1600px}article{background:white;border:1px solid #dce5ef;border-radius:15px;padding:35px 38px}h1{font-size:32px;line-height:1.5;margin-top:0;color:#153954}h2{font-size:25px;line-height:1.6;margin-top:52px;padding-top:12px;border-top:2px solid #e9eff6;scroll-margin-top:20px}h3{font-size:20px;margin-top:32px}p{margin:15px 0}a{color:#1567ac;text-underline-offset:3px}li{margin-bottom:8px}strong{color:#103c5b}pre{overflow:auto;border-radius:9px;background:#172d42;color:#dce9f3;padding:20px;font:14px/1.7 Consolas,monospace}code{font-family:Consolas,monospace;font-size:.9em;overflow-wrap:anywhere}p code,li code,td code{background:#edf2f8;padding:2px 4px;border-radius:3px}.table-wrap{overflow-x:auto;border:1px solid #dae4ef;border-radius:9px;margin:22px 0}table{border-collapse:collapse;width:100%;min-width:650px;font-size:14px}th{background:#eaf1f8;text-align:left;padding:13px;color:#153954}td{padding:13px;border-top:1px solid #e4ebf2;vertical-align:top;min-width:130px}tr:nth-child(even) td{background:#f8fafd}img{width:100%;height:auto;display:block;margin:27px 0;border:1px solid #dde6ef;border-radius:12px}.intro-bar{background:#e8f1ff;border-left:4px solid #3477b5;border-radius:9px;padding:17px 21px;margin-bottom:25px;font-size:15px}.interactive{background:#f0f6ff;padding:22px;border:1px solid #bcd3eb;border-radius:12px;margin:28px 0}.interactive h2{margin-top:8px;border:0;padding:0}.eyebrow{font-size:12px;color:#476986;letter-spacing:1px}.controls{display:flex;gap:20px;flex-wrap:wrap}.controls label{font-size:14px}.controls input,.controls select{margin-left:9px;border:1px solid #adc3d9;border-radius:5px;padding:9px;background:white;max-width:100%}.feature-scroll{max-height:340px;overflow:auto}.feature-scroll th{position:sticky;top:0}.feature-scroll td:first-child{min-width:110px}.memory{border-top:1px solid #cbdded;padding-top:20px}.memory label{display:flex;align-items:center;gap:15px;flex-wrap:wrap}input[type=range]{flex:1;min-width:160px}.memory small{color:#526a7f}.metrics{display:flex;gap:12px;margin-top:15px;flex-wrap:wrap}.metric{padding:12px 16px;border-radius:8px;background:white;border:1px solid #cbdced}.warn{color:#9a4c08}.foot{font-size:13px;color:#617487;margin-top:35px}@media(max-width:900px){aside{position:static;width:auto;max-height:220px}aside strong{font-size:18px}main{margin:0;padding:20px 12px}article{padding:24px 18px}h1{font-size:25px}h2{font-size:22px}.controls input{width:190px}img{min-width:0}}@media print{aside,.interactive{display:none}main{margin:0;padding:0}article{border:0}h2{break-after:avoid}table{min-width:0;font-size:11px}}aside strong{color:#fff}</style></head><body><aside><strong>广域量化机器学习<br>研究系统蓝图</strong><a href="#explorer">交互：候选特征与内存</a><a href="#chapter-1">1. 先给结论，也承认前面研究范围的问题</a><a href="#chapter-2">2. 现在已经有什么，缺什么</a><a href="#chapter-3">3. 数据盘点：确实还有大量内容没有进入ML</a><a href="#chapter-4">4. 特征、alpha、模型、策略分别是什么</a><a href="#chapter-5">5. 总体架构：在现有底座上补齐研究层</a><a href="#chapter-6">6. 一次实际研究怎样走完：以龙虎榜集中度为例</a><a href="#chapter-7">7. 需要建设的特征目录：有意义的结构优先</a><a href="#chapter-8">8. Alpha DSL：让组合特征成为可登记、可批量执行的对象</a><a href="#chapter-9">9. 自动寻找特征：不仅一种办法</a><a href="#chapter-10">10. 梯度下降能不能找到这些组合？</a><a href="#chapter-11">11. 不同模型需要什么样的数据</a><a href="#chapter-12">12. 模型目录：树以外确实有很多值得试</a><a href="#chapter-13">13. Y、训练损失与终极目标怎样对应</a><a href="#chapter-14">14. 股票名单、小市值和中性化：三条路线都保留</a><a href="#chapter-15">15. 广度要写进预算，防止系统再次越搜越窄</a><a href="#chapter-16">16. 为什么不直接对一万个候选做全部完整回测？</a><a href="#chapter-17">17. 并行计算、内存和额度：分别管理</a><a href="#chapter-18">18. 上万个尝试后，怎样避免挑出历史幻觉</a><a href="#chapter-19">19. 最终接受标准始终是账户收益与回撤</a><a href="#chapter-20">20. 代码具体怎样扩展：保留底座，新增接口</a><a href="#chapter-21">21. 对象接口与每次实验应保存的内容</a><a href="#chapter-22">22. 分阶段建设与验收：不做一次性大重写</a><a href="#chapter-23">23. 自动循环与人类报告应怎样改</a><a href="#chapter-24">24. 外部研究与专业团队：可以借鉴什么，不能声称什么</a><a href="#chapter-25">25. 这次究竟完成了什么，以及之前循环的研究路径</a></aside><main><div class="intro-bar">设计 v0.1 · 本次0新增训练、0新增账户 · 已核对源码和本机表结构 · 新模块均为待建</div><article><h1>从16个特征的小实验，扩展到可批量研究的量化机器学习系统</h1>
+<p><strong>2026-10-05 · 系统蓝图 v0.1 · 设计任务 task-1c49d3f311dc</strong></p>
+<p>这份文件回答的是：我们的数据还可以怎样用、哪些模型值得比较、如何自动构造组合特征、怎样把大量候选筛选落到代码，以及现有项目究竟需要改哪里。文中的新模块、候选公式、规模和验收要求都是建设设计，不表示已经实现或已经盈利。现状依据是实际源码、Parquet元数据和已有登记实验；本次没有新增模型训练或策略账户。</p>
+<h2 id="chapter-1">1. 先给结论，也承认前面研究范围的问题</h2>
+<p><strong>你的批评有依据。原16维价量输入只是最小基准，不足以代表你要求的广泛研究。我们没有证据支持“龙虎榜、板型、复杂特征或其他模型不值得继续尝试”。</strong></p>
+<p>现在项目有可复用的日线账户、数据快照、实验登记和证据核查基础，但机器学习研究部分仍接近“几个固定实验的执行器”。尚未形成能统一处理事件、公式、序列、多个模型及大规模候选的研究系统。建设的重点是扩展研究层和数据接口，不需要先推翻账户引擎。</p>
+<p>前面把研究越做越窄，主要有四个原因：</p>
+<ol>
+<li>起步先做了一个易核查的16维基准，这个起点合理；后来却继续围绕它安排研究，没有及时把数据和模型扩展列为独立主线。这是研究规划不足。</li>
+<li>主线 <code>src/mlresearch/contracts.py</code> 直接限制特征组；<code>complete/universe</code> 矩阵限定周频、Top100、原16维。增加一个新信息组经常需要新分支和专门核查器，而不是登记一个特征包。</li>
+<li>龙虎榜特征和旧板型研究分布在旧事件模块，当前 <code>technical</code> 行情快照不读取或冻结龙虎榜。数据在项目里，当前ML入口却没有消费它们。</li>
+<li>自动循环主要在调度AI研究会话，没有通用数值候选调度层。一小组实验也要经历阅读、实现、归档和复核；这些工作消耗额度，却不会自然增加数值实验吞吐量。</li>
+</ol>
+<p>严谨核查有价值，但不该成为长期只试几个相似模型的理由。改进办法是让同一份经过验证的接口服务大量候选，AI按“研究主题和批次”工作，数值程序在机器上执行批量计算。</p>
+<h2 id="chapter-2">2. 现在已经有什么，缺什么</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>部分</th>
+  <th>现在的实际情况</th>
+  <th>后续处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>日线行情与历史状态</td>
+  <td>已有行情、ST、限价有效性、证券主表和日历</td>
+  <td>保留；增加逐字段可用性与覆盖检查</td>
+</tr>
+<tr>
+  <td>公司行动与账户</td>
+  <td>主板原生账户及逐日独立核查可复用</td>
+  <td>作为所有候选的共同最终检验器</td>
+</tr>
+<tr>
+  <td>财务快照</td>
+  <td>已有公告日、报告日、股本、利润、权益、资产</td>
+  <td>增加统一PIT财务特征，保留修订与代理口径限制</td>
+</tr>
+<tr>
+  <td>龙虎榜</td>
+  <td>汇总、多个报告窗口、席位及集中度代码存在</td>
+  <td>新建事件快照及向全股票面板的时点关联</td>
+</tr>
+<tr>
+  <td>原16维特征</td>
+  <td>收益、波动、偏离、价量比和当日蜡烛特征</td>
+  <td>保留为回归基准，不再作为输入上限</td>
+</tr>
+<tr>
+  <td>模型</td>
+  <td>已有岭回归、受限提升树及有限消融/重训</td>
+  <td>新建模型注册接口与不同数据结构适配器</td>
+</tr>
+<tr>
+  <td>自动特征发现</td>
+  <td>没有统一的类型化DSL和搜索执行器</td>
+  <td>增量建设表达式、缓存、去重、候选生成</td>
+</tr>
+<tr>
+  <td>批量筛选</td>
+  <td>固定矩阵能跑，通用批次筛选尚未建立</td>
+  <td>增加批次清单、数值工作进程、分层淘汰</td>
+</tr>
+<tr>
+  <td>研究任务与冻结</td>
+  <td>已有领取、登记、失败保留、归档、复核</td>
+  <td>扩展批次登记，不改变既有证据身份</td>
+</tr>
+<tr>
+  <td>真正未见验证</td>
+  <td>已看历史不能恢复成未见样本</td>
+  <td>新增事前冻结的未来影子运行，届时才有新证据</td>
+</tr>
+<tr>
+  <td>专业流程整体</td>
+  <td>有一些关键基础，尚未完成广域研究平台</td>
+  <td>通过后文验收逐块补齐，不给虚假的完成百分比</td>
+</tr>
+</tbody>
+</table></div>
+<p>判断“专业”主要看能否把信息可用时点、特征血缘、实验全部尝试、模型拟合范围、账户比较和研究交接统一起来。是否用了Transformer、多少行代码或拥有几万个公式，不能单独回答这个问题。</p>
+<h2 id="chapter-3">3. 数据盘点：确实还有大量内容没有进入ML</h2>
+<p>下列数量来自本次本机Parquet文件元数据。<strong>行数证明文件规模，不证明每行有效、覆盖完整或可用于预测；本次没有对所有字段做全量质量扫描。</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>当前文件/快照</th>
+  <th style="text-align:right">行数或规模</th>
+  <th>内容与边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>data/clean/daily_kline.parquet</code></td>
+  <td style="text-align:right">8,680,769行</td>
+  <td>OHLC、参考前收、量额、换手率、限价及有效性、历史ST</td>
+</tr>
+<tr>
+  <td>主板快照 <code>31eef7349722ec89cd1a3743</code> 的bars</td>
+  <td style="text-align:right">5,814,596行</td>
+  <td>目前账户研究主要使用的行情；3,389只有行情的历史代码</td>
+</tr>
+<tr>
+  <td>扩展快照 <code>f3ea89a21a917b3247ceeba6</code></td>
+  <td style="text-align:right">5,458只历史代码</td>
+  <td>主板3,389、创业板1,448、科创板621；无北交所，不是完整全A</td>
+</tr>
+<tr>
+  <td><code>data/clean/lhb_summary.parquet</code></td>
+  <td style="text-align:right">118,237行</td>
+  <td>选择后的股票日期事件；包含不支持市场和不同披露类型</td>
+</tr>
+<tr>
+  <td><code>data/raw/lhb_summary_reports.parquet</code></td>
+  <td style="text-align:right">139,192行</td>
+  <td>保留多个原因/窗口的源报告</td>
+</tr>
+<tr>
+  <td><code>data/clean/lhb_broker_detail.parquet</code></td>
+  <td style="text-align:right">1,177,284行</td>
+  <td>买卖方向、排名、名称/代码、金额、报告ID、窗口、披露类型</td>
+</tr>
+<tr>
+  <td><code>data/factor/lhb_event_factors.parquet</code></td>
+  <td style="text-align:right">118,237行</td>
+  <td>已有买一/卖一集中度、买卖比、净买比、机构席位计数等</td>
+</tr>
+<tr>
+  <td>主板 <code>fundamentals.parquet</code></td>
+  <td style="text-align:right">133,367行</td>
+  <td>报告日、公告日、股本、归母利润、总权益、总资产，共7列含代码</td>
+</tr>
+<tr>
+  <td>主板 <code>actions.parquet</code></td>
+  <td style="text-align:right">19,194行</td>
+  <td>当前账户使用的公司行动记录</td>
+</tr>
+</tbody>
+</table></div>
+<h3>3.1 已存在但未接入当前ML的例子</h3>
+<p><code>src/features/compute_lhb_factors.py</code> 已计算 <code>buy1_concentration</code>、<code>sell1_concentration</code>、<code>buy_sell_ratio</code>、<code>net_buy_ratio</code>、<code>net_buy_float_mcap_ratio</code>、<code>inst_buy_count</code>、<code>inst_sell_count</code>、<code>inst_net_seats</code>、<code>northbound_buy</code> 等。</p>
+<p><code>src/features/build_lhb_features.py</code> 已保留报告窗口和席位来源。<code>src/workbench/data.py</code> 有机构披露净额和当时价量关联逻辑，可以借用其定义和测试经验；它把事件次日09:00作为<strong>假定</strong>可知时间，这不是实测发布时刻。</p>
+<p>现有事件宽表按股票/日期聚合，不能完整表达同日全部报告ID。新事件快照应从保留的报告源和席位明细建立 <code>(stock_code, report_id, disclosure_date)</code> 主键、窗口起止与可用时点，再选择或关联。实际窗口包含1、3、10、30日和未知异常期间，不仅是单日/三日两类。</p>
+<p>旧因子也不能整表原样当作已统一的X：买一/卖一集中度实现允许对部分缺失席位求和；部分净买比字段只在全列缺失时重算。新特征版本应重新核查完整席位、相同报告窗口、分母和来源单位，保留旧定义对照与改变原因，而不是静默覆盖旧表。</p>
+<p><code>research/exp03_board_chasing.py</code> 到 <code>exp06_seal_predictors.py</code> 曾研究连板、封板和炸板。它们是历史探索资料，不能直接当作当前通用、无泄漏的特征服务。</p>
+<h3>3.2 接入前必须区分四种情况</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>状态</th>
+  <th>例子</th>
+  <th>系统应怎样处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>有原始字段且能构建</td>
+  <td>同窗口买一占前五买入金额比例</td>
+  <td>核查完整性与窗口，登记公式</td>
+</tr>
+<tr>
+  <td>有字段但可用时点未完整记录</td>
+  <td>龙虎榜当天报告只有日期，没有发布时分</td>
+  <td>使用显式假设和延迟敏感性；不能自动设为收盘已知</td>
+</tr>
+<tr>
+  <td>可以由日线做近似描述</td>
+  <td>同日触及涨跌停两端</td>
+  <td>用准确名称，不宣称恢复盘中顺序</td>
+</tr>
+<tr>
+  <td>当前缺乏所需数据</td>
+  <td>封单金额、开板次数、逐笔委托撤单、完整历史行业成员</td>
+  <td>放入待补数据目录，不生成伪特征</td>
+</tr>
+</tbody>
+</table></div>
+<p>财务快照不含完整现金流、营业收入、分析师预期或全部修订版本；不要把新加几项利润比值称为“完整基本面”。扩展板块快照主要用于学习，主板公司行动和会计支持不能自动推广到其他板块。</p>
+<section class="interactive" id="explorer"><span class="eyebrow">可交互附件 · 全部为设计候选</span><h2>查看候选特征与内存规模</h2><p>筛选下面的特征定义，或改变批量大小，理解为什么需要分批计算。此处不训练模型、不计算策略收益。</p><div class="controls"><label>特征家族 <select id="family"><option value="">全部家族</option></select></label><label>搜索 <input id="feature-query" placeholder="集中、连板、财务、市场…" /></label></div><p id="feature-count"></p><div class="table-wrap feature-scroll"><table><thead><tr><th>家族</th><th>定义ID</th><th>含义 / 条件</th></tr></thead><tbody id="feature-items"></tbody></table></div><div class="memory"><label>同时展开的float32列数 <input type="range" id="feature-columns" min="16" max="10000" step="16" value="64"/><output id="columns-output">64</output></label><div id="memory-result"></div><small>仅数值本体；索引、临时数组、模型、事件表、进程拷贝和其他应用另占内存。不是吞吐量承诺。</small></div></section><h2 id="chapter-4">4. 特征、alpha、模型、策略分别是什么</h2>
+<p>用人话说：</p>
+<ul>
+<li><strong>特征</strong>：对当时情况的描述，例如“今天买一占披露前五买入金额的40%”。</li>
+<li><strong>候选alpha</strong>：希望能预测后来表现的信号，例如“集中买入、相对强净买、且最近不是极度拥挤的股票，是否更值得买”。它可能是一条公式，也可能是模型评分。</li>
+<li><strong>模型</strong>：从历史里学习这些描述怎样组合，例如集中度在首板和四连板时是否有不同作用。</li>
+<li><strong>策略</strong>：何时评分、从什么名单选多少股票、分配多少资金、何时调整。</li>
+<li><strong>账户结果</strong>：依照共同规则实际模拟后，资金曲线得到的收益和回撤。</li>
+</ul>
+<p>“alpha”在因子研究中常被宽泛地用作预测信号；在资产定价中也可指风险因子调整后的超额收益。文中“候选alpha”不等于已经证明存在这种超额收益。</p>
+<p><strong>你说的二次、三次、四次构建可以做。它们更接近组合深度，不一定是数学上的高维。</strong> 一条由五个运算组成的公式仍可能只输出一个数；同时使用300个不同公式才是300维输入。</p>
+<p>组合不会凭空增加原始信息，但能把信息变得更适合某个模型。线性模型看不到的条件关系，乘积、分段或序列编码可以显式表达；树和神经网络也能隐式学习部分组合。需要比较手工结构与模型自动学习的增量。</p>
+<h2 id="chapter-5">5. 总体架构：在现有底座上补齐研究层</h2>
+<p><img src="diagrams/architecture.svg" alt="总体系统架构" /></p>
+<p>上图的绿色部分主要复用现有能力，蓝色部分是新增研究层，橙色部分是检验与反馈。完整关系如下：</p>
+<ol>
+<li><strong>数据层</strong>提供只读快照：日线、状态、财务、龙虎榜报告及席位。新增事件快照引用行情快照，不复制整份大数据。</li>
+<li><strong>时点层</strong>回答每个值何时可知、覆盖是否完整、单位和报告窗口是什么。</li>
+<li><strong>特征层</strong>把原始事实变成可复用的日线、事件、序列或关系特征，并记录计算公式。</li>
+<li><strong>候选层</strong>允许人工假设、论文复现、模板枚举、遗传程序、强化学习或LLM提出候选。</li>
+<li><strong>数值执行层</strong>批量计算与筛选，在固定预算内并行执行，不让每个公式触发一个新AI会话。</li>
+<li><strong>模型层</strong>学习单个或多个特征的组合，输出统一的股票评分/收益分布。</li>
+<li><strong>组合层</strong>把评分变成目标持仓，独立比较等权、低换手、风险约束和模型组合。</li>
+<li><strong>账户层</strong>通过现有原生账户和核查器给出最终收益、回撤及费用路径。</li>
+<li><strong>研究层</strong>记录全部尝试、复核、负面结论和下一阶段计划。论文指标和代理筛选不能冒充账户成功。</li>
+</ol>
+<p>这九层是责任划分，开始可以仍在一个Python项目里运行，不要求九个微服务。</p>
+<h2 id="chapter-6">6. 一次实际研究怎样走完：以龙虎榜集中度为例</h2>
+<p>假设研究命题是：“强净买是否只有在买方比较集中、同时不是已经连续大涨很多天时，才提供选股价值？”这只是可检验假设。</p>
+<h3>6.1 每天数据进入系统</h3>
+<p>收盘后，行情记录当天OHLC、量额和状态。龙虎榜报告在自己的可用时间进入事件表。系统保留 <code>report_id</code>、统计窗口和披露类型，而不是只保留一个净买数字。</p>
+<p>事件适配器把已可知事件关联到每只股票当天的输入。没有龙虎榜的股票仍留在全市场模型名单里。系统分别记录“确认没有事件”“采集未覆盖”“有事件但席位缺失”，不能全部填零。</p>
+<h3>6.2 某个调仓日为每只股票构造X</h3>
+<p>例如一只股票的X包括：过去20日收益、近20日成交额、当前连板长度、最近一次可知龙虎榜距今几天、同窗口买一集中度、净买强度、机构披露占比、当前市场涨停广度、PIT财务比值及缺失标志。它是一个按定义生成的向量，不再固定16维。</p>
+<p>模型可以分别接收：一行100个汇总特征；过去60日×20个日线特征的序列；最近5次事件×若干事件属性。具体维度必须由特征包声明，不能只写“全部信息”。</p>
+<h3>6.3 训练、评分与交易</h3>
+<p>训练仅使用当时已成熟的Y。冻结的模型给当前共同名单中的每只股票评分，组合器选择目标持仓，下一个已定义可交易开盘执行。使用龙虎榜当天信息，必须确保它在评分截止前已经可知。</p>
+<p>当前主基准是周末决策、下个市场开盘执行，标签从下个执行开盘到再下一次周调仓开盘；节假日按日历寻址。它不是统一的“周一开盘到周五收盘”。新实验可改日频或持有期，但X的可用时点、Y的起止和账户规则必须一同声明。</p>
+<p><img src="diagrams/timeline.svg" alt="信息可用时点" /></p>
+<p>没有实际发布时刻时，可以预先声明“该报告交易日之后一个完整市场日结束才视作可用”，再在之后开盘使用；这是延迟假设，不是历史发布时刻认证。另一组可检验次日开盘可用的假设，但必须披露来源与敏感性，不能在结果好时才挑延迟。</p>
+<h2 id="chapter-7">7. 需要建设的特征目录：有意义的结构优先</h2>
+<p>下面是候选目录，不是有效策略清单。单个原始字段、归一化、事件属性和组合分别登记；完整机器可读目录见文末附件。</p>
+<h3>7.1 价量与交易行为</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>候选描述</th>
+  <th>构建方式/含义</th>
+  <th>可用性与注意点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>开盘跳空</td>
+  <td>open/pre_close−1</td>
+  <td>收盘评分时可知；开盘前不能用当日open</td>
+</tr>
+<tr>
+  <td>隔夜与日内收益分解</td>
+  <td>跳空、close/open−1及两者关系</td>
+  <td>检验动量来自哪个交易区间</td>
+</tr>
+<tr>
+  <td>上下影线</td>
+  <td>(high−max(open,close))/pre_close；下影线相应定义</td>
+  <td>结构描述，不证明买卖盘意图</td>
+</tr>
+<tr>
+  <td>路径效率代理</td>
+  <td>一段净收益绝对值/逐日绝对收益之和</td>
+  <td>区分连续推进与来回震荡</td>
+</tr>
+<tr>
+  <td>下行半波动</td>
+  <td>只对负收益做二阶统计</td>
+  <td>与普通波动不同的风险信息</td>
+</tr>
+<tr>
+  <td>量价方向不对称</td>
+  <td>上涨日和下跌日的量额强度差</td>
+  <td>避免把正负方向混为一个均量</td>
+</tr>
+<tr>
+  <td>流动性冲击代理</td>
+  <td>abs(return)/amount等</td>
+  <td>单位核查；不等于盘口冲击测量</td>
+</tr>
+<tr>
+  <td>日均成交价格代理</td>
+  <td>amount/volume</td>
+  <td>核查量额单位；不是某时刻可成交VWAP</td>
+</tr>
+<tr>
+  <td>换手与成交额偏离</td>
+  <td>原换手率/自身过去分布</td>
+  <td>当前ML快照未必保留换手率，需补充冻结来源</td>
+</tr>
+<tr>
+  <td>极端日及修复状态</td>
+  <td>已发生极端涨跌、随后已观察修复</td>
+  <td>阈值只在训练确定；不能按未来表现删事件</td>
+</tr>
+</tbody>
+</table></div>
+<h3>7.2 A股涨跌停与板型</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>候选描述</th>
+  <th>过去事实的定义</th>
+  <th>数据限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>收盘涨停/跌停</td>
+  <td>收盘等于当日已核验限价</td>
+  <td>限价未知时留未知，不用今天名称反推旧ST</td>
+</tr>
+<tr>
+  <td>首板、当前连板长度</td>
+  <td>沿市场日历向过去累计收盘涨停</td>
+  <td>停牌、缺行情、制度例外单独处理</td>
+</tr>
+<tr>
+  <td>一字涨停/跌停</td>
+  <td>OHLC均等于相应限价</td>
+  <td>可描述形态，不能判断排队是否成交</td>
+</tr>
+<tr>
+  <td>触板未封</td>
+  <td>high触涨停但close未涨停；跌停对应</td>
+  <td>一天内触及次数和时间未知</td>
+</tr>
+<tr>
+  <td>高开跌停/低开涨停</td>
+  <td>open接近一端、close在另一端</td>
+  <td>可定义日线形态，不能恢复途中完整路径</td>
+</tr>
+<tr>
+  <td>同日两端触及</td>
+  <td>high与low分别触及两端</td>
+  <td>无法确定“先天后地”还是“先地后天”</td>
+</tr>
+<tr>
+  <td>断板后已观察修复</td>
+  <td>过去连板结束后当日表现</td>
+  <td>不包含后来是否重新连板</td>
+</tr>
+<tr>
+  <td>距上次触板/封板日</td>
+  <td>过去事件的市场日龄</td>
+  <td>对无事件与记录未知分开编码</td>
+</tr>
+<tr>
+  <td>板强度与成交活跃度</td>
+  <td>板型×相对量额、换手</td>
+  <td>不是封单强度；需要单位与覆盖检查</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>特别注意</strong>：旧 <code>generate_future_labels.py</code> 中 <code>within_5d_limit_up</code>、<code>continue_board_*</code>、<code>next_day_open_at_limit</code> 等很多列描述的是未来，只能作为Y或诊断。旧配置中的“排除次日无法买入事件”也是事后条件，不能照搬成当时可选名单。当天首板等过去事实应重新从因果输入生成并独立核查。</p>
+<h3>7.3 龙虎榜结构与席位</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>候选描述</th>
+  <th>示例定义</th>
+  <th>需要守住的边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>买一/卖一集中度</td>
+  <td>第一席金额/同侧披露前五金额</td>
+  <td>前五不全时不能悄悄当完整五席</td>
+</tr>
+<tr>
+  <td>披露席位HHI</td>
+  <td>同侧各席占比平方之和</td>
+  <td>仅披露席位集中度，不是全市场持仓集中度</td>
+</tr>
+<tr>
+  <td>买卖集中度差</td>
+  <td>买方HHI−卖方HHI</td>
+  <td>同一报告窗口、已知方向</td>
+</tr>
+<tr>
+  <td>买卖不平衡</td>
+  <td>(披露买额−卖额)/(买额+卖额)</td>
+  <td>有界强度；不是全市场资金净流入</td>
+</tr>
+<tr>
+  <td>机构披露金额占比</td>
+  <td>可辨识机构席位金额/同侧披露额</td>
+  <td>机构专用是匿名类别，不是同一基金身份</td>
+</tr>
+<tr>
+  <td>席位方向重叠</td>
+  <td>可辨识营业部同时出现在两侧</td>
+  <td>匿名席位不跨方向强制合并</td>
+</tr>
+<tr>
+  <td>单日净买/成交额</td>
+  <td>同日同窗口的披露净额/当日amount</td>
+  <td>三日榜不能除以一天amount冒充同口径</td>
+</tr>
+<tr>
+  <td>多日榜归一化</td>
+  <td>多日净额/同窗口累计成交额</td>
+  <td>窗口完整且明确时才计算，不平均成逐日实际流量</td>
+</tr>
+<tr>
+  <td>已发生事件密度</td>
+  <td>近期上榜次数、最近上榜日龄</td>
+  <td>重叠报告不可重复累计同一段金额</td>
+</tr>
+<tr>
+  <td>可知事件持续性</td>
+  <td>过去若干有效报告的方向一致性</td>
+  <td>明确单日/多日分组，缺失不是0</td>
+</tr>
+<tr>
+  <td>具名席位历史行为</td>
+  <td>当时已成熟历史的方向、持有代理及后续标签统计</td>
+  <td>必须时间折外编码与标签成熟；不能用全样本席位成功率</td>
+</tr>
+<tr>
+  <td>股票—席位关系</td>
+  <td>当时可知披露形成的关系边</td>
+  <td>只是公开披露子图，不是全市场真实资金网络</td>
+</tr>
+</tbody>
+</table></div>
+<p>普通席位披露、投资者分类披露和融资融券监控披露不能直接混算。采集表中的提供方后续收益、解读成功率、当前名称等不进入预测X。项目数据约定已写明这些限制，应把它们变成程序契约。<a href="DATA_CONTRACT.md">项目数据约定</a></p>
+<h3>7.4 财务、市场环境与交叉结构</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>候选描述</th>
+  <th>当前可做的范围</th>
+  <th>当前不能直接声称的内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>EP、BP、利润/权益代理</td>
+  <td>已公告年度利润与权益结合当时股本价格</td>
+  <td>年度利润不是TTM；总权益不是归母权益</td>
+</tr>
+<tr>
+  <td>利润及资产变化</td>
+  <td>同可比报告期、公告可知后同比变化</td>
+  <td>原字段累计/单季语义需先核查</td>
+</tr>
+<tr>
+  <td>财报龄与修订风险标志</td>
+  <td>公告距今、期末距今、缺失</td>
+  <td>缺完整版本史，不能认证真正原始时点版本</td>
+</tr>
+<tr>
+  <td>主板市场状态</td>
+  <td>当时股票等权收益、波动、涨跌广度</td>
+  <td>不是完整全A指数；不能用未来存续名单回算</td>
+</tr>
+<tr>
+  <td>涨停/跌停市场广度</td>
+  <td>当时支持名单的触板、封板、连板分布</td>
+  <td>指标分母及未知限价占比必须报告</td>
+</tr>
+<tr>
+  <td>个股相对市场</td>
+  <td>相对收益、过去beta/残差、下行关系</td>
+  <td>过去拟合，不以未来beta残差化</td>
+</tr>
+<tr>
+  <td>龙虎榜×板型</td>
+  <td>集中度在首板/高连板的差异</td>
+  <td>保留结构假设；不要枚举任意深度无限乘积</td>
+</tr>
+<tr>
+  <td>净买×拥挤×市场状态</td>
+  <td>资金集中、过去涨幅、市场广度交互</td>
+  <td>多个经济解释可能相反，正负方向只在开发区间确定</td>
+</tr>
+<tr>
+  <td>财务×行为</td>
+  <td>EP与相对交易活跃度、利润变化与日内修复</td>
+  <td>区分规模暴露和新增财务信息</td>
+</tr>
+<tr>
+  <td>行业/主题相对强度</td>
+  <td>只有取得历史成员或有效当时标签后</td>
+  <td>当前行业或热点名单不能回填整个历史</td>
+</tr>
+</tbody>
+</table></div>
+<p>没有必要为每个指标随意试1到500天。第一版使用少量有解释的时间尺度：事件日、交易周、交易月、季度公告和半年趋势；变化的时间尺度本身也属于尝试，全部记录。没有机制约束的窗口堆积容易变成同一信息的重复搜索。</p>
+<h2 id="chapter-8">8. Alpha DSL：让组合特征成为可登记、可批量执行的对象</h2>
+<p>DSL是受限制的表达式语言。研究者描述一个公式，系统检查输入、运算和时间，再确定性地计算。它不应允许生成器随意执行Python代码。</p>
+<p>例如原提议：</p>
+<pre><code class="language-text">cs_rank(-past_return(5)) * cs_rank(volume / ts_mean(volume, 20))
+</code></pre>
+<p><code>cs_rank</code> 表示在当天同一名单内排名；<code>ts_mean</code> 表示某只股票向过去求均值。这里输出的是“过去跌得较多而成交相对活跃”的评分，不包含仓位或收益承诺。交易策略还要另行定义。</p>
+<p>一个龙虎榜候选可以写成：</p>
+<pre><code class="language-text">where(event_known,
+      cs_rank(event_net_imbalance)
+      * cs_rank(buy_top5_hhi)
+      * (1 - cs_rank(past_return(20))),
+      missing)
+</code></pre>
+<p>含义是观察净买方向、披露买方集中和过去涨幅的交互。它只在事件可知时有值；全市场模型可把该值与事件有无、日龄和其他特征一起输入。若把它直接做独立选股，事件股票不足Top100时的剩余现金/补足规则必须预先定义。</p>
+<h3>8.1 第一版运算符</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>类别</th>
+  <th>运算</th>
+  <th>应有的契约</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>数值</td>
+  <td>add/sub/mul/safe_div/abs/log1p</td>
+  <td>单位、定义域、除零与有限性</td>
+</tr>
+<tr>
+  <td>当日截面</td>
+  <td>cs_rank/cs_zscore/group_demean</td>
+  <td>名单、分组及当时可知成员；稳定并列排序</td>
+</tr>
+<tr>
+  <td>过去时间</td>
+  <td>lag/delta/ts_mean/ts_std/ts_rank/ts_corr</td>
+  <td>只允许过去窗口；按市场日历，缺失有明确定义</td>
+</tr>
+<tr>
+  <td>事件</td>
+  <td>event_age/event_count/last_known_event</td>
+  <td>已知发布时点、报告窗口、稀疏与缺失区分</td>
+</tr>
+<tr>
+  <td>条件</td>
+  <td>where/clip/indicator</td>
+  <td>条件也必须当时可知；阈值来源固定或只拟合训练</td>
+</tr>
+<tr>
+  <td>暴露处理</td>
+  <td>residualize/neutralize</td>
+  <td>暴露与回归只用当时可用数据；标明代理口径</td>
+</tr>
+</tbody>
+</table></div>
+<h3>8.2 每条公式记录什么</h3>
+<p>记录规范化AST、输入字段、数据快照ID、源文件哈希、单位、最大回看、可用时间策略、股票名单版本、缺失规则、所用常量、代码/算子版本、计算类型和解释。AST就是公式的运算树；不需要使用者读编译器知识才能写一个候选。</p>
+<p>输出一个数不代表单独复制一列永久保存。公式可以延迟计算；共享子表达式只算一次。缓存键必须同时包括公式、快照、时点规则、名单和代码版本，不能只用名称。</p>
+<p><img src="diagrams/dsl.svg" alt="表达式共享与血缘" /></p>
+<p>“depth≤4、nodes≤20”等可以作为第一版复杂度预算；这是搜索工程规则，不是科学上保证四层最有效。首轮从浅层结构开始，复杂公式要证明相对简化公式的增量。</p>
+<h2 id="chapter-9">9. 自动寻找特征：不仅一种办法</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>路线</th>
+  <th>适合的角色</th>
+  <th>第一阶段取舍</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>研究者手工假设</td>
+  <td>龙虎榜、板型、数据口径、机制解释</td>
+  <td>先建立高质量种子和反例</td>
+</tr>
+<tr>
+  <td>可解释模板枚举</td>
+  <td>事件×价格状态、买卖不平衡×集中度</td>
+  <td>批量生成数百/数千候选的首选</td>
+</tr>
+<tr>
+  <td>已公布公式迁移</td>
+  <td>Alpha101、Qlib特征族</td>
+  <td>逐项检查字段、名单、算子和市场差异</td>
+</tr>
+<tr>
+  <td>遗传程序GP</td>
+  <td>在受限AST里交叉、变异、保留多样性</td>
+  <td>DSL执行和候选账本建立后比较</td>
+</tr>
+<tr>
+  <td>符号回归</td>
+  <td>同时寻找表达式结构与数值常量</td>
+  <td>金融目标和时间验证需自行适配</td>
+</tr>
+<tr>
+  <td>强化学习公式生成</td>
+  <td>逐步选择运算符，奖励组合增量</td>
+  <td>与模板/随机合法AST/GP公平比较</td>
+</tr>
+<tr>
+  <td>LLM生成</td>
+  <td>提出经济命题、公式和反向预测</td>
+  <td>按主题批量提案，不逐股实时随意发交易指令</td>
+</tr>
+<tr>
+  <td>神经网络表征</td>
+  <td>学序列、事件、关系的隐含组合</td>
+  <td>与显式公式并行存在，不强制翻译回公式</td>
+</tr>
+<tr>
+  <td>搜索代理模型</td>
+  <td>用已有结果预测哪些候选更值得计算</td>
+  <td>防止只在既有高分同类附近越搜越窄</td>
+</tr>
+</tbody>
+</table></div>
+<p>这些路线都应有随机合法公式、简单人工种子及固定模型对照。所谓智能搜索要在相同数值计算和AI调用预算下证明价值，不能靠多跑几百倍尝试得到更好冠军。</p>
+<p>AlphaGen强调因子集合的协同作用；AlphaForge把挖掘与动态组合分开。可以学习它们的设计，但它们主要的搜索指标并不自动等于我们账户的收益/回撤。<a href="https://arxiv.org/abs/2306.12964">AlphaGen论文</a>，<a href="https://arxiv.org/html/2406.18394v5">AlphaForge论文</a></p>
+<h2 id="chapter-10">10. 梯度下降能不能找到这些组合？</h2>
+<p><strong>有些部分可以，公式结构本身通常不是直接对收益率反向传播就能解决的。</strong></p>
+<p>假设已经有100个可知特征，模型 <code>score = Σ(w_j × x_j)</code> 可以对系数w求梯度；MLP、GRU、TCN等也可以学习非线性表示。训练损失可以是收益回归、排序、分位数或多任务损失。</p>
+<p>但“用乘法还是除法”“回看5日还是20日”“增加哪个事件算子”是离散选择，普通梯度下降没有直接对应的连续导数。GP、RL或LLM可以搜索运算树；也可以用连续松弛或可微代理指导搜索，再把提议转成合法公式，并在真实数据上重新计算。</p>
+<p>AlphaForge使用可微生成器和评分代理，说明这条路线可研究；它不是让真实账户回撤直接穿过全部离散交易规则求导。PySR的演化搜索与常量优化也提供了可复用思路。<a href="https://arxiv.org/html/2406.18394v5">AlphaForge方法</a>，<a href="https://arxiv.org/abs/2305.01582">PySR论文</a></p>
+<p>账户里的TopK、涨跌停阻止成交、整数股、换仓和最大回撤通常非光滑。可以研究可微近似组合及风险/换手惩罚，但最终仍需回到共同账户核查。<strong>局部最优说明优化器在给定样本和目标下找到一个解，不说明找到真实规律，更不保证未来有效。</strong></p>
+<p>训练目标、模型选择指标和最终接受标准可以不同。例如用稳健回归方便训练，用开发期账户收益与回撤选择少量模型，最后检查冻结候选的账户与不确定性。让IC做诊断、让收益回撤做接受标准，二者可以共存。</p>
+<h2 id="chapter-11">11. 不同模型需要什么样的数据</h2>
+<p><img src="diagrams/representations.svg" alt="多种输入表示" /></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>表示</th>
+  <th>输入的具体样子</th>
+  <th>我们现在能怎样构建</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>汇总表格</td>
+  <td>每只股票每决策日一行，例如100个特征</td>
+  <td>最先扩展的通用面板；树、线性、MLP可用</td>
+</tr>
+<tr>
+  <td>时间序列</td>
+  <td>每只股票过去60个市场日×20维</td>
+  <td>从日线构建，停牌/缺失掩码独立保存</td>
+</tr>
+<tr>
+  <td>稀疏事件序列</td>
+  <td>最近若干次已知龙虎榜的属性与时间间隔</td>
+  <td>保留不规则日龄，不能伪装每天都有事件</td>
+</tr>
+<tr>
+  <td>截面集合</td>
+  <td>同一天N只股票×D维</td>
+  <td>日期分批，截面操作/注意力；不能混入未来样本</td>
+</tr>
+<tr>
+  <td>股票—席位图</td>
+  <td>当时具名营业部与股票的披露关系</td>
+  <td>具名身份稳定性核查；匿名机构不当作同一主体</td>
+</tr>
+<tr>
+  <td>多路输入</td>
+  <td>日线编码+事件编码+财务+市场状态</td>
+  <td>首先比较每路单独、合并和打乱对照</td>
+</tr>
+<tr>
+  <td>K线图片</td>
+  <td>过去窗口画成图</td>
+  <td>可研究，但需比较数值输入；图片不增加原始信息</td>
+</tr>
+</tbody>
+</table></div>
+<p>序列只是重新组织过去数据，不会把60天重叠窗口变成60倍独立证据。新增事件、财务和市场信息比单纯把同一价量表reshape更可能增加信息来源；这也是要优先接入它们的原因。</p>
+<h2 id="chapter-12">12. 模型目录：树以外确实有很多值得试</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>模型族</th>
+  <th>要验证的能力</th>
+  <th>适配与先后顺序</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Ridge/ElasticNet</td>
+  <td>高维特征线性组合、稀疏选择</td>
+  <td>当前依赖可支持；作为低成本透明基准</td>
+</tr>
+<tr>
+  <td>稳健线性/分位数回归</td>
+  <td>少受极端标签影响、学习收益分布</td>
+  <td>注意尾部也是收益来源，不能只把尾部删掉</td>
+</tr>
+<tr>
+  <td>GAM/样条/显式交互</td>
+  <td>介于线性和复杂树之间的可解释非线性</td>
+  <td>检验集中度是否存在稳定分段关系</td>
+</tr>
+<tr>
+  <td>RandomForest/ExtraTrees</td>
+  <td>与提升树不同的随机集成结构</td>
+  <td>控制训练预算、树数与样本依赖</td>
+</tr>
+<tr>
+  <td>HGB/LightGBM/XGBoost/CatBoost</td>
+  <td>非线性与特征交互</td>
+  <td>HGB已可用；其他依赖按版本隔离引入</td>
+</tr>
+<tr>
+  <td>排序学习模型</td>
+  <td>更直接学习同日相对排序</td>
+  <td>按日期分组；不能把RankIC提升直接判为成果</td>
+</tr>
+<tr>
+  <td>MLP/表格网络</td>
+  <td>连续组合、高维表示</td>
+  <td>先用小网络，与相同X的线性/树比较</td>
+</tr>
+<tr>
+  <td>GRU/LSTM</td>
+  <td>学过去序列演化</td>
+  <td>保留原始与归一化序列，明确长度和缺失掩码</td>
+</tr>
+<tr>
+  <td>TCN/1D-CNN</td>
+  <td>多尺度时间模式</td>
+  <td>可比循环网络更易并行；实际成本要测量</td>
+</tr>
+<tr>
+  <td>Transformer/时序注意力</td>
+  <td>远近时间和条件依赖</td>
+  <td>参数量、数据有效时间长度、内存需控制</td>
+</tr>
+<tr>
+  <td>GNN/图注意力</td>
+  <td>席位/股票/当时关系的信息传播</td>
+  <td>在关系质量通过后做；避免未来边和全样本图</td>
+</tr>
+<tr>
+  <td>多专家/TRA类</td>
+  <td>不同市场状态或事件机制由不同专家处理</td>
+  <td>路由只能使用当时信息和成熟的过去误差</td>
+</tr>
+<tr>
+  <td>MASTER类市场条件模型</td>
+  <td>市场状态影响特征权重与股票关系</td>
+  <td>需要日期截面批次和市场输入</td>
+</tr>
+<tr>
+  <td>多任务收益+风险模型</td>
+  <td>同时预测收益、下行风险、事件修复</td>
+  <td>每个任务的标签成熟和缺失独立核查</td>
+</tr>
+<tr>
+  <td>直接组合/策略学习</td>
+  <td>学持仓权重而非单只股票Y</td>
+  <td>后置；必须处理长仓约束和与原账户的近似差异</td>
+</tr>
+</tbody>
+</table></div>
+<p>Qlib官方基准已经提供线性、树、MLP、GRU/LSTM、TCN、Transformer和其他模型的统一工作流，支持“扩展表示和模型”的方向；它并不证明哪一类模型一定最强。其公开表格的名单、区间、超额收益/年化口径和交易规则不能直接对照我们的CAGR。<a href="https://github.com/microsoft/qlib/blob/main/examples/benchmarks/README.md">Qlib基准</a></p>
+<p>TRA和MASTER可以作为后续结构研究来源，而非立即照抄论文收益。<a href="https://arxiv.org/abs/2106.12950">TRA论文</a>，<a href="https://arxiv.org/abs/2312.15235">MASTER论文</a></p>
+<p>当前虚拟环境有sklearn、numpy、scipy、duckdb、pyarrow、joblib；本次检查未发现lightgbm、xgboost或torch。这个依赖现状是实施顺序的因素，不是排除其他模型的研究理由。本次未核查GPU，不假定有可用训练GPU。</p>
+<h2 id="chapter-13">13. Y、训练损失与终极目标怎样对应</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>Y/任务</th>
+  <th>学什么</th>
+  <th>与账户的联系及限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>执行开盘到下次执行开盘收益</td>
+  <td>参考价衔接的持有区间收益代理</td>
+  <td>原周频训练还减去同日有效标签均值；不含买入前跳空，也不等于含费用及权益应收的账户收益</td>
+</tr>
+<tr>
+  <td>同日相对收益/排序</td>
+  <td>当时股票谁相对更好</td>
+  <td>排序提高可能改善中间组，而Top100和账户未改善</td>
+</tr>
+<tr>
+  <td>多期限收益</td>
+  <td>1、5、20日等不同预测尺度</td>
+  <td>日历和成熟截止各自定义；不是每种都同日可训练</td>
+</tr>
+<tr>
+  <td>收益分位数/下行尾部</td>
+  <td>同时了解收益和风险分布</td>
+  <td>风险评分的价值要在组合账户验证</td>
+</tr>
+<tr>
+  <td>未来路径不利波动</td>
+  <td>期间最大不利变动、触板等</td>
+  <td>可作Y，但日线不能模拟所有盘中止损的真实成交</td>
+</tr>
+<tr>
+  <td>事件后修复/持续</td>
+  <td>当时事件随后是否延续</td>
+  <td>不按未来“是否可买”筛掉坏样本</td>
+</tr>
+<tr>
+  <td>多任务</td>
+  <td>收益、风险、流动性或事件持续一起学</td>
+  <td>共用表示可能有增量，也可能任务互相干扰</td>
+</tr>
+</tbody>
+</table></div>
+<p>纯收益回归可以用MSE、Huber等；排序有pairwise/listwise等损失；分位数有pinball损失；多任务需固定权重或只在开发期选择。具体损失都属于研究配置，不能看评价结果后悄悄更换。</p>
+<p>不要求一开始就对最大回撤反向传播。我们可以先学收益和风险，再从多个账户候选形成收益—回撤的帕累托前沿：一个方案收益更高但回撤也更大，不能只报“更好”。</p>
+<h2 id="chapter-14">14. 股票名单、小市值和中性化：三条路线都保留</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>路线</th>
+  <th>选股是否先筛小市值</th>
+  <th>回答的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>纯ML全共同名单</td>
+  <td>不先筛</td>
+  <td>新信息和模型能否独立形成策略</td>
+</tr>
+<tr>
+  <td>小市值增强</td>
+  <td>明确先筛/加入规模评分</td>
+  <td>在原强基准上有没有实际增量</td>
+</tr>
+<tr>
+  <td>暴露匹配/中性化诊断</td>
+  <td>约束或控制规模等暴露</td>
+  <td>新信号是否只是重新编码小盘/高波动</td>
+</tr>
+</tbody>
+</table></div>
+<p>共同名单可以是当前合格主板名单，也可以是更宽的当时可用主板名单；两者都要保留适当对照。事件模型另有“全市场带事件特征”和“仅事件机会”的不同问题，不能把事件子池当全市场策略。</p>
+<p>纯ML不要求排除规模信息；“是否使用规模”是一项明确消融。小市值是对照与一条研究分支，不是所有模型必须依附的底座。</p>
+<p>中性化也不是必经的“专业认证”。可以比较原信号、过去可知规模/波动暴露残差和暴露匹配账户。只有取得历史行业成员后才做严格行业处理；自建少数代理因子的风险模型不能称为完整Barra产品。</p>
+<h2 id="chapter-15">15. 广度要写进预算，防止系统再次越搜越窄</h2>
+<p>第一版建立以下并行研究主题：价量结构、涨跌停/板型、龙虎榜结构、事件持续与席位、PIT财务、市场环境、跨组交互、序列表示、关系表示、组合与风险、训练窗口/漂移、模型结构。</p>
+<p>研究主题注册表记录每类当前覆盖、已尝试次数、最后一次新证据、失败原因和待补数据。每一研究周期必须说明哪些主题得到预算、哪些被推迟及理由；不能因为树模型工具已经写好就永久只做树。</p>
+<p>一个<strong>建设完成后的首批规模提案</strong>如下，不是已经启动的实验：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>层级</th>
+  <th style="text-align:right">预设规模</th>
+  <th>数量到底表示什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>基础特征种子</td>
+  <td style="text-align:right">约80–150条定义</td>
+  <td>去重后的有解释特征，不是80个策略</td>
+</tr>
+<tr>
+  <td>模板与浅层公式</td>
+  <td style="text-align:right">首批最多2,000条合法候选</td>
+  <td>公式结构、方向和参数全部计入尝试</td>
+</tr>
+<tr>
+  <td>低成本开发期筛选</td>
+  <td style="text-align:right">最多200条进入更详细比较</td>
+  <td>保留不同机制与低相关性，不只按全截面IC</td>
+</tr>
+<tr>
+  <td>特征包×模型</td>
+  <td style="text-align:right">首批最多24个配置</td>
+  <td>如6个信息包×4个模型；分别冻结</td>
+</tr>
+<tr>
+  <td>原生账户晋级</td>
+  <td style="text-align:right">首批8–12个配置、两种费用路径</td>
+  <td>最终策略证据；控制账户可核查后复用</td>
+</tr>
+<tr>
+  <td>后续扩容</td>
+  <td style="text-align:right">先评估1,000/2,000的吞吐再到10,000</td>
+  <td>扩容是新登记批次，不在旧预算内无限追加</td>
+</tr>
+</tbody>
+</table></div>
+<p>完整全因子笛卡尔积会迅速变成几十万次拟合，初期用分块设计：固定模型比较信息组、固定信息组比较模型、最后验证少量交互。这个设计允许广泛探索，同时能知道提升来自哪里。</p>
+<p>这里的24是<strong>模型配置数</strong>，8–12是<strong>目标组合配置数</strong>；12个组合×2个费用情景是24条账户路径。第一次示范批次可固定每配置仅拟合一次，共最多24次拟合尝试，预处理范围一并冻结。年度重训、额外seed、调参或失败重试均另耗拟合名额，不能塞进“24配置”后隐去成本；这些后续路线另行有界登记。</p>
+<p>例如公式搜索先按8个机制家族分配基础额度；选择部分低相关候选，另留预定探索名额测试稀疏事件、非线性组合和低IC但可能有条件收益的候选。实际家族数与名额写进批次协议，不事后按赢家改解释。</p>
+<h2 id="chapter-16">16. 为什么不直接对一万个候选做全部完整回测？</h2>
+<p><img src="diagrams/funnel.svg" alt="候选筛选与账户检验" /></p>
+<p>可以对很多候选计算信号和组合代理，但不能把一万个完全不同的模型、每个多年份重训、多个费用账户和独立复核等同于一万个简单公式计算。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>阶段</th>
+  <th>执行内容</th>
+  <th>可以拒绝什么</th>
+  <th>不能声称什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>S0 数据与公式检查</td>
+  <td>时点、单位、覆盖、常数列、合法AST、复杂度</td>
+  <td>不合法或不可算候选</td>
+  <td>不代表策略收益失败</td>
+</tr>
+<tr>
+  <td>S1 批量信号诊断</td>
+  <td>开发区间IC、组内/TopK关系、稳定性、事件覆盖</td>
+  <td>单一机制重复、明显不稳定</td>
+  <td>IC最高不等于赚钱最多</td>
+</tr>
+<tr>
+  <td>S2 简化组合筛选</td>
+  <td>固定名单和权重的低成本净值代理、收益/风险/换手</td>
+  <td>明显不具备组合价值的方案</td>
+  <td>代理不是原生资金账户；不作成果通知</td>
+</tr>
+<tr>
+  <td>S3 原生账户</td>
+  <td>少量冻结候选×费用情景</td>
+  <td>在共同会计下未达账户标准的方案</td>
+  <td>同期历史好不等于真正未见成功</td>
+</tr>
+<tr>
+  <td>S4 稳健性与独立复核</td>
+  <td>分年、暴露、典型路径、配对区间、全部搜索选择影响</td>
+  <td>结果被泄漏、口径或单一时期解释</td>
+  <td>不用两个角色名冒充机构认证</td>
+</tr>
+<tr>
+  <td>S5 未来影子记录</td>
+  <td>事前冻结、逐期记预测与真实新数据</td>
+  <td>看新时间里的失效与漂移</td>
+  <td>尚未运行前不预报未来验证结果</td>
+</tr>
+</tbody>
+</table></div>
+<p>S1不能只用IC一刀切。少数稀疏事件可能全市场IC低，但事件条件下有价值；有些信号在单独交易时弱，组合后互补。系统要保留预先约定的多样性/探索通道。</p>
+<p>S2先作为<strong>明确受限的近似</strong>，并用少量共同策略核对与原生账户的偏差。无法复现原账户关键规则时，就只用于粗筛，不输出“已审计收益”。对进入S3的候选必须走正式登记执行器，不能绕过 <code>register/run</code>。</p>
+<h2 id="chapter-17">17. 并行计算、内存和额度：分别管理</h2>
+<p>本机盘点：16个逻辑CPU，物理内存33,492,422,656字节，约31.2 GiB；盘点时可用约12.5 GiB。可用内存随其他应用变化。没有基于这些数值实测公式吞吐，因此不能现在承诺“每小时必跑一万个”。</p>
+<h3>17.1 不能一次把所有特征展开</h3>
+<p>8,680,769行×10,000个float32列，仅数值就约347.2 GB；即使按已有周面板940,485行计算，也约37.6 GB，尚未包含索引、临时拷贝、模型和事件表。大于当前可用内存。</p>
+<p>按周面板每批64条float32特征，数值本体约241 MB；日线全量64条约2.22 GB。实际需额外工作空间，所以先采用32/64条分批、日期/股票分区、公共子表达式缓存和只持久化必要结果。序列张量按批次生成，不永久展开所有滑动窗口。</p>
+<h3>17.2 数值并行与AI并行不是一回事</h3>
+<p>第一版建议从2个数值进程、每个最多4个底层线程起步，测量后再考虑4个进程。Windows使用进程时避免把大DataFrame反复序列化；通过只读文件、内存映射和小配置传任务。不能16个进程各自再开16个BLAS线程。</p>
+<p>线程上限和内层并行需要显式控制；Joblib/sklearn官方文档说明了多进程与底层线程叠加造成的过度订阅问题。<a href="https://joblib.readthedocs.io/en/latest/user_guide/parallel.html">Joblib并行说明</a>，<a href="https://scikit-learn.org/stable/computing/parallelism.html">sklearn资源管理</a></p>
+<p>研究任务数据库保持小型元数据和状态，数值大表放Parquet/DuckDB与分区文件。先保留SQLite WAL和集中写入；没有证据要求马上换成大型数据库、云集群或Kubernetes。</p>
+<p>资源验收先运行固定32/64候选的小批，记录峰值RAM、磁盘写入、每候选耗时和恢复行为，再决定1,000/2,000/10,000级预算。调度器执行前原子预留内存和拟合/账户名额；总资源越界排队或失败，不让多个进程分别误判“还有12 GiB”。缓存有预先设定的磁盘上限，只清理可重算且未被运行引用的缓存，永久证据和冻结输入不参与自动淘汰。首版上限根据这一小批实测登记，而非凭CPU数承诺吞吐。</p>
+<h3>17.3 预算至少分六项</h3>
+<p>分别记录合法候选数、全部尝试数、模型拟合数、账户路径数、CPU/墙钟与内存、AI调用数及可读到的额度。候选生成、筛选、拟合、账户和复核都要有上限；失败也计数。</p>
+<p>前一轮8个新策略/16个费用路径的登记矩阵执行315.17秒，另一次统计8.03秒；这是那个固定评分实验的记录，不能直接推算新模型或一万个账户的成本。它说明数值执行与完整AI会话的耗时不是同一件事。</p>
+<p>额度不足时保存任务、批次游标、候选账本与收据。只有平台实际给出可用额度和重置时间时才安排接续；不靠猜测“固定五小时后一定恢复”。当前总控仍是有界本地调度，不能因此宣称无限常驻研究。</p>
+<h2 id="chapter-18">18. 上万个尝试后，怎样避免挑出历史幻觉</h2>
+<p><strong>尝试越多，越容易挑到噪声冠军。多跑是扩大探索范围的方法，不是提高结论可信度的方法。</strong> 回测过拟合研究明确讨论了从多个候选中选择赢家带来的问题。<a href="https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf">Bailey等：回测过拟合概率</a></p>
+<p>系统需要以下规则：</p>
+<ol>
+<li>生成器只读取开发区间反馈，冻结晋级候选后才开启下一层检验；策略代码和模型选择不读取后来账户赢家。</li>
+<li>按时间划分，以标签真正结束日期清除边界重叠；重叠20日Y不能按“股票行数随机分割”。</li>
+<li>每次拟合记录特征转换的拟合范围、标签成熟上限、所用版本、候选族、seed和选择规则。</li>
+<li>截面/席位target encoding、因子动态权重和状态路由只用当时已经成熟的过去标签。过去几日IC在Y尚未成熟时也是未来信息。</li>
+<li>记录全部合法与失败尝试，跨任务按实质定义去重；换名称、新Chat或模型名称不是新证据。</li>
+<li>用按时间块的配对区间、所有候选的选择影响、年份/机制稳定性和负对照分析不确定性。只对冠军做一个普通t检验是不够的。</li>
+<li>使用日期内打乱Y、滞后事件、简化公式、单信息组、规模匹配和无事件模型等对照；不要把同一机制的很多近似公式当独立发现。</li>
+<li>2024—2026-09-24已有结果已被反复看过；即便开发程序限制信息读取，研究者知道这段历史的结果，它仍是回顾性评价。新的未来时间与事前冻结日志才可能提供真正前瞻证据。</li>
+</ol>
+<p>独立复核需要检查方法和数据，而不只是报告措辞。同一模型扮演不同角色也可能有共同盲点，报告保留这个边界。</p>
+<h3>18.1 统计检验具体覆盖什么</h3>
+<p>第一版对进入筛选的候选保存共同日期上的TopK或组合代理收益向量，并保留所有模型配置在选择区间的评分，而非只存赢家。对最终账户用同日期、同时间块的配对重采样比较收益差和回撤差；共同使用4/8周块只是两个敏感性设置，不保证选对真实依赖长度。</p>
+<p>对于预先固定候选集合，可以用时间块重采样的最大统计量，或核对后引入Reality Check/SPA类方法处理该集合的选择影响。检验集合、比较基准、绩效定义及零假设必须在运行前写明；不同名单/缺失窗口不能假装同一个完整返回矩阵。代理收益上的校正只支持代理层，不自动传给账户层。</p>
+<p>方法来源：<a href="https://onlinelibrary.wiley.com/doi/abs/10.1111/1468-0262.00152">White：Reality Check</a>，<a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=264569">Hansen：Superior Predictive Ability</a>。它们用于明确集合下的比较，不代表解决全部自适应研究偏差。</p>
+<p>RC/SPA需要事前定义的逐期损失或绩效差矩阵；不能直接把一个最终CAGR或最大回撤值塞进普通检验。账户CAGR/MDD的路径区间另行计算并说明重采样假设。</p>
+<p><strong>8–12个晋级账户的区间不等于对2,000个公式及自适应生成过程完成了全搜索校正。</strong> 如果生成器根据结果继续学习、研究者跨多轮改主题，固定集合的bootstrap也不覆盖全部选择。严格评估自适应搜索需要在外层时间折中重做内层搜索，成本另计；当前已看历史只报告这些边界，不能把它包装成确认性显著性。建设验收要求报告“检验覆盖的候选集合”和“未覆盖的适应性选择”，即使无法计算一项校正，也明确留空。</p>
+<h2 id="chapter-19">19. 最终接受标准始终是账户收益与回撤</h2>
+<p>每个晋级候选都必须报告：CAGR、累计收益、每日净值最大回撤、分年收益、回撤持续时间、实际平均仓位、换手/成交覆盖、费用反事实、暴露、事件覆盖和期末权益情况。IC、RMSE、分类准确率等放到诊断部分。</p>
+<p>比较必须采用相同时间、资金、共同名单和会计；同时保留适当的小市值、固定组合/固定随机、简单价量及零费用对照。模型打乱标签对照尤其重要。</p>
+<p>目前循环已有事前账户门槛：相对同池小市值，年化高至少2个百分点且最大回撤最多增加2个百分点；或者年化最多降低2个百分点且最大回撤至少改善5个百分点，并有分年及复核要求。这是该循环的工作门槛，不是行业统一标准，也不是你指定的唯一效用函数。</p>
+<p>新系统可以继续保留这类门槛，同时显示完整收益—回撤前沿。不把极大降仓带来的回撤降低包装成在相近收益下改善；也不因为小市值收益高就永久锁死其他信息和策略。</p>
+<p>AQR公开研究把机器学习与组合经济目标、成本后的风险收益前沿联系起来，支持我们将最终账户作为目标。这里引用的是公开研究思路，不声称复制其内部实盘系统。<a href="https://www.aqr.com/insights/research/working-paper/machine-learning-and-the-implementable-efficient-frontier">AQR：Machine Learning and the Implementable Efficient Frontier</a></p>
+<p>原生账户是同一冻结模拟口径下的最终比较器，仍继承既有近似：开盘成交量约束使用执行日全日成交量，限价部分来自上游按规则生成；公司行动、修订和覆盖也有已有边界。账本核查证明计算一致，不能认证真实开盘容量。这里保留这些共同规则，不将工程核查扩大为实盘可实现性认证。</p>
+<h2 id="chapter-20">20. 代码具体怎样扩展：保留底座，新增接口</h2>
+<p><img src="diagrams/modules.svg" alt="增量建设与现有模块" /></p>
+<p>建议新增 <code>src/alpharesearch/</code>。名称可调整，责任边界应固定。下面全是待建模块。</p>
+<pre><code class="language-text">src/alpharesearch/
+  contracts.py          # FeatureSpec、ModelSpec、StudySpec、BatchSpec
+  availability.py       # 数据时间、窗口、单位与缺失/覆盖契约
+  snapshots.py          # 事件扩展快照；引用原行情快照
+  features/
+    registry.py         # 特征目录、版本与依赖
+    price_structure.py  # 结构价量，不重复原16维定义
+    boards.py           # 因果板型与当前连板
+    lhb.py              # 披露结构、席位与事件持续
+    financial.py        # 可知财务及代理口径
+    market.py           # 过去可知的市场状态
+  dsl/
+    ast.py              # 类型化公式树与规范化
+    operators.py        # 允许算子及时间/单位规则
+    compiler.py         # 共享子表达式DAG
+    executor.py         # 向量计算、分区及缓存
+  generators/
+    templates.py        # 可解释模板与浅层枚举
+    random_ast.py       # 合法随机负对照
+    gp.py               # 后续受限遗传搜索
+    llm_proposals.py    # 有来源的主题批量提议
+    rl.py               # 后续公式生成研究
+  datasets/
+    tabular.py          # 汇总表格
+    sequence.py         # 序列与缺失掩码
+    events.py           # 不规则事件序列
+    graph.py            # 当时关系边
+  models/
+    registry.py         # 拟合/预测/模型保存统一接口
+    sklearn_models.py   # 首批已有依赖的模型
+    neural_models.py    # 独立环境引入后建设
+  screen.py             # 开发期多指标筛选与探索通道
+  portfolio.py          # 评分变目标权重，保留不同路线
+  account_bridge.py     # 正式登记后接现有原生账户
+  batch.py              # 预算、候选账本、去重、检查点
+  workers.py            # 数值进程资源限制与恢复
+  audit.py              # 前缀、血缘、选择及数值独立核查
+  report.py             # 人话说明+全部尝试+研究路径
+</code></pre>
+<p>复用 <code>src/technical/runner.py</code> 已存在的 <code>prepared</code> 和 <code>frozen_external_decisions</code> 接口。它已经允许外部评分/目标持仓进入共同账户，因此不需要为了LSTM或DSL重写现金、公司行动、税费、T+1等会计。</p>
+<p><code>prepared</code> 是内部传参入口，<strong>不是自动核验任意新模型输出的通用边界</strong>。新增 <code>account_bridge</code> 必须先检查快照身份、共同名单、唯一股票/日期键、决策与执行日历、所有依赖known_at≤评分/决策截止&lt;执行时点、每次训练label_end≤训练截止、参考close来自冻结行情、评分/权重有限、长仓权重非负且总和不超过1、并列排序稳定、剩余现金规则、目标表哈希与特征/模型收据关联，再调用原账户和数值核查。非法权重、重复股票或错价必须在进入账户前失败并留收据。</p>
+<p>账户继续使用原主板行情/行动快照，新增事件快照作为评分父清单绑定。现有 <code>tools/verify_technical.py</code> 对账户快照检查无LHB来源，并输出 <code>no_lhb_inputs=True</code>；这个旧字段不能扩大解释为“新策略没有使用龙虎榜”。工程接入要区分 <code>account_snapshot_has_no_lhb_sources</code> 与 <code>signal_provenance</code>，独立核查后者的事件哈希、时点与公式。改审计描述及接入契约作为工程任务，保留账本计算规则和冻结旧核查结果。</p>
+<p>扩展 <code>src/researchops</code> 的正式登记类型：增加“特征/公式批次”和“模型/账户批次”，冻结生成语法、选择规则、代码、输入清单和预算。现在 <code>attach</code> 仅事后归档文件完整性，不能拿它替代未来批次的事前登记执行。</p>
+<p>冻结分支中的 <code>fixed_blend</code>、<code>financial_context</code> 扩展先分别做工程合并与核查；不能因为某个分支跑过就声称主线入口已经支持它。</p>
+<h2 id="chapter-21">21. 对象接口与每次实验应保存的内容</h2>
+<p>以下为设计示例，不能直接提交给目前的 <code>MLSpec</code>：</p>
+<pre><code class="language-json">{
+  &quot;kind&quot;: &quot;alpha_batch_v1&quot;,
+  &quot;data_snapshot&quot;: &quot;31eef7349722ec89cd1a3743&quot;,
+  &quot;event_snapshot&quot;: &quot;to_be_created_and_verified&quot;,
+  &quot;universe&quot;: &quot;dated_mainboard_qualified_v1&quot;,
+  &quot;feature_pack&quot;: &quot;price_boards_lhb_v1&quot;,
+  &quot;decision_time&quot;: &quot;weekly_after_all_required_inputs_known&quot;,
+  &quot;label&quot;: &quot;next_execution_open_to_following_execution_open&quot;,
+  &quot;search_period&quot;: [&quot;2020-01-01&quot;, &quot;2022-12-31&quot;],
+  &quot;selection_period&quot;: [&quot;2023-01-01&quot;, &quot;2023-12-31&quot;],
+  &quot;retrospective_evaluation&quot;: [&quot;2024-01-01&quot;, &quot;2026-09-24&quot;],
+  &quot;generator&quot;: &quot;typed_templates_depth_le_4&quot;,
+  &quot;budget&quot;: {
+    &quot;max_proposals_including_invalid&quot;: 4000,
+    &quot;max_legal_candidates&quot;: 2000,
+    &quot;max_model_configurations&quot;: 24,
+    &quot;max_fit_attempts&quot;: 24,
+    &quot;max_portfolio_configurations&quot;: 12,
+    &quot;max_account_paths&quot;: 24
+  },
+  &quot;scenarios&quot;: [&quot;configured_costs&quot;, &quot;zero_trading_costs&quot;],
+  &quot;status&quot;: &quot;design_only_not_executable_in_current_dispatcher&quot;
+}
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>对象</th>
+  <th>最少记录</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>FieldSpec</td>
+  <td>来源、单位、事件发生日、最早可知时点、披露窗口、修订/覆盖状态</td>
+</tr>
+<tr>
+  <td>FeatureSpec</td>
+  <td>AST或确定性函数、依赖字段、输出结构、回看、缺失处理、因果测试</td>
+</tr>
+<tr>
+  <td>DatasetSpec</td>
+  <td>名单、日历、日期、Y定义、输入形状、变换拟合范围</td>
+</tr>
+<tr>
+  <td>ModelSpec</td>
+  <td>模型族、参数、seed、损失、训练标签截止、依赖版本</td>
+</tr>
+<tr>
+  <td>PortfolioSpec</td>
+  <td>评分方向、目标数量、权重、留仓/换仓、事件不足规则、风险约束</td>
+</tr>
+<tr>
+  <td>BatchSpec</td>
+  <td>假设、生成器、预算、淘汰/晋级规则、已知历史范围</td>
+</tr>
+<tr>
+  <td>CandidateReceipt</td>
+  <td>规范化ID、父候选、状态、失败理由、耗时、是否被看过、选择层级</td>
+</tr>
+<tr>
+  <td>AccountReceipt</td>
+  <td>正式实验ID、目标持仓哈希、各费用路径、原生核查结果</td>
+</tr>
+<tr>
+  <td>EvidenceSummary</td>
+  <td>全部尝试、各层数量、收益回撤、局限、复核和下一步</td>
+</tr>
+</tbody>
+</table></div>
+<p>特征缓存与研究账本身份不同：同一特征可在多个任务复用，但每次模型/组合选择与开发反馈必须有新的明确血缘。不能复制一个旧结果就算新增成功。</p>
+<h2 id="chapter-22">22. 分阶段建设与验收：不做一次性大重写</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>阶段</th>
+  <th>建设内容</th>
+  <th>可以验收的具体输出</th>
+  <th>进入下一阶段的条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>P0 修复当前阻断</td>
+  <td>财务/市场代理的日历范围契约；主线扩展接入整理</td>
+  <td>执行器与核查器一致，真实越界案例和60日窗口测试通过</td>
+  <td>保留旧失败；新冻结登记预算合法，不重置旧任务预算</td>
+</tr>
+<tr>
+  <td>P1 数据接入与因果特征</td>
+  <td>事件快照、known_at、板型和LHB/财务/市场特征注册</td>
+  <td>能解释每列X；因果前缀、窗口、缺失与单位验收；原16维输出不变</td>
+  <td>事件延迟假设明确；旧未来标签与提供方解读被拒绝</td>
+</tr>
+<tr>
+  <td>P2 DSL与缓存</td>
+  <td>类型化AST、运算、共享子表达式、去重、批次登记</td>
+  <td>相同定义相同ID；截断未来数据不改过去值；缓存不跨名单/版本误用</td>
+  <td>解析/执行边界、稳定排序、零分母及覆盖失败可追溯</td>
+</tr>
+<tr>
+  <td>P3 1,000级筛选</td>
+  <td>数值进程、批次游标、主题分配和全部尝试账本</td>
+  <td>运行一批固定公式；实测耗时/RAM；中断后恢复且不重算已完成候选</td>
+  <td>代理收益清楚标识，筛选不读评价反馈</td>
+</tr>
+<tr>
+  <td>P4 多模型与完整账户</td>
+  <td>多信息包×线性/随机森林/提升树等；8–12账户</td>
+  <td>固定X比较模型、固定模型比较X；所有账户双费用和核查</td>
+  <td>阶段性收益回撤报告+负面对照+两个复核</td>
+</tr>
+<tr>
+  <td>P5 序列/关系与智能搜索</td>
+  <td>GRU/TCN/事件编码、GP，再比较RL/LLM等</td>
+  <td>相同预算比较生成器；简化/多路消融；稀疏与新依赖成本记录</td>
+  <td>新结构必须证明信息或组合增量，不能只比模型名称</td>
+</tr>
+<tr>
+  <td>P6 持续研究与未来记录</td>
+  <td>主题知识库、漂移/失效管理、前瞻影子运行</td>
+  <td>每周期全部路径简报、未来事前预测与结果对应</td>
+  <td>重要通知仅来自经过复核的账户成果/需处理的实质阻断</td>
+</tr>
+</tbody>
+</table></div>
+<p>阶段之间可对独立模块并行工程，但数据契约、登记和依赖验证必须先于相关账户研究。这里给的是工作与验收拆分，没有在尚未做性能测量时许诺若干小时即可全部完成。</p>
+<p><strong>第一项具体行动是P0解除已定位故障，并建设P1事件数据接口。随后先用现有依赖完成宽特征基准，再扩展神经网络。</strong></p>
+<p>P1建议先实现日线板型、龙虎榜浓度/不平衡/事件龄、财务代理和市场广度，不一开始同时引入大型图网络。理由是这些新增信息现在就在数据里，能直接回答“16维没有充分利用数据”这个问题。</p>
+<h2 id="chapter-23">23. 自动循环与人类报告应怎样改</h2>
+<p>自动循环的基本单位从“一个模型名字”变成“一个有机制解释的研究批次”。每批先声明信息包、名单、标签、模型范围、搜索预算、晋级标准和来源，然后运行、复核、整理、选择下一主题。</p>
+<p>报告首页必须写清：新接入了什么数据、构造了什么X、训练了几次、实际新增多少账户、最好候选与共同基准的CAGR/MDD、是否有增量、哪些失败以及下一步为何改变。附录保存所有候选和参数，不只报赢家。</p>
+<p>工作台增加三张视图：</p>
+<ol>
+<li><strong>覆盖地图</strong>：每个信息组和模型族试过多少、缺什么数据、上次结论。</li>
+<li><strong>研究漏斗</strong>：生成/合法/筛选/拟合/账户/复核各有多少，运行成本、失败、游标。</li>
+<li><strong>账户前沿</strong>：收益对回撤、各年份、规模/事件暴露及费用，点击可查到X/Y/公式/训练与账本。</li>
+</ol>
+<p>额度状态、计算状态、工程阻断、普通阶段否证和重要收益成果分开显示。遇到值得通知的账户成果时，报告末尾简述自上次通知以来的研究路径；不是拿IC改善提前结束整个循环。</p>
+<h2 id="chapter-24">24. 外部研究与专业团队：可以借鉴什么，不能声称什么</h2>
+<p>我们能依据公开机构材料、论文和开源项目设计流程，不能据此完整知道美国、中国所有顶尖公司的内部系统、私有数据和正在赚钱的策略。以下是本次核对的一手来源；“借鉴”列是对本项目的设计推论。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>来源</th>
+  <th>已公开的事实/研究主题</th>
+  <th>对本项目的借鉴与限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><a href="https://www.worldquant.com/brain/iqc/">WorldQuant BRAIN官方2026比赛</a></td>
+  <td>历史数据、预定义算子与alpha模拟</td>
+  <td>公式研究是实际公开流程之一；不代表其全公司生产架构</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/1601.00991">101 Formulaic Alphas</a></td>
+  <td>公开101条公式</td>
+  <td>用作表达式与算子参考；并非当前A股盈利保证，所需行业等字段逐条核查</td>
+</tr>
+<tr>
+  <td><a href="https://github.com/microsoft/qlib">Qlib官方代码</a></td>
+  <td>因子、模型、组合与评估的开放工作流</td>
+  <td>借用模块接口与基准组织；当前项目保留自己的原生账户</td>
+</tr>
+<tr>
+  <td><a href="https://raw.githubusercontent.com/microsoft/qlib/main/qlib/contrib/data/loader.py">Alpha158/360源码</a></td>
+  <td>汇总特征与历史价量表示</td>
+  <td>学特征分类/输入表示；158/360是配置下的表示维度，不是同样数量已验证策略</td>
+</tr>
+<tr>
+  <td><a href="https://github.com/microsoft/qlib/blob/main/examples/benchmarks/README.md">Qlib模型基准</a></td>
+  <td>多模型统一比较及组合指标</td>
+  <td>比较数据结构与完整工作流；不把表格收益直接当本项目CAGR</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2306.12964">AlphaGen，KDD 2023</a></td>
+  <td>RL搜索协同因子集合</td>
+  <td>因子组合增量比单因子最高分更有意义；在本项目重新检验账户</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/html/2406.18394v5">AlphaForge，AAAI 2025</a></td>
+  <td>生成—评分代理与动态因子组合</td>
+  <td>可微代理、多样性与组合分层；动态权重必须只读成熟标签</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2305.01582">PySR</a></td>
+  <td>可解释符号回归和演化/常量优化</td>
+  <td>可研究浅层表达式搜索；原科学基准不证明金融收益</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2106.12950">TRA，2021</a></td>
+  <td>多预测专家与路由</td>
+  <td>检验机制混合与市场漂移；不是任意状态过滤必然有效</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2312.15235">MASTER，AAAI 2024</a></td>
+  <td>市场条件、序列与股票关联</td>
+  <td>后续研究市场输入和截面关系；资源及数据划分自行核查</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2502.16789">AlphaAgent，2025</a></td>
+  <td>LLM候选、AST相似度、复杂度/解释约束</td>
+  <td>可启发重复与过复杂公式控制；本次按公开摘要理解，不视作数值复现</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2505.15155">R&amp;D-Agent-Quant论文</a>及<a href="https://www.microsoft.com/en-us/research/articles/rd-agent-quant/">微软官方说明</a></td>
+  <td>因子与模型联合研发闭环</td>
+  <td>研究广度应覆盖数据和模型；AI闭环仍需确定性执行与实际账户反馈</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2604.09601">Hubble，2026预印本</a></td>
+  <td>受限算子、AST、正负检索与家族反馈</td>
+  <td>扩展到机制家族记忆；本次阅读摘要，不当作A股效果证明</td>
+</tr>
+<tr>
+  <td><a href="https://arxiv.org/abs/2607.08332">XALPHA，2026预印本</a></td>
+  <td>主题规划、假设到代码、循环研究记忆</td>
+  <td>启发主题覆盖和阶段反思；本次阅读摘要，未审计实现或收益</td>
+</tr>
+<tr>
+  <td><a href="https://www.aqr.com/insights/research/working-paper/machine-learning-and-the-implementable-efficient-frontier">AQR公开研究</a></td>
+  <td>从预测到组合经济目标和风险收益前沿</td>
+  <td>最终看账户，不能只优化IC；不声称是该机构具体产品</td>
+</tr>
+<tr>
+  <td><a href="https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf">回测过拟合论文</a></td>
+  <td>多候选选择导致的过拟合</td>
+  <td>搜索扩容必须同时扩容尝试账本和选择影响分析</td>
+</tr>
+</tbody>
+</table></div>
+<p>所以，用户提供的“Alpha101/158→中性化→IC/换手→组合”有可借鉴部分，但不是所有团队共同且唯一的开发路线。我们还需要事件结构、数据时点、多种表示、风险目标和真实账户；不能把一条学习路线当成完整专业标准。</p>
+<h2 id="chapter-25">25. 这次究竟完成了什么，以及之前循环的研究路径</h2>
+<h3>本次完成</h3>
+<ul>
+<li>创建并领取架构任务 <code>task-1c49d3f311dc</code>，以暂缓财务任务为父任务，明确0新增fit、0新增账户。</li>
+<li>对现有数据做一次Parquet元数据盘点、依赖和内存/CPU盘点；保留源码哈希及前两阶段任务上下文。</li>
+<li>核对一手公开研究，输出本蓝图、六张离线图、候选特征机器目录与分阶段机器计划。</li>
+<li>两个新上下文分别做了只读数据事实和架构方法复核；均接受为设计稿并提出修订。已补入报告ID重建、旧集中度缺失口径、账户桥接边界、实际拟合/账户预算、统计检验覆盖范围及资源验收。复核不是策略收益认证；没有新增数值重现。</li>
+<li>明确“现有”“需核查”“待建”“缺数据”边界。本蓝图不是系统已建成报告；目录里的公式也没有在本次被回测。</li>
+</ul>
+<h3>自上一份账户循环报告以来</h3>
+<ol>
+<li>第一轮固定8种评分/规模/风险组合已经结束并获复核收束：0新fit、8新策略、16条费用路径；均未达到原账户门槛。最高候选CAGR13.37%、最大回撤31.06%，同期小市值26.35%、41.40%。这是风险收益取舍，不是相近收益下的显著改进。</li>
+<li>第二轮计划接入PIT财务与市場环境，登记 <code>exp-368f9b7ceaed</code> 后，在模型拟合前因日历范围检查失败；诊断定位到快照从2019开始而检查覆盖了1990起的全日历。四模型0fit、0新账户，不能据此否证财务/环境特征。</li>
+<li>当前 <code>loop-33d1488ec3b8</code> 停在 <code>needs_attention</code>，财务任务 <code>task-d9034f6e1b3a</code> 为deferred。停止原因是需要新的工程修复证据，不是本次发现了重要收益成果，也不是该次状态记录中的额度耗尽。</li>
+<li>你的新要求促使下一主线转向广域系统建设：先给蓝图，再解决日历阻断和事件/特征接口，随后批量检验新信息组与多模型。不能继续把原16维的少量参数变化当作完成广泛研究。</li>
+</ol>
+<h3>可追溯附件</h3>
+<ul>
+<li><span>本机盘点JSON（本机证据，未随公开源码提供）</span>：表结构、行数、设备/依赖与核心源码哈希。</li>
+<li><span>候选特征目录JSON（本机证据，未随公开源码提供）</span>：待实现定义与数据需求，不是已验证alpha。</li>
+<li><span>系统计划JSON（本机证据，未随公开源码提供）</span>：模块、阶段、预算提案及证据边界。</li>
+<li><span>第一轮账户证据（本机证据，未随公开源码提供）</span>：对应登记实验 <code>exp-bba0768f6a98</code>。</li>
+<li><span>第二轮故障证据（本机证据，未随公开源码提供）</span>：对应登记实验 <code>exp-368f9b7ceaed</code>。</li>
+</ul>
+<p>上述设计证据可事后归档文件完整性，不表示经过策略事前登记、收益数值重现或两个独立研究复核。</p>
+</article><p class="foot">离线页面：图示、候选筛选和内存计算均在本地运行，无CDN或外部脚本。研究来源为正文链接。</p></main><script>const FEATURES=[{"id": "gap_return", "family": "价量结构", "definition": "open/pre_close-1：当日开盘跳空", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "intraday_return", "family": "价量结构", "definition": "close/open-1：当日日内收益", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "upper_shadow", "family": "价量结构", "definition": "high-max(open,close)，按参考前收归一化", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "lower_shadow", "family": "价量结构", "definition": "min(open,close)-low，按参考前收归一化", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "body_range_ratio", "family": "价量结构", "definition": "实体绝对长度/日振幅，零振幅显式处理", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "overnight_intraday_conflict", "family": "价量结构", "definition": "开盘跳空与日内收益方向是否相反", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "path_efficiency", "family": "价量结构", "definition": "过去净收益绝对值/逐日绝对收益之和", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "downside_semivariance", "family": "价量结构", "definition": "过去负收益二阶统计", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "up_down_amount_asymmetry", "family": "价量结构", "definition": "上涨日与下跌日成交额强度差", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "up_down_volume_asymmetry", "family": "价量结构", "definition": "上涨日与下跌日成交量强度差", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "illiquidity_proxy", "family": "价量结构", "definition": "abs(return)/amount，经单位与覆盖核查", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "daily_vwap_proxy", "family": "价量结构", "definition": "amount/volume，单位核查，仅全日平均价格代理", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "close_vwap_deviation", "family": "价量结构", "definition": "收盘相对全日平均成交价格代理", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "gap_recovery", "family": "价量结构", "definition": "当日跳空与已发生日内修复程度", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "turnover_relative", "family": "价量结构", "definition": "当时换手率相对自身过去分布，需补冻结来源", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount", "turnover_rate"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": "turnover source not in current ML bars: extend frozen source first", "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "amount_price_correlation", "family": "价量结构", "definition": "过去价格变化与成交额变化关系", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "extreme_day_age", "family": "价量结构", "definition": "距过去已观察极端日的市场日龄，阈值仅训练确定", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "realized_reversal_strength", "family": "价量结构", "definition": "过去下跌后已经观察到的修复强度，不含未来", "requires": "daily", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "pre_close", "volume", "amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "close_upper_limit", "family": "涨跌停与板型", "definition": "收盘等于已核验涨停价", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "close_lower_limit", "family": "涨跌停与板型", "definition": "收盘等于已核验跌停价", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "touch_upper_limit", "family": "涨跌停与板型", "definition": "当日高点触及已核验涨停价", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "touch_lower_limit", "family": "涨跌停与板型", "definition": "当日低点触及已核验跌停价", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "unsealed_upper_touch", "family": "涨跌停与板型", "definition": "触及涨停但收盘未封住", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "unsealed_lower_touch", "family": "涨跌停与板型", "definition": "触及跌停但收盘未封住", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "one_price_upper_limit", "family": "涨跌停与板型", "definition": "OHLC均等于涨停价", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "one_price_lower_limit", "family": "涨跌停与板型", "definition": "OHLC均等于跌停价", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "current_upper_streak", "family": "涨跌停与板型", "definition": "截至当日的连续市场日收盘涨停长度", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "current_lower_streak", "family": "涨跌停与板型", "definition": "截至当日的连续市场日收盘跌停长度", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "first_upper_board", "family": "涨跌停与板型", "definition": "紧邻上一市场日已确认未涨停而今天涨停；上一日行情或限价未知则首板未知", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "both_limits_touched", "family": "涨跌停与板型", "definition": "同日两端触及，仅形态，不能推断先后", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "open_upper_close_lower", "family": "涨跌停与板型", "definition": "涨停附近开盘且跌停收盘，仅日线端点形态", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "open_lower_close_upper", "family": "涨跌停与板型", "definition": "跌停附近开盘且涨停收盘，仅日线端点形态", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "days_since_upper_close", "family": "涨跌停与板型", "definition": "距过去收盘涨停日的市场日龄", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "broken_streak_state", "family": "涨跌停与板型", "definition": "已经断板后的日龄和已观察修复", "requires": "validated_daily_limits", "required_fields": ["trade_date", "stock_code", "open", "high", "low", "close", "high_limit", "low_limit", "limit_price_valid"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_known", "family": "龙虎榜报告结构", "definition": "截至评分时是否已有可用报告；与采集未知分开", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_age", "family": "龙虎榜报告结构", "definition": "最近可用报告距评分时的市场日龄", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "report_window_days", "family": "龙虎榜报告结构", "definition": "本报告实际统计窗口，未知不假定为1", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "disclosure_kind", "family": "龙虎榜报告结构", "definition": "普通席位、分类、监控等分组", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "buy1_share", "family": "龙虎榜报告结构", "definition": "买一/同侧完整前五买额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "sell1_share", "family": "龙虎榜报告结构", "definition": "卖一/同侧完整前五卖额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "buy_top5_hhi", "family": "龙虎榜报告结构", "definition": "同侧完整披露买方份额的平方和", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "sell_top5_hhi", "family": "龙虎榜报告结构", "definition": "同侧完整披露卖方份额的平方和", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "hhi_asymmetry", "family": "龙虎榜报告结构", "definition": "买方HHI减卖方HHI", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_imbalance", "family": "龙虎榜报告结构", "definition": "(披露买额-卖额)/(买额+卖额)", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_to_daily_amount", "family": "龙虎榜报告结构", "definition": "仅同单日报告净额/当日成交额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_to_window_amount", "family": "龙虎榜报告结构", "definition": "明确多日净額/该窗口累计成交额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "top5_to_window_amount", "family": "龙虎榜报告结构", "definition": "披露前五金额/相同窗口成交额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "inst_buy_amount_share", "family": "龙虎榜报告结构", "definition": "可辨识机构买额/同侧披露买额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "inst_sell_amount_share", "family": "龙虎榜报告结构", "definition": "可辨识机构卖额/同侧披露卖额", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "inst_direction_asymmetry", "family": "龙虎榜报告结构", "definition": "机构买卖金额占比差", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "named_seat_overlap", "family": "龙虎榜报告结构", "definition": "稳定具名营业部买卖两侧重叠，不合并匿名席位", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "broker_detail_coverage", "family": "龙虎榜报告结构", "definition": "报告所需席位和方向完整性", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_source_unknown", "family": "龙虎榜报告结构", "definition": "来源覆盖/时点/窗口未知状态，不能填作无事件", "requires": "verified_lhb_reports", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "disclosure_kind", "direction", "rank", "broker_name", "buy_amount", "sell_amount"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "past_event_count", "family": "事件持续与席位", "definition": "过去已可知事件数量，按报告ID与窗口去重", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "past_single_day_event_count", "family": "事件持续与席位", "definition": "单日普通报告的历史密度", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_direction_consistency", "family": "事件持续与席位", "definition": "历史有效报告方向一致性，重叠金额不重复累计", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_intensity_decay", "family": "事件持续与席位", "definition": "过去事件强度按事件龄衰减，衰减规则事前固定", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "new_named_broker_flag", "family": "事件持续与席位", "definition": "在该股票此前可知披露中首次出现的稳定具名营业部", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "repeat_named_broker_flag", "family": "事件持续与席位", "definition": "此前已知具名营业部再次出现", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "named_broker_diversity", "family": "事件持续与席位", "definition": "历史稳定具名营业部的披露多样性", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "broker_mature_outcome_encoding", "family": "事件持续与席位", "definition": "仅时间折外、已成熟历史标签的席位统计", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "stock_broker_graph_degree", "family": "事件持续与席位", "definition": "当时可知披露子图的度，非真实持仓网络", "requires": "verified_event_history", "required_fields": ["stock_code", "trade_date", "report_id", "window_days", "broker_name", "broker_code", "direction"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "annual_ep_proxy", "family": "PIT财务", "definition": "已公告年度归母利润/当时估算市值，非TTM", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "annual_bp_proxy", "family": "PIT财务", "definition": "已公告总权益/当时估算市值，非精确归母BP", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "profit_equity_proxy", "family": "PIT财务", "definition": "已公告年度利润/权益，非精确ROE", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "profit_asset_proxy", "family": "PIT财务", "definition": "已公告年度利润/资产", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "equity_asset_proxy", "family": "PIT财务", "definition": "同一报告的权益/资产", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "comparable_profit_growth", "family": "PIT财务", "definition": "同可比报告期利润同比，累计口径先核查", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "comparable_asset_growth", "family": "PIT财务", "definition": "同可比报告期资产变化", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "publication_age", "family": "PIT财务", "definition": "最近可用公告日龄", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "report_period_age", "family": "PIT财务", "definition": "最新可用报告期末日龄", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "financial_missing_flags", "family": "PIT财务", "definition": "各项财务缺失/失效标志，名单不因缺失Y缩减", "requires": "pit_mainboard_filings", "required_fields": ["stock_code", "report_date", "publication_date", "total_shares", "np_parent_company_owners", "total_shareholder_equity", "total_assets"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "market_return_state", "family": "市场与相对状态", "definition": "当时支持名单等权市场收益状态", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "market_volatility_state", "family": "市场与相对状态", "definition": "过去支持市场代理波动", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "advancing_breadth", "family": "市场与相对状态", "definition": "当时可用股票上涨占比，明确分母", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "upper_close_breadth", "family": "市场与相对状态", "definition": "已知限价股票收盘涨停占比", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "lower_close_breadth", "family": "市场与相对状态", "definition": "已知限价股票收盘跌停占比", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "unsealed_touch_breadth", "family": "市场与相对状态", "definition": "触涨停未封占比", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "high_streak_breadth", "family": "市场与相对状态", "definition": "当时高连板股票比例，阈值预定义", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "relative_market_return", "family": "市场与相对状态", "definition": "个股过去收益减过去市场代理收益", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "past_market_beta", "family": "市场与相对状态", "definition": "仅过去有效样本估计的市场beta", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "past_idiosyncratic_risk", "family": "市场与相对状态", "definition": "过去市场残差风险，非未来拟合", "requires": "causal_supported_universe", "required_fields": ["stock_code", "trade_date", "close", "pre_close", "high_limit", "low_limit", "limit_price_valid", "dated_universe_membership"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_x_hhi", "family": "组合与条件关系", "definition": "同窗口净买不平衡×买方HHI", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_x_event_age", "family": "组合与条件关系", "definition": "净买强度×预定义事件龄衰减", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_x_first_board", "family": "组合与条件关系", "definition": "净买强度与当日首板的条件作用", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "net_x_streak", "family": "组合与条件关系", "definition": "净买强度与截至当日连板长度的交互", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "hhi_x_past_rally", "family": "组合与条件关系", "definition": "买方集中度与过去涨幅交互", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "inst_x_unsealed", "family": "组合与条件关系", "definition": "机构披露占比与过去触板未封状态交互", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_x_market_breadth", "family": "组合与条件关系", "definition": "事件强度在不同当时涨停广度下的条件作用", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "event_x_liquidity", "family": "组合与条件关系", "definition": "事件结构与过去流动性状态交互", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "financial_x_activity", "family": "组合与条件关系", "definition": "可知财务代理与过去相对活跃度交互", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "financial_x_reversal", "family": "组合与条件关系", "definition": "财务代理与过去已观察修复交互", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "relative_strength_x_risk", "family": "组合与条件关系", "definition": "过去相对市场收益与下行风险条件关系", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}, {"id": "sequence_event_context", "family": "组合与条件关系", "definition": "日线编码与最近已知事件编码合并，结构和训练另登记", "requires": "composite_known_inputs", "required_fields": ["referenced_feature_receipts", "event_known", "declared_universe", "known_at_policy"], "field_binding_status": "semantic prerequisites; actual source bindings must be registered", "status": "design_only_not_evaluated_in_this_task", "time_rule": "input must be known before decision; training labels must be mature", "availability_policy": "pending source-specific known_at validation; no default event-at-close assumption", "unit_policy": "operator-specific; ratios/masks/market-day ages must be declared before execution", "lookback_policy": "pending preregistered event/week/month/quarter scale; not executable without a fixed declaration", "coverage_checked": false, "blocking_requirements": ["implement deterministic formula or legal AST", "verify per-row coverage, units and time prefix", "freeze source bindings and missing policy"], "extra_data_blocker": null, "output": "scalar or declared encoding; missing/coverage masks separate"}];const AVAILABLE=13460582400;const items=FEATURES;const family=document.getElementById('family');[...new Set(items.map(x=>x.family))].forEach(x=>{const o=document.createElement('option');o.value=o.textContent=x;family.append(o)});function draw(){const q=document.getElementById('feature-query').value.toLowerCase();const selected=items.filter(x=>(!family.value||x.family===family.value)&&(!q||(x.id+x.definition+x.family).toLowerCase().includes(q)));document.getElementById('feature-count').textContent=`当前 ${selected.length} / ${items.length} 条候选定义；本次均未拟合或回测。`;const tbody=document.getElementById('feature-items');tbody.replaceChildren();selected.forEach(x=>{const tr=document.createElement('tr');[x.family,x.id,x.definition].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td)});tbody.append(tr)})}family.addEventListener('change',draw);document.getElementById('feature-query').addEventListener('input',draw);draw();function memory(){const n=Number(document.getElementById('feature-columns').value);document.getElementById('columns-output').textContent=n;const weekly=940485*n*4/1e9,daily=8680769*n*4/1e9;const heavy=daily*1e9>AVAILABLE;document.getElementById('memory-result').innerHTML=`<div class="metrics"><div class="metric">周面板本体<br><strong>${weekly.toFixed(2)} GB</strong></div><div class="metric">日线本体<br><strong class="${heavy?'warn':''}">${daily.toFixed(2)} GB</strong></div><div class="metric">盘点时可用物理内存<br><strong>${(AVAILABLE/1e9).toFixed(2)} GB</strong></div></div>`}document.getElementById('feature-columns').addEventListener('input',memory);memory();</script></body></html>

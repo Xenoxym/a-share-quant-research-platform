@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-05",
+  "owner_task": "task-f162cedea988",
+  "scope": "首批导航条目，不是完整知识清单，不是策略证据，不替代任务库；本轮所有候选均零新增训练与账户。",
+  "sources": [
+    {
+      "id": "P1", "title": "项目系统蓝图", "author": "本项目",
+      "url": "ML_SYSTEM_BLUEPRINT_20261005.md", "date": "2026-10-05", "accessed": "2026-10-05",
+      "reading_depth": "已复核设计与任务交接；非实现或策略实验",
+      "claim": "保存多源数据、候选特征、DSL、模型、账户桥接和受控批量研究的初步设计。",
+      "inference": "其中的阶段清单与候选数可以扩展，不能当作全部研究的上限。",
+      "limits": "设计证据不等于功能完成或收益证明。task-1c49d3f311dc / evidence-702bac20426f。"
+    },
+    {
+      "id": "P2", "title": "Codex 项目建设与交付规划", "author": "本项目",
+      "url": "CODEX_PROJECT_DELIVERY_PLAN_20261005.md", "date": "2026-10-05", "accessed": "2026-10-05",
+      "reading_depth": "已复核交付规划与任务交接；非全部工程完成",
+      "claim": "保存分包、实施依赖、审查、软件基线及 GitHub 准备方案。",
+      "inference": "必须先保全实际源码和验证契约，再扩大研究吞吐。",
+      "limits": "GitHub 文件为草案，远程发布未完成。task-b2bac8817dbb / evidence-1a03e0d017cb。"
+    },
+    {
+      "id": "S1", "title": "Accurate predictions on small data with a tabular foundation model",
+      "author": "Noah Hollmann 等", "url": "https://www.nature.com/articles/s41586-024-08328-6",
+      "date": "2025-01-08", "accessed": "2026-10-05",
+      "reading_depth": "已读取作者论文网页的摘要、方法介绍与评估范围；未复现或完整逐节审查",
+      "claim": "TabPFN 使用合成任务预训练，在论文的小型通用表格基准中表现较强。该评估重点覆盖最多一万样本、五百特征的任务。",
+      "inference": "可考虑少量事件样本或子任务的模型对照，先评估适配性和资源。",
+      "limits": "通用基准不是金融账户；论文评估范围不是最新产品的绝对容量限制；跨日期验证不能沿用随机表格切分。"
+    },
+    {
+      "id": "S2", "title": "Machine Learning and the Implementable Efficient Frontier",
+      "author": "Theis Ingerslev Jensen、Bryan Kelly、Semyon Malamud、Lasse H. Pedersen",
+      "url": "https://www.aqr.com/insights/research/working-paper/machine-learning-and-the-implementable-efficient-frontier",
+      "date": "2022-08-18", "accessed": "2026-10-05",
+      "reading_depth": "已读取作者机构工作论文介绍页；尚未完整审查论文推导与代码",
+      "claim": "介绍以经济目标学习组合权重，并在风险和交易成本约束下评价可实现收益的方法框架。",
+      "inference": "研究可以改造学习目标和组合决策，不必只优化下一期收益预测误差。",
+      "limits": "不是 AQR 现役产品策略披露；不是我们的 A 股收益证明；可微代理仍需原生账户核查。"
+    },
+    {
+      "id": "S3", "title": "Conformal Predictive Portfolio Selection",
+      "author": "Masahiro Kato", "url": "https://arxiv.org/abs/2410.16333v2",
+      "date": "2025-02-13（v2；首版2024-10-19）", "accessed": "2026-10-05",
+      "reading_depth": "已读取作者预印本摘要与版本信息；待阅读全文及理论假设",
+      "claim": "提出用未来组合收益的预测区间辅助组合选择的框架。",
+      "inference": "除了谁预测得高，还可以检验预测的不确定性是否有助于风险和仓位决策。",
+      "limits": "不得由摘要宣称 A 股有效或漂移下覆盖有保证；需要检查时间序列依赖、校准和分布假设。"
+    },
+    {
+      "id": "S4", "title": "Temporal Representation Learning for Stock Similarities and Its Applications in Investment Management",
+      "author": "Yoontae Hwang、Stefan Zohren、Yongjae Lee", "url": "https://arxiv.org/abs/2407.13751v1",
+      "date": "2024-07-18", "accessed": "2026-10-05",
+      "reading_depth": "已读取作者预印本摘要与版本信息；待阅读全文和具体评估切分",
+      "claim": "研究通过时序自监督表示识别股票相似性，并讨论其投资管理应用。",
+      "inference": "输入未必只能是一只股票的一行指标，股票之间的相似关系也是可研究的信息表示。",
+      "limits": "关系表示可能有用不等于可迁移论文收益；不可直接假设 A 股可做原文的双边配对交易。"
+    }
+  ],
+  "entries": [
+    {
+      "id": "R01", "title": "真实源码与时间契约", "area": "工程 / 数据",
+      "status": "工程前置；已有P0任务，R0为草案", "source_ids": ["P1", "P2"],
+      "hypothesis": "先消除日期、信息可见性和实际源码不完整的错误，后续模型试验才能回答策略问题。",
+      "minimum_test": "按已有工程包核对日历与行情交集、标签成熟时间、序列回看及冻结实际源码；不新增策略训练。",
+      "constraints": "不改旧冻结运行；软件已知失败需明确处理，不以文档验收代替测试。",
+      "task_links": ["task-28ab0d6b9fe2", "task-b2bac8817dbb"], "evidence_note": "既有工程失败不是财务信息无效的证据。"
+    },
+    {
+      "id": "R02", "title": "龙虎榜、席位与交易状态的事件结构", "area": "A股事件 / 特征",
+      "status": "已有设计；实现与实测待核对", "source_ids": ["P1"],
+      "hypothesis": "事件强度、集中度、持续参与和事件后的状态转移，可能比只有价格量更能区分股票。",
+      "minimum_test": "先审计事件去重、席位完整度和known_at；固定模型比较事件特征增量，再决定是否进账户。",
+      "constraints": "日OHLC不推断天地板顺序；多日榜与单日榜不可直接混合；缺席位不等于无交易。",
+      "task_links": ["task-1c49d3f311dc"], "evidence_note": "94个设计候选并非94个已测特征。"
+    },
+    {
+      "id": "R03", "title": "财务变化、行业和市场上下文", "area": "基本面 / 环境",
+      "status": "前次训练前工程失败；有效性未回答", "source_ids": ["P1"],
+      "hypothesis": "已公告信息的变化、相对行业位置和市场环境可能改善单只股票的判断。",
+      "minimum_test": "P0通过后登记有限的时点正确信息块消融，保持相同股票范围、切分和账户口径。",
+      "constraints": "不能用最新修订覆盖历史，也不能根据未来事件删除样本后声称可执行。",
+      "task_links": ["task-d9034f6e1b3a", "task-28ab0d6b9fe2"], "evidence_note": "没有新账户证据支持该信息块有效或无效。"
+    },
+    {
+      "id": "R04", "title": "样本、股票范围和目标重定义", "area": "问题定义",
+      "status": "待新主题选择与分项登记", "source_ids": ["P1"],
+      "hypothesis": "模型失败可能由样本选择或Y与决策不匹配造成，而非所有输入都是噪声。",
+      "minimum_test": "分别比较股票范围或持有目标；每次保持其余定义不变，核对标签成熟与交易端点。",
+      "constraints": "全市场与小市值子池是不同问题；终点收益、期间路径和尾部风险不是同一个Y。",
+      "task_links": [], "evidence_note": "新定义仍用已看历史；不重新称为未见样本。"
+    },
+    {
+      "id": "R05", "title": "机制交互与自动公式发现", "area": "高阶特征 / 搜索",
+      "status": "已有设计；受控流水线待建设", "source_ids": ["P1"],
+      "hypothesis": "有类型与时点约束的机制交互及符号候选，可以扩大特征范围且保留可解释性。",
+      "minimum_test": "先实现少量算子、去重与异常值检查；用固定有限候选证明筛选和账户接口可追溯。",
+      "constraints": "GP、RL和LLM只是候选生成器；全部尝试计数，不能反复在评价期择优。",
+      "task_links": ["task-1c49d3f311dc"], "evidence_note": "不先承诺上万候选都完成有效账户核查。"
+    },
+    {
+      "id": "R06", "title": "序列、事件流和多尺度表示", "area": "表示 / 模型",
+      "status": "已有设计；数据适配与实测待核对", "source_ids": ["P1"],
+      "hypothesis": "顺序和路径信息可能被压成一行指标后丢失；不同表示可能适合不同学习器。",
+      "minimum_test": "固定过去观察范围，比较聚合表格与有限序列；简单模型和容量匹配模型一起保留。",
+      "constraints": "序列只用决策前数据；观察频率提高不自动提高独立有效样本数。",
+      "task_links": [], "evidence_note": "分钟数据扩展先做覆盖与接入评估，不假设现有快照已具备。"
+    },
+    {
+      "id": "R07", "title": "自监督股票相似性与关系表示", "area": "知识扩展 / 表示学习",
+      "status": "新来源线索；摘要阅读，待方法核查", "source_ids": ["S4"],
+      "hypothesis": "先从过去无标签序列学习相似性，再用于选股或风险分散，可能提供不同于人工行业的关系。",
+      "minimum_test": "先阅读全文和切分；设计固定过去窗口关系与简单滚动相关对照，严格时间隔离后再小试。",
+      "constraints": "表示预训练不能使用评价期未来序列；当前不假设可融券，优先设计多头用途。",
+      "task_links": [], "evidence_note": "作者摘要线索，不是本项目实验，也不是已确认A股适用。"
+    },
+    {
+      "id": "R08", "title": "预测不确定性与选择性配置", "area": "知识扩展 / 风险",
+      "status": "新来源线索；理论条件待核查", "source_ids": ["S3"],
+      "hypothesis": "将预测区间或不确定性用于是否持有、持有多少，可能比只看点预测更适合风险目标。",
+      "minimum_test": "先阅读理论条件；设计滚动校准诊断和固定配置规则，以等现金/等风险对照排除减仓解释。",
+      "constraints": "漂移和标签依赖可能破坏覆盖条件；校准期不能和评价期反复共同择优。",
+      "task_links": [], "evidence_note": "只提高区间覆盖或校准指标不能宣布账户改善。"
+    },
+    {
+      "id": "R09", "title": "小事件样本的表格基础模型", "area": "知识扩展 / 模型",
+      "status": "新来源线索；评估适配性后再决定", "source_ids": ["S1"],
+      "hypothesis": "特定事件或小子任务中，通用表格预训练可能形成与树不同的基线。",
+      "minimum_test": "核对官方实现、许可、依赖与资源；先用很小的过去事件样本比较固定树/线性/预训练模型。",
+      "constraints": "通用小表格胜出不等于数百万股票行适用；上下文样本与预训练数据需审计时间污染。",
+      "task_links": [], "evidence_note": "本轮未安装模型、未下载权重、未运行fit。"
+    },
+    {
+      "id": "R10", "title": "直接学习组合的经济目标", "area": "知识扩展 / 目标与决策",
+      "status": "作者机构介绍页线索；全文待审查", "source_ids": ["S2"],
+      "hypothesis": "学习权重和经济目标可能减少预测分数与实际组合价值之间的断层。",
+      "minimum_test": "先审查方法和约束；用简单可微权重代理及同预测等权对照，检查代理与原生账户差异。",
+      "constraints": "不能把介绍页当作私有现役策略；换目标与换模型分别消融，风险下降需排查现金和暴露。",
+      "task_links": [], "evidence_note": "研究重点是学习决策；账户约束用于检验其经济含义。"
+    },
+    {
+      "id": "R11", "title": "状态漂移、稳健学习与在线适应", "area": "学习 / 维护",
+      "status": "待主动检索原始方法与失效反例", "source_ids": ["P1"],
+      "hypothesis": "旧规律失效可能来自分布改变；滚动、稳健或适应式方法需要与固定训练对照。",
+      "minimum_test": "先诊断分期和特征/标签漂移；固定少量更新协议比较，所有阈值只在选择期决定。",
+      "constraints": "状态分类可能仅描述历史；复杂门控本身也会过拟合。",
+      "task_links": [], "evidence_note": "暂未锁定新增方法来源，不能声称已广泛读完该领域。"
+    },
+    {
+      "id": "R12", "title": "负对照、风险归因和大量搜索偏差", "area": "验证 / 统计",
+      "status": "贯穿性要求；批量强制能力待建设", "source_ids": ["P1", "P2"],
+      "hypothesis": "模型表面优势可能来自市值/风险暴露、共同市场因素或大量搜索择优。",
+      "minimum_test": "登记负对照和暴露对照；保存累计候选、切分、晋级及拒绝记录，报告分期不确定性。",
+      "constraints": "统计显著不等于因果；历史重用后不能用新名称恢复独立验证。",
+      "task_links": [], "evidence_note": "是否需要更强多重检验方法，按实际搜索规模与原始来源另行评估。"
+    },
+    {
+      "id": "R13", "title": "组合相关性、尾部与持有路径", "area": "组合 / 风险",
+      "status": "待分项设计与主动方法检索", "source_ids": ["P1"],
+      "hypothesis": "不同股票信号的相关性和尾部共振，可能比单股票预测分数更决定组合回撤。",
+      "minimum_test": "固定预测比较等权、简单分散及有限风险约束；分别说明仓位和暴露变化。",
+      "constraints": "风险估计本身有误差；不在评价期选择最有利的约束或风险缩放。",
+      "task_links": [], "evidence_note": "平均收益近似不保证相同最大回撤或相同风险。"
+    },
+    {
+      "id": "R14", "title": "受控批处理与实验价值排序", "area": "资源 / 调度",
+      "status": "已有交付设计；吞吐实测待建设", "source_ids": ["P1", "P2"],
+      "hypothesis": "共享缓存、早期否证与有限并发可增加有价值试验数，减少重复算和无信息调参。",
+      "minimum_test": "先在小型有限批次测内存、耗时、收据完整性和去重，再扩预算；失败也计数。",
+      "constraints": "候选生成数、fit数、账户路径和调用数分别记录；并行不能破坏时间或选择协议。",
+      "task_links": [], "evidence_note": "探索算法的选择应主动找原始方法，不只提高随机枚举数量。"
+    },
+    {
+      "id": "R15", "title": "未来数据、跨领域方法与暂缺信息", "area": "开放扩展",
+      "status": "开放区域；新来源和接入评估待持续补充", "source_ids": ["P1"],
+      "hypothesis": "额外观察、关系或外部领域方法可能改变当前问题的可识别性，而非只优化旧数据。",
+      "minimum_test": "每个新线索保存来源、成本、时点、授权、最小样本和潜在信息增量；先判断是否值得接入。",
+      "constraints": "当前不声称有完整订单簿、实时tick、新闻或所有关系数据；不能默认可做HFT/做市。",
+      "task_links": [], "evidence_note": "没有被用户点名的方向也可以进入雷达；未调查不是无价值。"
+    },
+    {
+      "id": "R16", "title": "前瞻影子观察与失效管理", "area": "验证 / 维护",
+      "status": "长期目标；真正新观察流程待建设", "source_ids": ["P1", "P2"],
+      "hypothesis": "冻结策略后的后续新观察能减少持续回看历史带来的误判，并发现失效。",
+      "minimum_test": "先定义冻结版本、前瞻起点、变更日志、影子组合和停止条件，再积累尚未观察的新数据。",
+      "constraints": "历史已看区间不得装成前瞻；改策略后区分旧版结果与新假设。",
+      "task_links": [], "evidence_note": "本文没有开启影子交易，也没有宣称已拥有真正未见验证集。"
+    }
+  ]
+}

@@ -1,0 +1,815 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>从零理解项目机器学习V1</title>
+<style>html{scroll-behavior:smooth}body{margin:0;background:#fafbf9;color:#1f2b30;font:17px/1.9 system-ui,"Microsoft YaHei",sans-serif}header{padding:34px max(24px,calc((100vw - 1260px)/2));background:#173e40;color:#fff}header b{font-size:28px}header p{max-width:850px;margin-bottom:0;color:#daebe7}.layout{display:grid;grid-template-columns:260px minmax(0,960px);max-width:1260px;margin:auto;gap:30px}nav{position:sticky;top:0;height:100vh;overflow:auto;padding:20px 12px;font-size:14px}nav a{display:block;padding:5px;color:#315e5b;text-decoration:none}article{min-width:0;padding:24px 24px 100px}h2{font-size:24px;line-height:1.5;margin-top:56px;border-top:1px solid #ccd9d4;padding-top:20px;scroll-margin-top:16px}a{color:#176b61}p{margin:20px 0}pre{background:#edf3ef;border-left:4px solid #487e71;padding:16px;overflow:auto;font:14px/1.75 Consolas,monospace}code{font-size:.88em;overflow-wrap:anywhere}.table-scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7;margin:12px 0}th,td{border-bottom:1px solid #cedbd5;padding:10px 12px;text-align:left;vertical-align:top}th{background:#e3eee7}td{min-width:70px}.flow{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0}.flow span{border:1px solid #b7d3c8;border-radius:8px;background:#edf5ee;padding:8px 14px;font-size:14px}.flow .pending{border-style:dashed;color:#6c7374;background:#f2f1ee}button{border:0;background:#173e40;color:#fff;padding:10px 14px;cursor:pointer;border-radius:6px}@media(max-width:850px){.layout{display:block}nav{position:static;height:auto;padding:14px 24px}nav a{display:inline-block;margin-right:8px;font-size:12px}article{padding:12px 20px 70px}header{padding:25px 20px}header b{font-size:24px}body{font-size:16px}h2{font-size:21px}td{min-width:90px}}@media print{nav,button{display:none}.layout{display:block}h2{break-after:avoid}pre,table{font-size:11px}header{color:black;background:white}}</style>
+<header><b>从零理解这个项目的机器学习 V1</b><p>从行情、X/Y、训练和预测，读到结果、代码与完成范围。依据一次已经保存的固定实验；本篇没有新增训练或回测。</p></header><div class="layout"><nav><a href="#chapter-1">1．先说完成范围，避免一开始就把事情理解错</a><a href="#chapter-2">2．我到底想让机器学什么？</a><a href="#chapter-3">3．一行训练数据是什么？</a><a href="#chapter-4">4．原始行情怎样变成 X？</a><a href="#chapter-5">5．为什么还用了股本和财报公告？不是只用价量吗？</a><a href="#chapter-6">6．未来标签 Y 怎样得到？</a><a href="#chapter-7">7．训练、验证、测试怎样分？</a><a href="#chapter-8">8．岭回归究竟是什么？</a><a href="#chapter-9">9．“受限提升树”究竟是什么？</a><a href="#chapter-10">10．训练究竟发生了什么，验证有没有参与？</a><a href="#chapter-11">11．拿一个真实样本，把模型输出算出来</a><a href="#chapter-12">12．模型怎么变成选股排名？当前交易规则是什么？</a><a href="#chapter-13">13．拿什么来比较？</a><a href="#chapter-14">14．METRIC 是干什么的？每个数字怎么看？</a><a href="#chapter-15">15．这次真实结果是什么？</a><a href="#chapter-16">16．怎么提取结果，怎么使用保存模型？</a><a href="#chapter-17">17．后面怎样建立新模型、训练和测试？</a><a href="#chapter-18">18．你提到的消融、比较、回测，后续具体怎样做才有意义？</a><a href="#chapter-19">19．测试、核查和独立复核分别做了什么？</a><a href="#chapter-20">20．每份代码是用来做什么的？按什么顺序读？</a><p><a href="ML_CODE_WALKTHROUGH.html">逐行代码阅读器 ↗</a><a href="ML_FROM_ZERO_TECHNICAL.md">Markdown源文档 ↗</a></p><button onclick="window.print()">打印 / 保存为PDF</button></nav><article>
+<div class="flow" aria-label="完成流程与尚未完成阶段"><span>已登记行情快照 →</span><span>16个特征和未来Y →</span><span>时间分段 →</span><span>两种固定模型 →</span><span>评分/排名/评价 →</span><span>保存与核查</span><span class="pending">待建：持仓/交易/账户回测</span><span class="pending">待实验：消融/滚动/暴露</span></div><p><strong>这个项目的机器学习 V1：从行情表到一个可检查的选股模型</strong></p>
+<p>这篇文章回答三个问题：我究竟建了什么；模型究竟学什么、怎么学、怎么检验；距离一个完整的机器学习交易策略还差什么。你可以先读正文，再打开<a href="ML_CODE_WALKTHROUGH.html">逐行代码阅读器</a>。阅读器收录本次新增的全部学习、登记、测试和界面代码，以及原有文件的集成变更；每段都保留原文件行号。</p>
+<p>本文依据真实登记实验 <code>exp-d741c7b00ca4</code>，运行 <code>20261003T165732-991ae261</code>。本文是这次实验之后补写的解释，没有重新训练、选择参数或者新增策略实验。样本讲解来自已保存模型，不是新的有效性证据。</p>
+<h2 id="chapter-1">1．先说完成范围，避免一开始就把事情理解错</h2>
+<p>我建的是一条可以重复执行、核查和接续研究的机器学习选股实验流程：从已有日线快照产生样本，训练两种固定模型，在后面的年份给每只候选股票打分，再检查排序是否包含预测信息。模型、输入、预测、评价和运行身份都被保存；现有工作台也增加了入口。</p>
+<p>这次还没有把这些模型接入项目的交易账户引擎。没有机器学习持仓净值，没有买卖订单，没有模型策略的年化、最大回撤、费用或换手。现有项目本来就有账户回测能力；新增的学习层尚未调用它来执行模型策略。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>你关心的工作</th>
+<th>V1 的实际情况</th>
+<th>留下了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>定义研究问题与实验协议</td>
+<td>完成，参数在执行前固定</td>
+<td>proposal、冻结 input/code、任务与实验记录</td>
+</tr>
+<tr>
+<td>从行情建立特征 X</td>
+<td>完成，16 个明确公式</td>
+<td>panel.parquet、dataset.json</td>
+</tr>
+<tr>
+<td>建立未来目标 Y</td>
+<td>完成，未来五个交易日的相对收益</td>
+<td>label_return、label_relative、label_end</td>
+</tr>
+<tr>
+<td>按时间建立训练/验证/测试集</td>
+<td>完成，并排除跨阶段标签</td>
+<td>split 列与日期统计</td>
+</tr>
+<tr>
+<td>建模、训练、保存模型</td>
+<td>完成，岭回归与小规模提升树</td>
+<td>两个包含预处理的 joblib 文件</td>
+</tr>
+<tr>
+<td>在后续时期预测、排名与分组</td>
+<td>完成，所有当时合格候选先排名</td>
+<td>predictions.parquet、分组文件</td>
+</tr>
+<tr>
+<td>预测评价及简单规则对照</td>
+<td>完成，分时期与分年</td>
+<td>RankIC、Top100、MSE、区间等</td>
+</tr>
+<tr>
+<td>代码正确性与数值核查</td>
+<td>完成，有具体覆盖范围</td>
+<td>自动测试、ml_audit、界面验收</td>
+</tr>
+<tr>
+<td>用验证集调参或选冠军</td>
+<td>没做</td>
+<td>2023 年仅作为中间检查段</td>
+</tr>
+<tr>
+<td>滚动训练或年度重新训练</td>
+<td>没做</td>
+<td>两个模型均只训练一次</td>
+</tr>
+<tr>
+<td>特征消融、重要性与风险暴露分析</td>
+<td>没做正式实验</td>
+<td>仅留有增加市值输入的配置接口</td>
+</tr>
+<tr>
+<td>明确持仓、买卖、成交并运行 ML 账户回测</td>
+<td>没做</td>
+<td>Top100 是评价对象，不是已执行的账户</td>
+</tr>
+<tr>
+<td>实时服务或实盘</td>
+<td>没做</td>
+<td>当前结果是历史研究产物</td>
+</tr>
+</tbody>
+</table></div>
+<p>之前的建设 REPORT 回答的是“工程交付了什么、验收是否通过、固定案例得到什么数值”；<code>ML_RESEARCH_GUIDE.md</code> 回答的是“如何用命令和工作台操作”。运行目录里的 REPORT 则是程序自动写出的指标摘要。它们都没有承担这篇从零讲解的作用，这是之前说明缺失的地方。</p>
+<h2 id="chapter-2">2．我到底想让机器学什么？</h2>
+<p>你的直觉是：人观察 K 线、成交量和指标，试图判断哪只股票之后更值得持有。机器学习可以把这种判断写成一个函数：</p>
+<pre><code class="language-text">当天能知道的 16 个数字 X → 模型 f(X) → 对未来相对表现的评分
+</code></pre>
+<p>这里选择的是“同一天各股票的相对收益”，不是直接预测股价，也不是判断涨跌方向。一个股票未来五日下跌 1%，而同期候选池平均下跌 3%，它的目标 Y 是 +2 个百分点。它绝对下跌，但相对表现较好。</p>
+<p>为什么这样设？选股关心谁比同一天的其他候选更好；市场整体涨跌会影响所有股票。减去当日池的未来均值，把学习问题更多地指向横截面差异。这不能自动消除行业、市值、风险和共同事件的影响，也不能证明捕捉到了“纯 K 线因果关系”。</p>
+<p>这是一种有意选择的基准定义，不是唯一正确答案。你当年记忆中可能是预测下一天涨跌，本次改为五日，主要是让第一个研究案例的时间尺度明确并与每周采样配合。没有做过“1 日比 5 日差”或“5 日最佳”的实验，不能把这个选择解释为经过搜索取得的结论。</p>
+<h2 id="chapter-3">3．一行训练数据是什么？</h2>
+<p>不是“一只股票的一整段 K 线”，也不是“一笔交易”。一行是“某只股票，在某个周末采样日，当时的特征与之后的标签”。</p>
+<pre><code class="language-text">stock_code      trade_date      X 的 16 列       Y             split
+000001.SZ       2024-01-05      当天及过去数据   之后五日结果   test
+000002.SZ       2024-01-05      当天及过去数据   之后五日结果   test
+……             ……              ……              ……            ……
+000001.SZ       下一采样日       更新后的 X       新的未来结果   test
+</code></pre>
+<p>股票代码和日期是定位样本的主键，默认不是模型输入。表中还有未来标签、阶段、公告日和市值，也不意味着模型会把这些列全部吃进去。训练和预测均显式调用 <code>feature_names(spec)</code>，只取白名单列。</p>
+<p>这点非常关键：如果把整个表随手交给模型，未来收益、未来结束日或者其他不该用的信息可能进入 X。当前写法把“用于预测的输入”和“事后核查所需的元数据”分开。</p>
+<p>本次快照从 2019-01-02 覆盖到 2026-09-24，包含 3,389 只股票、5,814,596 条日行情。2019 年用于给较早的训练日期提供历史窗口；并非所有行情都变成训练行。周采样、资格筛选与标签边界处理后，面板共有 931,783 行。</p>
+<h2 id="chapter-4">4．原始行情怎样变成 X？</h2>
+<p>程序读取股票代码、交易日、开高低收、参考前收 <code>pre_close</code>、成交量、成交额和 ST 标记。对每只股票按日期排序，分别计算特征。窗口不能跨到其他股票。</p>
+<p>先定义每日对数收益：</p>
+<pre><code class="language-text">r(t) = ln(close(t) / pre_close(t))
+</code></pre>
+<p>例如单日简单收益是 2%，对应对数收益约 0.019803。最近五日的对数收益可以相加；转回累计简单收益时用 <code>exp(五日之和)-1</code>。因此 <code>return_5=0.02</code> 不等于精确的五日简单收益 2%，而约为 2.0201%。</p>
+<p><code>pre_close</code> 是快照供应商的参考前收。除权除息等事件可能让它与上一日原始收盘价不同。这里构造的是参考价衔接收益，不是逐笔买卖及分红账户现金流。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>输入名</th>
+<th>数学意义</th>
+<th>希望给模型表达的信息</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>return_1 / 5 / 20 / 60</td>
+<td>最近对应天数的 r 之和</td>
+<td>短、中期涨跌与趋势/反转</td>
+</tr>
+<tr>
+<td>volatility_5 / 20 / 60</td>
+<td>对应窗口 r 的样本标准差</td>
+<td>短、中期波动程度；未年化</td>
+</tr>
+<tr>
+<td>bias_5 / 20 / 60</td>
+<td>过去收益衔接指数 / 其窗口均值 − 1</td>
+<td>当前位置相对均线的偏离</td>
+</tr>
+<tr>
+<td>range_1</td>
+<td>(最高 − 最低) / 参考前收</td>
+<td>当天振幅</td>
+</tr>
+<tr>
+<td>body_1</td>
+<td>(收盘 − 开盘) / 参考前收</td>
+<td>当天实体方向和大小</td>
+</tr>
+<tr>
+<td>amount_ratio_5_20</td>
+<td>5 日均成交额 / 20 日均成交额 − 1</td>
+<td>成交额近期是否放大</td>
+</tr>
+<tr>
+<td>volume_ratio_5_20</td>
+<td>5 日均成交量 / 20 日均成交量 − 1</td>
+<td>成交量近期是否放大</td>
+</tr>
+<tr>
+<td>amount_volatility_20</td>
+<td>20 日成交额标准差 / 20 日均成交额</td>
+<td>成交额是否不稳定</td>
+</tr>
+<tr>
+<td>close_location</td>
+<td>(收盘 − 最低) / (最高 − 最低)</td>
+<td>收盘在当日范围中的位置；平价日取 0.5</td>
+</tr>
+</tbody>
+</table></div>
+<p>这里合计 16 列。没有用 RSI、MACD、新闻、行业、龙虎榜或财务指标作为本次模型的 X；没有用 LSTM 学原始序列；也没有把 K 线渲染成图片交给神经网络。它是一套有意控制规模的人工表示，方便第一次排查模型是否真的学到了后续信息。</p>
+<p>计算 <code>bias</code> 的指数是 <code>exp(历史 r 的累计和)</code>。它只沿过去向前累积，没有用未来公司行为重新调整整段过去价格。指数从哪个常数开始不影响“指数/均值”的比例。</p>
+<p>代码也处理无穷大、缺失值，并要求最近至少 60 个市场交易日连续有有效收益。它不是宣称特征永远正确；我们写了一个很具体的检验：追加未来数据、甚至将未来价格和成交额改成十倍，之前的 16 个特征都必须不变。</p>
+<p><code>known_at=当日15:30</code> 表示本研究把完整日线视为收盘后可知。这只是研究时间假设，不是供应商历史数据实际送达时间的证明。</p>
+<h2 id="chapter-5">5．为什么还用了股本和财报公告？不是只用价量吗？</h2>
+<p>X 只用价量，与候选资格、对照需要什么数据，是两个问题。</p>
+<p>我们要与小市值选股在同一候选池比较，所以需要每只股票当时已知的股本估算市值。复用了项目原有的 <code>attach_reports</code>：公告日期必须严格早于采样日，使用截至当时最新已公告的报告，报告期距当天不得超过 240 天。注意 240 天约束的是报告期龄，不是公告之后经过的时间。</p>
+<p>共同候选需要：已上市且当时未退市、非 ST、成交量为正、连续历史合格、20 日均成交额至少 2,000 万元、股本估算有效且不过期。快照本身以主板为研究范围；不是本次新加了一个“全 A 股自动筛主板”的步骤。</p>
+<p>这个条件会排除不少微小、冷门或数据不足的股票。本次“小市值”是这个池里按估算市值最小选 100 只，不能直接拿它与过去另一个股票池的“小市值策略年化”相比。相同名字不保证相同实验。</p>
+<p>默认 X 不包括市值。另一个配置 <code>price_volume_size</code> 会把 <code>log_market_cap</code> 加入 X，代码支持，但本次没有跑它。因此尚未知道模型预测是否主要借助价量间接捕捉了市值或流动性暴露。</p>
+<h2 id="chapter-6">6．未来标签 Y 怎样得到？</h2>
+<p>对采样日 t，从快照市场交易日历找到 t 之后的第 5 个交易日，写入 <code>label_end</code>。未来绝对标签是：</p>
+<pre><code class="language-text">R(i,t) = exp[r(i,t+1)+…+r(i,t+5)] − 1
+       = Π(close / pre_close，未来五个市场交易日) − 1
+
+Y(i,t) = R(i,t) − mean(R(同一天有标签的合格候选))
+</code></pre>
+<p>最容易写错的是 <code>rolling(5).sum().shift(-5)</code>：在位置 t，它取的是 t+1 到 t+5，不包括当日。这个“向未来移动”仅用于标签函数，不在特征函数里。历史监督学习当然需要以后发生的事作为答案；泄漏发生在未来答案进入输入或拟合过程，而不是在标签列出现未来数据。</p>
+<p>交易日历也很重要。一只股票停牌、缺少某天报价时，不能偷换成“往后数五条股票记录”。代码检查前后位置是否恰好相差五个市场交易日；不满足就把结果保留为未知，不能算成零。</p>
+<p>资格先由当天信息决定，再给全部候选打分。即使未来标签未知，这只股票也还在排名里；评价才统计哪些入选股票有答案。否则先删掉未来出问题的股票再选股，会悄悄改造当时能够选择的世界。本次测试有 6 行未知标签；这并不消除原始快照漏掉退市股票或其他非随机缺失的可能。</p>
+<h2 id="chapter-7">7．训练、验证、测试怎样分？</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>配置日期</th>
+<th>实际保留采样日</th>
+<th style="text-align:right">日期数</th>
+<th style="text-align:right">行数</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>train</td>
+<td>2020-01-01—2022-12-31</td>
+<td>2020-01-03—2022-12-23</td>
+<td style="text-align:right">153</td>
+<td style="text-align:right">381,457</td>
+<td>学习预处理统计和模型参数</td>
+</tr>
+<tr>
+<td>valid</td>
+<td>2023-01-01—2023-12-31</td>
+<td>2023-01-06—2023-12-22</td>
+<td style="text-align:right">49</td>
+<td style="text-align:right">136,962</td>
+<td>看时间迁移；本次没有调参</td>
+</tr>
+<tr>
+<td>test</td>
+<td>2024-01-01—2026-09-24</td>
+<td>2024-01-05—2026-09-11</td>
+<td style="text-align:right">139</td>
+<td style="text-align:right">413,364</td>
+<td>报告后续历史表现；有标签 413,358 行</td>
+</tr>
+</tbody>
+</table></div>
+<p>周采样使用市场日历里每周最后一个交易日，不是简单写死星期五。一个采样日如果五日标签跨过本阶段末日，就排除。这是按标签成熟日清理边界，不是任意删除前后几行股票。</p>
+<p>例如 2022 年末的某个训练样本需要 2023 年价格才能得到 Y，就不应该在截至 2022 年的训练中出现。测试配置虽然截止 2026-09-24，后面的周采样如果还需要 9 月 25 日才能完成标签，也不能纳入已成熟评价。因此最后的保留采样日早于截止日。</p>
+<p>同一只股票可以出现在三个时期。我们检验的是时间迁移，不是“对完全没出现过的股票能否预测”。没有随机拆散同一天股票到训练和测试。</p>
+<p>百万股票日行也不是百万个相互独立的实验。同行业、同一天和相邻日期会一起受影响。本次训练只有 153 个周采样日期。行数很大，并不自动意味着金融信息量很大。</p>
+<p>这些历史在项目里已经被看过。“test”只表示没有用这段行拟合当前模型，不能说研究者从未看过这段市场，也不能视作真正未知的未来。</p>
+<h2 id="chapter-8">8．岭回归究竟是什么？</h2>
+<p>把模型写开，就是：</p>
+<pre><code class="language-text">预测相对收益 = 截距 + w1×特征1 + … + w16×特征16
+</code></pre>
+<p>普通线性回归寻找让预测误差平方之和最小的权重。岭回归再加一项“权重不能太大”的惩罚：</p>
+<pre><code class="language-text">最小化 Σ(Y − 预测Y)² + alpha × Σwj²
+</code></pre>
+<p>本次 <code>alpha=10</code>。它降低模型用很大的正负权重互相抵消、迎合训练细节的倾向。不过 10 不是经过调参找到的最佳值，也不能仅凭数值大就说正则很强；惩罚的相对影响还与样本规模、特征尺度有关。岭回归一般不会像 Lasso 那样主动把一批权重变成精确零。</p>
+<p>线性模型容易检查：能看到每个输入的符号和贡献；如果后续历史有效，说明这种表示里至少存在简单组合能捕捉的关联。但它不能直接表示“只有当波动低，而且成交量突然放大时，过去跌幅才有用”的复杂条件关系。</p>
+<p>本次真正建立的对象是一个 sklearn Pipeline：</p>
+<pre><code class="language-python">ridge = make_pipeline(
+    SimpleImputer(strategy="median"),
+    StandardScaler(),
+    Ridge(alpha=10.0),
+)
+ridge.fit(X_train, y_train)
+</code></pre>
+<p>第一步，从训练集计算每列中位数，将缺失值填成训练中位数。第二步，只从填补后的训练集计算均值和标准差，把输入缩放成 <code>(x−训练均值)/训练标准差</code>。第三步学习 16 个系数与截距。这样不同量纲的列才有可比较的惩罚尺度。</p>
+<p>对验证和测试调用 <code>predict</code> 时，沿用训练时的中位数、均值、标准差和系数；不能对测试集重新 <code>fit</code> 标准化。Pipeline 把这种依赖保存在同一个对象里。这里的目标函数与 API 语义可对照 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html">Ridge 官方说明</a>；训练外数据不应参与拟合预处理，参见<a href="https://scikit-learn.org/stable/common_pitfalls.html">官方泄漏说明</a>。本次实际版本是保存环境中的 sklearn 1.9.0。</p>
+<h2 id="chapter-9">9．“受限提升树”究竟是什么？</h2>
+<p>这个称呼是我对当前配置的简写，不是一个新的模型算法。准确实现是 sklearn 的 <code>HistGradientBoostingRegressor</code>，也不是你旧 Notebook 使用的 LightGBM。</p>
+<p>单棵回归树会反复问条件问题：某个特征是否小于阈值？把样本分到几个叶子区域，每个叶子给出一个数字。提升树则用很多小树逐步修正当前预测。在平方误差目标下，可以把它理解为后面的树继续学习前面还没有解释好的误差。最终输出是初始预测加所有小树的贡献。</p>
+<p>“Hist”表示连续特征在训练时按区间分桶，以减少寻找分裂点的计算量；不是“识别 K 线直方图”。本次设置是：</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>参数</th>
+<th style="text-align:right">实际值</th>
+<th>限制的东西</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>max_iter</td>
+<td style="text-align:right">80</td>
+<td>训练 80 轮小树</td>
+</tr>
+<tr>
+<td>max_leaf_nodes</td>
+<td style="text-align:right">7</td>
+<td>每棵树最多 7 个叶子区域</td>
+</tr>
+<tr>
+<td>min_samples_leaf</td>
+<td style="text-align:right">200</td>
+<td>每个叶子至少需要 200 个训练样本</td>
+</tr>
+<tr>
+<td>learning_rate</td>
+<td style="text-align:right">0.05</td>
+<td>每轮更新缩小，避免一步改得太猛</td>
+</tr>
+<tr>
+<td>l2_regularization</td>
+<td style="text-align:right">10</td>
+<td>惩罚过大的叶子预测更新</td>
+</tr>
+<tr>
+<td>early_stopping</td>
+<td style="text-align:right">False</td>
+<td>不调用内部自动验证早停</td>
+</tr>
+<tr>
+<td>random_state</td>
+<td style="text-align:right">11</td>
+<td>固定涉及随机性的操作</td>
+</tr>
+</tbody>
+</table></div>
+<p>没有设置额外的 <code>max_depth</code>；实际复杂度主要靠叶子数限制。默认目标是平方误差，不是 RankIC 或收益率最大化。输入先用训练中位数填补，没有线性模型的标准化步骤。准确参数语义见 <a href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html">HistGradientBoostingRegressor 官方说明</a>。</p>
+<p>本次保存模型确实训练了 80 轮，每棵树实际都有 7 个叶子。限制复杂度不等于保证不学噪声；它只是让第一个非线性对照保持小规模、可检查。没有证据表明这些参数是收益最优。</p>
+<p>为什么先选这两种模型？一个线性、一个能表达阈值与交互；都适合当前固定的表格特征，现有环境有 sklearn，而没有 LightGBM。它们能形成可读、可运行的起点。没有比较过神经网络、LSTM 或更大树之后才宣布它们胜出。</p>
+<h2 id="chapter-10">10．训练究竟发生了什么，验证有没有参与？</h2>
+<p>实际训练入口 <code>fit_models</code> 的关键逻辑是：</p>
+<pre><code class="language-python">names = feature_names(spec)
+train = panel[panel.split.eq("train") &amp; panel.label_observed]
+X, y = train[names], train.label_relative
+
+for model in models.values():
+    model.fit(X, y)
+</code></pre>
+<p>X 是 381,457×16 的训练表，y 是相同行对应的未来相对收益。两种模型都拟合全部这些行；没有日内逐笔训练，也没有每周重新拟合。训练中的每行权重相同，所以候选股票更多的日期在训练损失里占比更大；最终指标却按日期平均，这种权重差异是当前定义的一部分。</p>
+<p>这里优化的是预测误差，不是把账户收益作为损失函数。训练完成后才按评分选 Top100 评价。因此“训练集收益”也是拟合后在训练行上的选股诊断，不是模型训练直接优化的目标。</p>
+<p>2023 年虽叫 valid，本次没有用它做超参搜索、早停、选模型，或决定最终只报告某一模型。它提供一个中间年份的迁移检查。两种模型都被完整报告；没有在测试集挑一个冠军后删掉另一个。</p>
+<p>没有训练完再把 train+valid 合并重训。测试 2024—2026 使用的仍然是只学到 2022 年底的两个模型。这使漂移诊断较直观，但不代表实务中不能滚动重训。</p>
+<h2 id="chapter-11">11．拿一个真实样本，把模型输出算出来</h2>
+<p>这里选最早测试采样日、股票代码升序的第一行：<code>000001.SZ</code>，2024-01-05。选择规则不依赖之后收益；完整值保存在<span>样本提取文件（本机证据，未随公开源码提供）</span>。</p>
+<p>当天候选池有 2,962 只股票。这个样本的几个输入是：</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>特征</th>
+<th style="text-align:right">原始值</th>
+<th style="text-align:right">训练统计标准化后 z</th>
+<th style="text-align:right">已学习系数 w</th>
+<th style="text-align:right">这次贡献 z×w</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>return_1</td>
+<td style="text-align:right">0.017411</td>
+<td style="text-align:right">0.631029</td>
+<td style="text-align:right">0.004093</td>
+<td style="text-align:right">+0.002583</td>
+</tr>
+<tr>
+<td>return_60</td>
+<td style="text-align:right">−0.181062</td>
+<td style="text-align:right">−0.962533</td>
+<td style="text-align:right">0.000692</td>
+<td style="text-align:right">−0.000666</td>
+</tr>
+<tr>
+<td>bias_60</td>
+<td style="text-align:right">−0.066606</td>
+<td style="text-align:right">−0.606497</td>
+<td style="text-align:right">−0.003511</td>
+<td style="text-align:right">+0.002129</td>
+</tr>
+<tr>
+<td>amount_ratio_5_20</td>
+<td style="text-align:right">0.202562</td>
+<td style="text-align:right">0.457044</td>
+<td style="text-align:right">−0.005705</td>
+<td style="text-align:right">−0.002607</td>
+</tr>
+<tr>
+<td>volume_ratio_5_20</td>
+<td style="text-align:right">0.198185</td>
+<td style="text-align:right">0.488633</td>
+<td style="text-align:right">0.004906</td>
+<td style="text-align:right">+0.002397</td>
+</tr>
+</tbody>
+</table></div>
+<p>把全部 16 项相加，再加接近零的截距，得到 <code>0.003476545</code>：岭回归预测它未来五日相对池收益约 <strong>+0.348 个百分点</strong>。这不是“股价会涨 0.348%”，也不是某种上涨概率。当天岭回归排名第 303，没有进入前 100。</p>
+<p>这个解释也展示了系数的局限：成交额与成交量的贡献一负一正，相互抵消。输入高度相关时，不能把单个系数直接解释为经济因果；其意义是给定其他输入的拟合关系。</p>
+<p>树模型对同一行预测 <code>0.000838357</code>，约 <strong>+0.084 个百分点</strong>，当天排第 1,205。它不是用 16 个系数求和，而是经过每棵小树的条件路径。</p>
+<p>保存模型的第一棵树对这一行实际做了三个判断：</p>
+<pre><code class="language-text">return_1 ≤ −0.104935？否 → 走右边
+return_1 ≤  0.083266？是 → 走左边
+range_1  ≤  0.082217？是 → 走左边
+到达叶子，本轮已缩小的贡献 = +0.0000213775
+</code></pre>
+<p>这只是第 1 棵树，本轮贡献约 +0.00214 个百分点；最终树模型预测还包括另 79 棵树。保存叶子值已包含学习率缩放，不能再乘一次 0.05。路径使用 sklearn 内部结构，只为解释这个已保存版本，不是提供一个跨版本稳定的策略接口。</p>
+<p>第一棵树的两个单日收益阈值落在很极端的位置。这提醒我们，模型可能在依赖稀有事件、特殊报价口径或异常数据；单凭阈值无法判断是哪一种。V1 没有做针对这些尾部样本的正式敏感性检验，不能把树的条件自动翻译成一条可靠的手动交易口诀。</p>
+<p>实际之后五日参考衔接收益为 −0.8630%，池均值为 −1.0486%，所以实际相对收益为 +0.1856 个百分点。两种预测都为正，样本实际也相对好一些，但两者均没有选中它。单个样本只能帮助理解计算，不能验证整套策略有效。</p>
+<h2 id="chapter-12">12．模型怎么变成选股排名？当前交易规则是什么？</h2>
+<p><code>predict_panel</code> 对 train、valid、test 的全部候选输入调用 <code>model.predict</code>，保存每只股票的两个分数。未来标签也保留在预测文件里供事后评价，但不作为输入传给模型。</p>
+<p>同一天，按分数从高到低排序；并列时按股票代码升序打破并列。取前 100 只作为 Top100 评价对象。另外，把整个排序按位置分成十组，第 1 组最高、第 10 组最低。分组按预测，不按实际收益。</p>
+<p>当前已明确的是<strong>采样和选股规则</strong>：每周最后交易日收盘后取得 X，两种固定模型分别打分，取各自前 100。当前没有实现完整交易规则：没有定义哪天、哪种价格买入；没有为模型策略规定持有期间与卖出；没有资本、仓位、停牌继承持仓或不能成交时的处理。</p>
+<p>程序里的五日 Y 是评价窗口，不能偷换成“已经在当天收盘成交并持有五日”。完整日线收盘后才知道 X，如果假定同一收盘价买入，就必须解释信息何时可得；下一交易日开盘买入，则训练标签与可交易收益起点又不同。</p>
+<p>周采样也不自动等于固定五日持有：节假日让相邻采样日之间不一定正好五个交易日，某些标签可能重叠。未来接账户时需要选定“到下一次调仓”或“固定持有五个交易日”等一致的定义，不能先平均五日标签后复合成一个账户。</p>
+<h2 id="chapter-13">13．拿什么来比较？</h2>
+<p>每种方法都使用相同日期、候选资格、Top100 和未来标签，便于比较排序信息。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>当天分数怎么得到</th>
+<th>回答什么问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ridge</td>
+<td>学习的线性组合预测 Y</td>
+<td>简单可检查的学习是否有用</td>
+</tr>
+<tr>
+<td>hist_gbdt</td>
+<td>学习的多棵小树预测 Y</td>
+<td>条件和非线性是否可能有价值</td>
+</tr>
+<tr>
+<td>small_cap</td>
+<td><code>−log(估算市值)</code></td>
+<td>是否胜过同池小市值排序</td>
+</tr>
+<tr>
+<td>reversal_5</td>
+<td><code>−return_5</code></td>
+<td>是否胜过一个直接的短期反转规则</td>
+</tr>
+<tr>
+<td>fixed_random</td>
+<td>股票代码与种子 11 的 SHA256 哈希分数</td>
+<td>没有预测学习的固定排序怎样</td>
+</tr>
+<tr>
+<td>候选池均值</td>
+<td>同日所有已知标签的等权均值</td>
+<td>相对收益的共同参照</td>
+</tr>
+</tbody>
+</table></div>
+<p>固定随机不是每天重新随机抽股票：同一股票的分数一直不变，但进入资格池的股票会变化。这个对照也不是前面账户研究里“年化 7%”的统一市场基准。本次不计算它的年化。</p>
+<p>这些属于方法对照，尚不是正式的特征消融。纯消融应该让其他条件保持一致，只拿掉或者加入一个信息组，然后重新登记、训练和评价。例如“同一提升树、同一时期、同一候选池，16 价量列 vs 16 价量列加市值”才更接近该问题。</p>
+<h2 id="chapter-14">14．METRIC 是干什么的？每个数字怎么看？</h2>
+<p>一个指标只能回答一类问题。因此不能只看训练收益，也不能用“预测误差低”替代“选股排序好”。当前每个采样日先计算，再跨日期平均。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>计算方法</th>
+<th>能回答的问题</th>
+<th>常见误读</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IC</td>
+<td>分数与实际五日收益的 Pearson 相关</td>
+<td>数值线性关系有多强</td>
+<td>不是账户收益</td>
+</tr>
+<tr>
+<td>RankIC</td>
+<td>分数排名与实际收益排名的相关</td>
+<td>整个池的顺序是否有用</td>
+<td>0.06 不是 6% 收益或 6% 正确率</td>
+</tr>
+<tr>
+<td>RankIC 为正比例</td>
+<td>有效日期中 RankIC&gt;0 的占比</td>
+<td>排序方向在多少日期一致</td>
+<td>不等于每笔交易胜率</td>
+</tr>
+<tr>
+<td>Top100 平均收益</td>
+<td>前 100 只中已知标签的收益均值</td>
+<td>最想选的那部分表现如何</td>
+<td>未模拟资金与成交</td>
+</tr>
+<tr>
+<td>Top 相对池收益</td>
+<td>Top 均值 − 同日池均值</td>
+<td>选出来的股票是否优于候选平均</td>
+<td>不是绝对收益，更不能直接年化</td>
+</tr>
+<tr>
+<td>相对小市值</td>
+<td>同日模型 Top 相对收益 − 小市值 Top 相对收益</td>
+<td>是否比简单小市值更强</td>
+<td>相同池里成立才有可比性</td>
+</tr>
+<tr>
+<td>十分组与 spread</td>
+<td>每组均值；第 1 组 − 第 10 组</td>
+<td>评分是否有分层，是否大致单调</td>
+<td>spread 没有执行卖空组合</td>
+</tr>
+<tr>
+<td>MSE</td>
+<td>预测 Y 与实际 Y 的误差平方均值</td>
+<td>预测幅度是否有帮助</td>
+<td>与收益不是同一个优化目标</td>
+</tr>
+<tr>
+<td>r2_vs_zero</td>
+<td><code>1−模型MSE/全部预测0的MSE</code></td>
+<td>比“都预测相对表现0”好多少</td>
+<td>不等于分类准确率或投资收益</td>
+</tr>
+<tr>
+<td>标签覆盖率</td>
+<td>已知未来结果数 / 当时候选数或入选数</td>
+<td>评价漏掉了多少答案</td>
+<td>高覆盖也不证明源数据无偏</td>
+</tr>
+<tr>
+<td>块区间</td>
+<td>连续采样日期成块重复抽样得到均值范围</td>
+<td>日期变化带来的统计不确定性</td>
+<td>不是未来收益保证</td>
+</tr>
+</tbody>
+</table></div>
+<p>普通规则的分数不以收益率为单位，所以没有给小市值的 <code>−log市值</code> 与 Y 计算一个假 MSE。MSE 只评价两个预测相对收益的模型。</p>
+<p>例如当日池均值 −2%，Top 均值 −1%，Top 相对收益就是 +1 个百分点。这个数字为正，整个持仓仍可能亏钱。另一日池涨 4%，Top 涨 5%，相对收益也为 +1 个百分点。必须先弄清指标参照谁。</p>
+<p>块区间使用 4 个采样日期的循环块，重复 400 次，取 2.5% 与 97.5% 分位数；不足 8 个日期就不输出区间。这样保留一些相邻日期的相关性，但只是当前固定诊断；没有系统检验不同块长，也没有校正整个项目的全部尝试、多指标比较或事后挑选效应。</p>
+<p>Top 的未知标签不按零收益填补。程序同时报告 Top 总数和有标签数；如果最差股票更容易缺失，平均收益仍可能偏高，展示覆盖率不能把这个问题凭空消除。</p>
+<h2 id="chapter-15">15．这次真实结果是什么？</h2>
+<p>完整测试段有 139 个采样日期。这里的“收益/期”指采样日之后五个交易日的标签均值，结果按采样日期等权平均。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>模型/对照</th>
+<th style="text-align:right">测试平均 RankIC</th>
+<th style="text-align:right">Top100 相对池收益/期</th>
+<th style="text-align:right">相对小市值/期</th>
+<th style="text-align:right">r2_vs_zero</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>岭回归</td>
+<td style="text-align:right">0.07891</td>
+<td style="text-align:right">+0.5184%</td>
+<td style="text-align:right">+0.1157 个百分点</td>
+<td style="text-align:right">0.3449%</td>
+</tr>
+<tr>
+<td>提升树</td>
+<td style="text-align:right">0.06010</td>
+<td style="text-align:right">+1.0395%</td>
+<td style="text-align:right">+0.6368 个百分点</td>
+<td style="text-align:right">0.8918%</td>
+</tr>
+<tr>
+<td>小市值</td>
+<td style="text-align:right">0.01977</td>
+<td style="text-align:right">+0.4027%</td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">不适用</td>
+</tr>
+<tr>
+<td>五日反转</td>
+<td style="text-align:right">0.03582</td>
+<td style="text-align:right">−0.1563%</td>
+<td style="text-align:right">−0.5590 个百分点</td>
+<td style="text-align:right">不适用</td>
+</tr>
+<tr>
+<td>固定随机 11</td>
+<td style="text-align:right">−0.00125</td>
+<td style="text-align:right">+0.0550%</td>
+<td style="text-align:right">−0.3477 个百分点</td>
+<td style="text-align:right">不适用</td>
+</tr>
+</tbody>
+</table></div>
+<p>表中的 +0.5184% 表示平均相对收益差，等价于 +0.5184 个百分点，不是岭回归整体账户每周涨 0.5184%。</p>
+<p>岭回归的全池排序更好，提升树的前 100 表现更好，并不矛盾。RankIC 看整个候选池，Top100 看最上面的尾部；一个模型可能在中间股票排序比较一致，另一个可能在高分极端更突出。五日反转 RankIC 为正但 Top100 为负，也说明“全池略有排序关系”不保证“选最极端 100 只会挣钱”。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>时期</th>
+<th style="text-align:right">岭回归 RankIC</th>
+<th style="text-align:right">提升树 RankIC</th>
+<th style="text-align:right">岭回归 Top 相对池</th>
+<th style="text-align:right">提升树 Top 相对池</th>
+<th style="text-align:right">小市值 Top 相对池</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练 2020—2022</td>
+<td style="text-align:right">0.07396</td>
+<td style="text-align:right">0.08776</td>
+<td style="text-align:right">+0.4623%</td>
+<td style="text-align:right">+1.1423%</td>
+<td style="text-align:right">+0.3688%</td>
+</tr>
+<tr>
+<td>验证 2023</td>
+<td style="text-align:right">0.07579</td>
+<td style="text-align:right">0.02498</td>
+<td style="text-align:right">+0.2997%</td>
+<td style="text-align:right">+0.7321%</td>
+<td style="text-align:right">+0.6614%</td>
+</tr>
+<tr>
+<td>测试 2024—2026</td>
+<td style="text-align:right">0.07891</td>
+<td style="text-align:right">0.06010</td>
+<td style="text-align:right">+0.5184%</td>
+<td style="text-align:right">+1.0395%</td>
+<td style="text-align:right">+0.4027%</td>
+</tr>
+</tbody>
+</table></div>
+<p>树在 2023 年 RankIC 明显下降，说明效果随时期变化，不能只看合并测试表。测试分年树的 RankIC 约为 2024：0.07632，2025：0.04845，2026：0.05413。2026 年不是完整年度。</p>
+<p>完整测试中，提升树相对小市值的每期配对差 +0.6368 个百分点，4 日期块区间约为 [+0.1168，+1.2114] 个百分点；岭回归对应区间约 [−0.3989，+0.7137] 个百分点。树的分年配对区间均跨过零。当前证据可以描述为：这个固定价量表示有正的后续排序关联，树在合并历史里的 Top100 相对小市值诊断也较好；不能宣布每年稳定胜出或一个可交易的收益冠军。</p>
+<p>两个模型的误差改善不到 1%。这与金融问题里的弱信号和大量个股噪声相容，但不是本实验对噪声来源的因果识别。排序收益看起来较大，也需要检查尾部、事件、规模暴露和缺失标签等解释。</p>
+<h2 id="chapter-16">16．怎么提取结果，怎么使用保存模型？</h2>
+<p>打开 <code>data/technical/ml_runs/20261003T165732-991ae261</code>：</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>你该从中读到什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>spec.json</td>
+<td>日期、模型参数、特征组、采样、Top 数量</td>
+</tr>
+<tr>
+<td>dataset.json</td>
+<td>输入定义、目标、候选资格、各段样本数</td>
+</tr>
+<tr>
+<td>panel.parquet</td>
+<td>每只股票每个采样日的 X、Y、阶段和可知时间</td>
+</tr>
+<tr>
+<td>ridge.joblib / hist_gbdt.joblib</td>
+<td>已拟合的完整 Pipeline，包含预处理</td>
+</tr>
+<tr>
+<td>predictions.parquet</td>
+<td>两个模型预测，以及小市值、反转、固定随机分数</td>
+</tr>
+<tr>
+<td>date_metrics.parquet</td>
+<td>可以定位到具体日期的全部方法评价</td>
+</tr>
+<tr>
+<td>quantile_dates.parquet</td>
+<td>每天每方法每一组的收益和覆盖</td>
+</tr>
+<tr>
+<td>quantiles.csv</td>
+<td>每个阶段的十分组均值，可用表格程序查看</td>
+</tr>
+<tr>
+<td>result.json</td>
+<td>汇总、分年、区间与限制</td>
+</tr>
+<tr>
+<td>REPORT.md</td>
+<td>自动生成的简短指标摘要</td>
+</tr>
+<tr>
+<td>manifest.json / environment.json</td>
+<td>文件身份和版本，定位结果属于什么执行</td>
+</tr>
+</tbody>
+</table></div>
+<p>例如，只读查看已完成结果：</p>
+<pre><code class="language-powershell">..\.venv\Scripts\python.exe tools/ml_research.py show 20261003T165732-991ae261
+</code></pre>
+<p>想看某天前 100，只需要读预测文件并排序，无需重训。下面是可在项目 Python 中执行的只读示例：</p>
+<pre><code class="language-python">from pathlib import Path
+import pandas as pd
+
+run = Path("data/technical/ml_runs/20261003T165732-991ae261")
+p = pd.read_parquet(run / "predictions.parquet",
+                    filters=[("trade_date", "==", "2024-01-05")])
+top = p.sort_values(["hist_gbdt", "stock_code"],
+                    ascending=[False, True]).head(100)
+print(top[["stock_code", "hist_gbdt", "label_return"]])
+</code></pre>
+<p>想复算某行预测，要先核查模型文件哈希，再加载本系统生成的模型，取同一白名单顺序的 X。模型文件包含训练中位数和标准化，因此不要在外面再标准化一次。本文的 <code>prepare.py</code> 演示了这项操作以及系数贡献拆解。该脚本只解释历史样本，没有准备新一天的实时数据，因此不等于实时预测服务。</p>
+<p>工作台的“机器学习研究”可以查看训练/验证/测试和分年汇总、十分组、样本数与下载；研究任务能跳转到这个结果。年份切换只改变上方年度指标，当前十分组表仍是全部测试期，页面已经明确标注。</p>
+<h2 id="chapter-17">17．后面怎样建立新模型、训练和测试？</h2>
+<p>具体实验仍要经过现有研究任务机制：建立子任务、领取凭据、固定假设/预期/否证条件/预算，生成 proposal，登记冻结，执行，分析，交接或提交。完整命令见<a href="ML_RESEARCH_GUIDE.md">操作指南</a>。这条流程让失败也留下来，不能把每次聊天或改名当成新的证据。</p>
+<p>现有模型家族在 <code>fit_models</code> 中定义，参数在 <code>MLSpec</code> 中定义；特征白名单和公式分别在 <code>contracts.py</code>、<code>dataset.py</code> 中。增加一个第三模型，需要代码、配置、预测列、评价对象及测试一起扩展，不能只把新名字加到 UI。登记时冻结学习代码和所依赖的技术数据函数，之后修改开发目录不会改写已登记执行。</p>
+<p>修改特征时，先回答：该值在采样时是否真的知道？源数据是否会事后修订？是否与未来标签混在一起？有没有前缀稳定检查？仅仅能计算出一列，不代表能用于一个可信的学习实验。</p>
+<p>这次没有实现自动调参。未来若需要，应在训练范围中建立时间顺序的内部验证，或者预先明确 2023 年作为选择段，只在它上面选有限的候选。已看过的 2024—2026 不能重新包装成“第一次未见测试”；对其继续试验必须公开记录全部尝试，再用真正后续数据或另一个明确外部阶段检查。</p>
+<p>滚动重训也需要明确规则：什么时候更新、回看多长历史、训练时哪些标签已经成熟、是否保持特征与超参不变。不能在某个周末用尚未发生的下一周结果训练，再预测下一周。</p>
+<h2 id="chapter-18">18．你提到的消融、比较、回测，后续具体怎样做才有意义？</h2>
+<p>下面是尚未执行的研究设计，不能算成已经交付的实验结果。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>对照设计</th>
+<th>需要观察什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>是否只是小市值/流动性的替身？</td>
+<td>固定现有池，价量 vs 价量+市值；再做同规模组内排序</td>
+<td>是否有超过已有暴露的增量</td>
+</tr>
+<tr>
+<td>哪类特征有用？</td>
+<td>同模型分别去掉收益、波动、均线偏离、成交或日内形状组</td>
+<td>后续日期指标如何变化，是否跨时期一致</td>
+</tr>
+<tr>
+<td>树的优势来自哪里？</td>
+<td>同 X、Y、日期，比较线性与树；必要时分层解释</td>
+<td>是尾部条件关系还是不稳定事件集中</td>
+</tr>
+<tr>
+<td>五日目标是否合适？</td>
+<td>预先固定几个目标窗口，按各自成熟度切分</td>
+<td>稳定性与预测用途；不能只选历史赢家</td>
+</tr>
+<tr>
+<td>是模型不够好还是没有信号？</td>
+<td>零预测、直接规则、受控打乱目标、不同复杂度</td>
+<td>无信号时是否仍产生假象，新增复杂度是否改善</td>
+</tr>
+<tr>
+<td>漂移是否可处理？</td>
+<td>固定模型 vs 严格过去标签的滚动重训</td>
+<td>分年、状态及失效时期，是否增加尝试偏差</td>
+</tr>
+<tr>
+<td>排序能否产生账户结果？</td>
+<td>完整交易定义、同规则小市值/固定组合对照</td>
+<td>净值、回撤、持仓、风险暴露与成交可行性</td>
+</tr>
+</tbody>
+</table></div>
+<p>特征重要性或单个系数不等于消融。多个高度相关特征能够互相替代；删除一个后重新训练，与把同一个保存模型里的这一列打乱，是不同问题。可以用后者解释模型依赖，用前者评价新增信息价值；都需要记录探索性质和使用过的时期。</p>
+<p>如果将来接账户，一个具体方案可以是：周末收盘后打分、下一交易日开盘按等权目标调整、到下次周末重新选股、未选中持仓退出、无法成交时保留真实状态。这个方案只是示例，尚未写入模型策略，也没有跑过。选择它后，标签最好与相应的开盘到下一次调仓收益对齐，明确分红与复权口径。</p>
+<p>为何这里仍需提成交时点？不是把重心转去优化摩擦，而是“模型究竟学哪段收益”取决于决策和持有定义。账户步骤建立后，再报告毛收益与统一费用情景，以及相同规则的简单基准。不能先把统计标签当成账户赚到的钱，再事后加一个费率。</p>
+<h2 id="chapter-19">19．测试、核查和独立复核分别做了什么？</h2>
+<p>之前工程交付的相关自动测试共 44 项通过；环境冻结修改后的 ML 专项 8 项也通过。主要检查未来数据不改变过去特征、缺报价标签、成熟边界、预处理仅用训练段、未知标签仍占入选位置、冻结执行不受后来源码改变影响、输入篡改失败、结果类型和 API 保护。测试使用临时合成行情，不是新增真实策略证据。</p>
+<p>真实执行核查检查：文件与快照身份；样本主键；标签与预测文件一致；阶段边界与公告早于采样；训练填补中位数；100 个标签按市场日历重算；500 个样本用保存模型复算；所有日期方法的 RankIC 和 Top 相对收益复算；核心汇总与逐日期文件一致。</p>
+<p>保存模型预测抽样误差为 0，标签抽样最大误差约 3.47×10⁻¹⁶，RankIC 复算最大误差为 0。它确认当前文件与计算吻合，不是一次完整的独立重新训练，也不能证明供应商原始数据正确。</p>
+<p>界面验收检查桌面、390 像素窄屏、年份选择、任务跳转、五行模型与对照、无运行时 JS 错误。首次浏览器启动和一次清理尝试失败也保留了记录；最终验收通过，不能把那些失败删除后说“所有尝试一次成功”。</p>
+<p>任务提交仍待其他角色独立研究复核。脚本自检、另一角色研究复核、供应商数据准确性是不同层次；没有因为核查显示 verified 就自动成为专业机构认证。</p>
+<h2 id="chapter-20">20．每份代码是用来做什么的？按什么顺序读？</h2>
+<p>先按学习流程读六个文件，再读记录与界面，最容易理解。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>文件</th>
+<th>具体职责</th>
+<th>读它时抓住的动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>src/mlresearch/contracts.py</td>
+<td>配置校验、特征白名单、固定基准 proposal</td>
+<td>规定允许研究什么和怎么定义</td>
+</tr>
+<tr>
+<td>src/mlresearch/dataset.py</td>
+<td>特征、未来标签、资格、时间阶段、面板</td>
+<td>把行情变成不能随便泄漏的 X/Y</td>
+</tr>
+<tr>
+<td>src/mlresearch/runner.py</td>
+<td>训练、预测、对照评分、文件输出</td>
+<td>调库建立真实 Pipeline 并跑完整统计流程</td>
+</tr>
+<tr>
+<td>src/mlresearch/evaluation.py</td>
+<td>排序、Top、分组、误差、区间</td>
+<td>把预测变成能回答不同问题的诊断</td>
+</tr>
+<tr>
+<td>src/mlresearch/audit.py</td>
+<td>身份、时间、标签和预测数值复核</td>
+<td>确保留下的结果确实对应登记定义</td>
+</tr>
+<tr>
+<td>src/mlresearch/<strong>init</strong>.py</td>
+<td>包标识和边界说明</td>
+<td>Python 能识别这个模块包</td>
+</tr>
+<tr>
+<td>src/researchops/ml_experiments.py</td>
+<td>ML 登记、冻结执行器、收据验证和恢复</td>
+<td>让学习服从项目已有的研究记录机制</td>
+</tr>
+<tr>
+<td>tools/ml_research.py</td>
+<td>plan/list/show/verify 命令</td>
+<td>给人和研究 Worker 一个明确入口</td>
+</tr>
+<tr>
+<td>src/technical/assets/ml.js</td>
+<td>页面、模型解释标签、指标表、下载和跳转</td>
+<td>展示已有结果，不在浏览器训练</td>
+</tr>
+<tr>
+<td>tests/test_mlresearch.py</td>
+<td>合成数据和冻结执行的正确性测试</td>
+<td>防止关键边界被后续改动破坏</td>
+</tr>
+<tr>
+<td>tools/verify_ml_ui.py</td>
+<td>自有无界面浏览器验收与截图</td>
+<td>验收展示是否正常，不评策略有效性</td>
+</tr>
+</tbody>
+</table></div>
+<p>原文件中的集成变更也很明确：<code>service.py</code> 区分 ML 与账户执行/核查；<code>store.py</code> 正确标记证据类型；<code>server.py</code> 提供 ML 查询、下载和固定执行接口；<code>web.py</code> 加载脚本；<code>app.js</code> 加页面切换和完成后打开结果；<code>tasks.js</code> 支持 ML 任务展示和跳转；<code>index.html</code> 添加入口与容器；<code>WORKER_GUIDE.md</code> 添加流程指引。</p>
+<p>没有改原有订单、成交与资金会计算法。你本来未提交的研究、样例和 Notebook 变更也没有被这次工作重置。</p>
+<p><a href="ML_CODE_WALKTHROUGH.html">逐行代码阅读器</a>对上述新增文件的每一行提供源代码与对应说明；跨多行的 Python 调用按完整语句解释，空行和括号不人为赋予金融意义。现有文件只解释本次改动，同时附上差异；其余项目代码不是这次新写的。</p>
+<p>当前完成的程度可以这样判断：数据到学习评价这条链已经落地，而且第一次固定案例没有重现“训练非常好、后面毫无信息”的表现。它仍然不能回答是否存在稳定、独立于常见风险暴露、可形成账户收益的交易策略。这些问题在上面的缺失环节里有具体研究设计，不能靠给两个模型换一个更高级的名字来回答。</p>
+</article></div></html>

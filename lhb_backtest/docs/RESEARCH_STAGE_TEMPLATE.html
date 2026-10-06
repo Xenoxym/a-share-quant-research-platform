@@ -1,0 +1,76 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>研究阶段记录模板</title><style>
+:root{color-scheme:light;--ink:#193246;--muted:#546a7b;--line:#d9e4ec;--accent:#126b84}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:#f2f6fa;font:17px/1.85 'Microsoft YaHei','Segoe UI',sans-serif}
+.wrap{max-width:1450px;margin:32px auto;display:grid;grid-template-columns:275px minmax(0,1fr);gap:28px;padding:0 25px}
+nav{position:sticky;top:22px;align-self:start;max-height:calc(100vh - 44px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
+nav summary{font-weight:700;cursor:pointer}nav a{display:block;font-size:14px;line-height:1.6;padding:6px 0;text-decoration:none}
+article{min-width:0;background:#fff;border:1px solid var(--line);border-radius:20px;padding:35px 48px 65px}
+a{color:var(--accent);overflow-wrap:anywhere}h1{font-size:34px;line-height:1.4;margin:0 0 20px}h2{font-size:25px;border-top:1px solid var(--line);padding-top:27px;margin-top:45px;scroll-margin-top:20px}h3{font-size:21px;margin-top:28px}
+p,li{overflow-wrap:anywhere}p{margin:16px 0}strong{color:#153e53}.table-wrap{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.75;min-width:650px}th,td{border:1px solid var(--line);padding:13px;vertical-align:top}th{background:#eaf2f7;text-align:left}
+blockquote{margin:22px 0;border-left:4px solid #3893a4;padding:5px 20px;background:#eff7f9}code{background:#edf3f7;border-radius:4px;padding:2px 5px;font-size:.87em;overflow-wrap:anywhere}img{display:block;width:100%;height:auto;border-radius:12px;margin:24px 0}.links{font-size:14px;color:var(--muted);margin-bottom:25px}.footer{border-top:1px solid var(--line);margin-top:38px;padding-top:15px;color:var(--muted);font-size:14px}
+@media(max-width:1050px){.wrap{display:block;max-width:950px}nav{position:static;max-height:290px;margin-bottom:20px}article{padding:28px}}
+@media(max-width:600px){body{font-size:16px}.wrap{margin:12px auto;padding:0 10px}article{padding:23px 18px;border-radius:14px}h1{font-size:27px}h2{font-size:22px}h3{font-size:19px}nav{padding:14px}table{font-size:14px}}
+</style></head><body><div class="wrap"><nav aria-label="目录"><details open><summary>本页目录</summary><a href="#chapter-1">阶段身份与范围</a><a href="#chapter-2">为什么做这一阶段</a><a href="#chapter-3">全部工作与尝试</a><a href="#chapter-4">结果与解释</a><a href="#chapter-5">对知识地图的更新</a><a href="#chapter-6">下一阶段与停止原因</a><a href="#chapter-7">向用户宣布值得注意的成果时，放在报告末尾</a></details></nav><article><div class="links"><a href="PROJECT_CHARTER.html">长期纲领</a> · <a href="RESEARCH_RADAR.html">研究雷达</a> · <a href="RESEARCH_STAGE_TEMPLATE.html">阶段记录模板</a> · <a href="ML_SYSTEM_BLUEPRINT_20261005.html">系统蓝图</a> · <a href="CODEX_PROJECT_DELIVERY_PLAN_20261005.html">交付路线</a></div><h1>研究阶段记录模板</h1>
+<p>依据：<a href="PROJECT_CHARTER.html">长期纲领</a>。本文件是人工阶段记录模板，不是 <code>tools/research.py submit</code> 的 JSON 字段规范；提交仍使用工具规定的四个字段。</p>
+<h2 id="chapter-1">阶段身份与范围</h2>
+<ul>
+<li>日期、任务 ID、父任务、角色与当前租约；阶段开始和结束时间。</li>
+<li>问题、假设、预期、否证条件和适当对照。</li>
+<li>长期地图的位置；本阶段明确范围、依赖和预算。</li>
+<li>数据快照、可用日期、代码身份、运行/证据 ID；区分设计、事前登记与事后分析。</li>
+</ul>
+<h2 id="chapter-2">为什么做这一阶段</h2>
+<ul>
+<li>沿已有证据深化的候选方向。</li>
+<li>至少一个不同机制、表示或决策层的竞争方向。</li>
+<li>选择理由、成本及最便宜的否证试验。</li>
+<li>如果是新研究主题：近期清单之外的检索、来源和阅读深度；若无合格新线索，记录搜索与拒绝理由。</li>
+<li>若为包内实施/紧急修复，说明为什么本阶段不做新主题检索。</li>
+</ul>
+<h2 id="chapter-3">全部工作与尝试</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>尝试/产物</th>
+  <th>登记或证据 ID</th>
+  <th>实际状态</th>
+  <th>资源消耗</th>
+  <th>得到什么/为何失败</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>待填写</td>
+  <td>待填写</td>
+  <td>设计/运行/失败/完成</td>
+  <td>fit、账户路径、时间、调用分别计数</td>
+  <td>待填写</td>
+</tr>
+</tbody>
+</table></div>
+<p>非法候选、重复、取消、工程失败及负结果都保留。不要只列晋级者。</p>
+<h2 id="chapter-4">结果与解释</h2>
+<ul>
+<li>工程阶段：实际检查、通过项、未通过项和受影响结论。</li>
+<li>预测阶段：诊断指标、分期/子样本稳定性；明确尚无账户结论。</li>
+<li>账户阶段：收益、回撤、曲线、分期、敞口、对照、费用反事实和未解决权益；完整数值链接。</li>
+<li>当前证据支持什么、不能支持什么；有哪些竞争解释？</li>
+<li>历史被查看或反复使用的程度；选择偏差、数据依赖与统计不确定性。</li>
+</ul>
+<h2 id="chapter-5">对知识地图的更新</h2>
+<ul>
+<li>新知道了什么；改变了什么既有假设？</li>
+<li>雷达条目新增/状态变化；关联来源与实验 ID。</li>
+<li>尚未研究、缺数据、工程受阻和有限范围否证分别记录。</li>
+<li>如达到覆盖审查时点：近期投入是否过于集中？下一轮如何处理未覆盖方向？</li>
+</ul>
+<h2 id="chapter-6">下一阶段与停止原因</h2>
+<ul>
+<li>下一阶段候选、选择理由、依赖、预算及验收/停止条件。</li>
+<li>可复用产物、不可变历史路径、领取及交接要求。</li>
+<li>本轮停止原因：阶段完成/值得通知的账户成果/额度/用户要求/失败待处理/其他；不确定则写明。</li>
+<li>checkpoint 或 handoff 的位置与时间。</li>
+</ul>
+<h2 id="chapter-7">向用户宣布值得注意的成果时，放在报告末尾</h2>
+<p>“自上次汇报起：依次做了 A、B、C；其中哪些失败、哪些只是中间诊断、哪些进入了账户核查。此次值得注意的结果相对什么对照改善了多少，局限是什么，下一步如何检验。”</p>
+<div class="footer">文档与入场准则 · 实际能力和研究状态以任务库、代码与核查证据为准 · <a href="RESEARCH_STAGE_TEMPLATE.md">Markdown 原文</a></div></article></div></body></html>

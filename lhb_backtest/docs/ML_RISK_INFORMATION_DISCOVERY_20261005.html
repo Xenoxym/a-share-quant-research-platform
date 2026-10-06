@@ -1,0 +1,59 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>波动组间信息：阶段诊断及分类更正</title><style>body{margin:0;background:#f5f6f8;color:#1d2530;font:17px/1.85 system-ui,'Microsoft YaHei',sans-serif}main{max-width:900px;margin:36px auto;padding:30px 42px;background:white;border-radius:16px}h1{font-size:30px;line-height:1.5}h2{font-size:23px;margin-top:38px}p{margin:18px 0}table{border-collapse:collapse;width:100%;font-size:15px}th,td{border-bottom:1px solid #dce2e8;padding:11px;text-align:left}th{background:#edf2f6}strong{color:#173d62}a{color:#1566a5}code{font-size:13px;overflow-wrap:anywhere}nav{font-size:14px;color:#617084}li{margin:10px 0}.bar{display:flex;height:42px;border-radius:8px;overflow:hidden;margin:20px 0}.between{width:78%;background:#3977a4;color:white;padding:5px 14px;box-sizing:border-box}.within{width:22%;background:#d5e5ef;padding:5px 9px;box-sizing:border-box;font-size:14px}.caption{color:#536575;font-size:14px}@media(max-width:700px){main{margin:0;padding:23px}h1{font-size:25px}table{font-size:12px}th,td{padding:6px}.bar{font-size:14px}.within{font-size:12px}}</style></head><body><main><nav>2026-10-05 · 按用户反馈修正规则 · <a href="ML_CYCLE_PROGRESS_20261005.html">累计研究路径</a> · <span>循环状态（本机证据，未随公开源码提供）</span></nav><h1>模型多学到的东西，主要出现在不同波动的股票之间</h1>
+<p><strong>2026-10-05按用户反馈更正分类：本文只解释循环最后一项机制诊断，不是整个循环的总结，也没有达到收益/回撤策略晋级标准。此前将它判为值得打断循环的成果，门槛过低。</strong> <a href="ML_CYCLE_PROGRESS_20261005.html">累计研究路径、实际账户结果及新报告标准</a>已另行整理。原冻结证据、数值和旧通知历史保留。</p>
+<p>这轮机制诊断的结果是：<strong>把训练目标从下周相对收益率改成当周股票的下周收益排名，模型整体排序能力的提升，约78%表现为不同历史波动组之间的排序贡献。</strong> 两名独立会话分别复核方法和数据，都接受这一限定结论；原综合裁决依据当时较宽的判据要求报告并停止下一研究。</p>
+<p>这回答了“模型多学到的信息在哪里”。它还没有证明最高分100只股票更赚钱，也没有证明模型只是一个低波动规则。</p>
+<p>运行状态已核验：原科学裁决完成，循环为<code>noteworthy_result</code>，重要发现的<span>正式归档报告（本机证据，未随公开源码提供）</span>及收据已保存并核对。通知引用格式故障已修复，旧失败归档仍保留；没有重做模型或原分析。额度重置不会解除这项停止，下一研究等待你阅读发现后明确继续。</p>
+<h2>先用一个例子说明</h2>
+<p>假设某个周五，符合既定条件的股票共有3000只。我们用截至这个周五的数据，给每只股票整理同样的16个价量特征，分别交给已经训练好的两个提升树。原模型学习下周相对收益率的数值；另一模型学习这只股票的下周收益在当周股票中的排名百分位。它们都输出一个分数，再从高到低排列股票。</p>
+<p>“下周”沿用当前项目标签：下一次周调仓的开盘，到再下一次周调仓的开盘，遇节假日按实际交易日处理。这里没有改成周一开盘至周五收盘。排名标签仍用平方误差训练；不是直接以回测收益或RankIC反向传播，也不是另换一种排序损失。</p>
+<p>现在把这些股票按过去20个交易日的波动分成低、中、高三个组。假设这一周，某组股票后来整体涨得更好，而模型恰好把这一组整体排得更靠前，那么它在全体3000只股票上的排序关系会变好。</p>
+<p>但是，知道“这一组整体较好”，和知道“同一组里面哪100只最好”，是两个层次的能力。前一个能力提升，后一个能力也许只增加一点；最高分股票的组合收益因此不一定提升。这个假设例子只说明逻辑，没有断言真实样本总是低波组或高波组获胜。</p>
+<h2>我们这次具体做了什么</h2>
+<p>没有再训练模型，也没有生成新预测或账户回测。我们取出之前保存的两个模型分数和同一批未来收益标签，检查它们新增的排序信息主要来自组与组之间，还是来自同组股票之间。</p>
+<p>股票分组的两个阈值只由2020—2022年的378671条成熟训练记录确定，之后固定不动。2023年仅作参考；主要统计使用2024-01-05至2026-09-11的139个成熟周。股票名单沿用原严格合格主板名单，每周名单可能变化；它不是全A股，也没有先只留下小市值股票。</p>
+<p>我们先对全体有已知标签的候选股票排名，再把总体秩相关精确拆为组内和组间的协方差贡献。两部分加起来等于原总体RankIC。这里的“组内贡献”不是把每个组单独重新排名后计算的相关系数。</p>
+<h2>结果怎么读</h2>
+<p>RankIC衡量模型给出的股票顺序与后来收益顺序的关系，数值越高表示这项排序关系更强。它不是年化收益率，也不是预测准确率。</p>
+<table>
+<thead>
+<tr>
+  <th>指标：139周平均</th>
+  <th style="text-align:right">原收益树</th>
+  <th style="text-align:right">排名目标树</th>
+  <th style="text-align:right">增量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>全体股票的RankIC</td>
+  <td style="text-align:right">0.06116</td>
+  <td style="text-align:right">0.09044</td>
+  <td style="text-align:right">+0.02928</td>
+</tr>
+<tr>
+  <td>不同波动组之间的贡献</td>
+  <td style="text-align:right">0.02415</td>
+  <td style="text-align:right">0.04698</td>
+  <td style="text-align:right">+0.02284</td>
+</tr>
+<tr>
+  <td>相同波动组内的贡献</td>
+  <td style="text-align:right">0.03701</td>
+  <td style="text-align:right">0.04345</td>
+  <td style="text-align:right">+0.00644</td>
+</tr>
+</tbody>
+</table>
+<p>约78%是0.02284除以0.02928的解释性比值，描述新增RankIC均值的组成；它不是“78%的股票预测正确”，也不是“78%的收益来自波动”。</p>
+<p>我们事先固定了两个统计问题：组间增量是否为正，组间增量是否大于组内增量。按连续4周抽样、并用8周作敏感性检查，两个问题的95%同时区间下界都大于零。2024、2025、2026年组间增量的均值也都为正。本次固定机制标准得到支持；年度正均值不等于每年都单独显著。</p>
+<p>4周主分析中，“组间增量减组内增量”的区间为[0.00134, 0.03145]，下界离零不远。我们没有把整个项目历次研究选择都纳入校正，全部历史也已经看过，因此这个发现应当作为后续设计的依据，而不能当成未来保证。</p>
+<div class="bar" aria-label="新增RankIC均值：组间约78%，组内约22%"><div class="between">组间约78%</div><div class="within">组内约22%</div></div><p class="caption">新增排序相关的均值组成，不是收益率、预测准确率或策略晋级证据。</p><h2>为什么还不能说策略成功了</h2>
+<p>之前同一批结果里，排名树相对原收益树的前100只股票平均周标签收益差约为−0.354个百分点，区间跨零。那项收益提升标准没有通过。这是此前的标签统计，不是本次新做的账户收益，也不是因手续费而得出的结论。</p>
+<p>所以现在可以同时说：整体排序信息确实有所提升；提升主要表现为波动组之间；最高分100只股票的收益尚未证明提升。它们描述不同问题，彼此并不矛盾。</p>
+<p>也不能据此说“模型只学到了波动”。组内增量的点估计仍然为正，但这轮没有单独检验其显著性。分组也没有排除其他价量特征、因果机制或当期市场状态的影响，更没有证明简单波动排序能替代这个模型。</p>
+<h2>下一阶段应该回答什么</h2>
+<p>优先建立一个简单、只使用历史波动信息的对照，再检验模型是否增加了这个对照没有的信息。与此同时，应直接考察波动相近的股票之间有没有稳定的选股增量。这样能判断当前提升需要复杂模型，还是主要来自较简单的组间关系。</p>
+<p>这两项是下一阶段建议，尚未运行或新建试验。本轮到报告这个发现为止，按你的停止条件停在下一研究开始前。</p>
+<p>本轮唯一原分析用时约18.8秒，没有追加fit、预测、bootstrap或账户。8条未知收益标签、原有15处量额单位异常和1处零成交额，以及供应商历史修订、退市覆盖限制仍保留。独立会话复核不是外部机构认证；证据包是事后完整性导入，不能冒称真正未见样本或平台事前登记。</p>
+<p>原科学证据：<code>evidence-3c17ae5fe608</code>；任务：<code>task-2ae246b96333</code>。详细计算、逐周结果、代码和原尝试见<span>冻结研究报告（本机证据，未随公开源码提供）</span>。原冻结报告保留“尚待复核”的计算时状态；后来的两个accept和裁决存于原campaign，不能倒改旧报告。</p>
+</main></body></html>

@@ -1,0 +1,18 @@
+# Workspace-only materials; the application has its own ignore rules.
+/.venv/
+/.pytest_cache/
+/.qa_cd2/
+/.qa_*/
+/release_candidates/
+/.local_delivery/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/browser_profile/
+**/*.egg-info/
+**/.env
+**/*.token
+**/session.json
+# Local delivery evidence and machine-specific settings are never public sources.
+/lhb_backtest/research/local_delivery_20261006/
+/lhb_backtest/docs/LOCAL_WORKSPACE.md

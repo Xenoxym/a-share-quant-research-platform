@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>A 股基础策略研究</title><style>/*STYLE*/</style></head>
+<body><aside><div class="brand"><span class="brand-mark">研</span>A 股研究工作台<small>RESEARCH / EVIDENCE / ITERATION</small></div><nav aria-label="主导航"><button data-view="results" class="active"><span>01</span> 结果与诊断</button><button data-view="campaigns"><span>◎</span> 自动研究总控</button><button data-view="tasks"><span>↗</span> 研究任务与交接</button><button data-view="foundations"><span>02</span> 基础策略研究</button><button data-view="ml"><span>ML</span> 机器学习研究</button><button data-view="regimes"><span>↗</span> 状态与组合研究</button><button data-view="lab"><span>03</span> 参数对照</button><button data-view="create"><span>04</span> 定义策略</button><button data-view="decisions"><span>05</span> 逐日决策</button><button data-view="archive"><span>06</span> 实验档案</button><button data-view="legacy"><span>↳</span> 旧模板审计</button></nav><p class="side-note"><b>让每一个结论可追溯</b><br>假设 → 实验 → 诊断 → 下一轮<br><span class="status-dot"></span> 本地研究 · V7</p></aside>
+<main><header><div><small class="eyebrow">核心规则可读 · 每次尝试留档</small><h1 id="page-title">结果与诊断</h1></div><button id="new" class="primary">定义一个实验</button></header><p id="error" role="status" hidden></p><section id="job" class="panel" hidden><h2>正在计算</h2><progress></progress><pre id="job-log"></pre></section>
+<section data-page="results"><div id="results"><div class="panel"><h2>从明确的价量假设开始</h2><p>独立历史股票池、正式指标定义和三种交易成本情景。创建实验后，在这里比较资金路径与费用构成。</p></div></div></section>
+<section data-page="campaigns" hidden><div id="controller-content"></div></section>
+<section data-page="tasks" hidden><div id="task-content"></div></section>
+<section data-page="foundations" hidden><div id="foundation-content"></div></section>
+<section data-page="ml" hidden><div id="ml-content"></div></section>
+<section data-page="regimes" hidden><div id="regime-content"></div></section>
+<section data-page="lab" hidden><div class="section-intro"><span class="eyebrow">RESEARCH LOOP</span><h2>一次比较一组假设，再决定下一步</h2><p>共用数据和成交规则，保留全部尝试。先冻结研究设计，后查看结果。</p></div><div class="panel"><div class="panel-heading"><h3>价量假设筛选 · 24 个实验</h3><span class="badge">回顾性研究</span></div><p>中期动量 63/0、126/21、252/21；短期反转 5/0、10/0、20/0。各自比较无趋势过滤 / MA126 过滤，以及月调仓 / 周调仓。</p><div class="toolbar"><label>研究开始<input id="batch-start" type="date" value="2020-01-01"></label><label>后续验证开始<input id="batch-split" type="date" value="2024-01-01"></label><label>研究结束<input id="batch-end" type="date"></label><button id="batch-preview">查看本轮设计</button><button id="batch-run" class="primary">冻结设计并运行 24 个实验</button></div><p class="note">共用“定义策略”页的初始资金、成本、股票数量、配置比例、流动性下限；窗口、方向、趋势、频率及收益门槛由本轮设计覆盖。没有龙虎榜输入。</p><div id="batch-plan"></div></div><div id="batch-results"></div><div id="batch-history" class="panel"></div></section>
+<section data-page="create" hidden><div class="intro"><h2>策略、执行、研究分别定义</h2><p>选择基础策略家族，右侧先看思想与公式，再配置执行。价格窗口只用于价格／波动信号；市场趋势使用参考指数均线。市值与财务信号只使用严格早于决策日公布的报表。</p></div>
+<form id="spec-form"><div class="two-cols"><div class="panel"><h3>1 · 策略核心逻辑</h3><div class="fields">
+<label class="wide">实验名称<input name="name" required maxlength="100"></label>
+<label class="wide">基础策略家族<select name="family"><option value="price">价格动量／反转</option><option value="size">小市值（已披露股本估算）</option><option value="large_size">大市值对照</option><option value="earnings_yield">年度盈利收益率</option><option value="book_to_price">账面权益／市值</option><option value="profitability">年度利润／权益</option><option value="low_volatility">低波动选股</option><option value="random">固定种子随机底仓</option><option value="market_trend">市场趋势与现金切换</option><option value="allocation">状态识别与组合配置</option><option value="cash">零利息现金</option></select></label>
+<label class="wide">状态配置规则<select name="allocation_policy"><option value="small">小市值原型</option><option value="small_half">小市值半仓＋现金</option><option value="defensive">低波动原型</option><option value="fixed_mix">固定各半组合</option><option value="vol_budget">简单波动率预算</option><option value="observable">可解释状态切换</option><option value="hmm2_mix">HMM两状态软切换</option><option value="hmm2_cash">HMM两状态风险预算</option><option value="hmm3_mix">HMM三状态软切换</option><option value="hmm2_lag5">HMM信号延迟五日对照</option></select></label>
+<label>状态规则广度门槛（0—1）<input name="state_breadth_threshold" type="number" min="0.1" max="0.9" step="0.1" value="0.4"></label>
+<label class="wide">股本口径<select name="share_basis"><option value="reported">原始季报股本（首轮研究）</option><option value="known_bonus">桥接已发生送转；未解决配股排除</option></select></label>
+<label>共同连续历史（日）<input name="min_history" type="number" value="0" min="0" max="756"></label>
+<label>剔除底部市值分位（0—0.9）<input name="size_floor_quantile" type="number" value="0" min="0" max="0.9" step="0.1"></label>
+<label>要求年度利润为正<select name="positive_profit"><option value="false">否</option><option value="true">是</option></select></label>
+<label>共同年度财报资格<select name="require_fundamentals"><option value="false">否</option><option value="true">是</option></select></label>
+<label>随机对照种子<input name="seed" type="number" value="11" min="0" max="1000000"></label>
+<label>排序假设<select name="direction"><option value="momentum">动量：收益高的优先</option><option value="reversal">反转：收益低的优先</option></select></label>
+<label>调仓频率<select name="rebalance"><option value="monthly">每月最后交易日决定</option><option value="weekly">每周最后交易日决定</option></select></label>
+<label>回看端点 L（交易日）<input name="lookback" type="number" min="2" max="756" required></label>
+<label>跳过最近 S 日<input name="skip" type="number" min="0" max="755" required></label>
+<label>均线过滤窗口（0=关闭）<input name="trend_window" type="number" min="0" max="756" required></label>
+<label>最低 score（%，空白=不设）<input name="min_score" type="number" step="0.1"></label>
+<label>排名入选数 K<input name="top_k" type="number" min="1" max="100" required></label>
+<label>总目标配置（%）<input name="allocation" type="number" min="1" max="100" step="1" required></label>
+<label class="wide">共同交易资格：20 日均成交额下限（万元）<input name="min_avg_amount" type="number" min="0" step="100" required></label>
+</div></div><div class="panel"><h3>这个策略如何做决定</h3><div id="definition-preview"></div></div></div>
+<div class="two-cols"><div class="panel"><h3>2 · 账户与执行</h3><div class="fields">
+<label>初始资金（元）<input name="initial_cash" type="number" min="1000" max="10000000000" required></label>
+<label>单边佣金（万分之）<input name="commission_rate" type="number" min="0" max="100" step="0.1" required></label>
+<label>单笔最低佣金（元）<input name="minimum_commission" type="number" min="0" max="1000" step="0.1" required></label>
+<label>其他单边费（万分之）<input name="other_fee_rate" type="number" min="0" max="100" step="0.1" required></label>
+<label>单边模拟滑点（基点）<input name="slippage_bps" type="number" min="0" max="500" step="1" required></label>
+<label>成交参与率上限（%）<input name="max_participation" type="number" min="0.0001" max="5" step="0.0001" required></label>
+<label>分红税准备金（%）<input name="dividend_tax_reserve" type="number" min="0" max="100" step="1" required></label>
+</div></div><div class="panel"><h3>3 · 研究设置</h3><div class="fields"><label>研究起始<input name="start_date" type="date" min="2019-01-01" required></label><label>研究结束<input name="end_date" required placeholder="latest"></label></div><p class="note">每次固定同一份信号，独立重算：①零交易费用与滑点；②零滑点、保留交易税费；③配置的税费和滑点。资金、股数及后续订单会随成本变化。</p><p class="note">数据从独立主板证券池构建。历史已被查看，本次属于回顾性研究；不自动搜索最优参数。数据不足以覆盖窗口时不生成信号。</p><button class="primary" type="submit" id="run">固定定义并运行三个情景</button></div></div></form></section>
+<section data-page="decisions" hidden><div class="panel"><h2>选股理由与执行分开检查</h2><p>先看调仓日的指标和排名，再看目标股数、订单、现金和实际持仓。排名入选不保证成交。</p><div class="toolbar"><label>调仓决策日<select id="decision-date"></select></label><button id="load-decisions">检查决策</button></div><div id="decision-content"></div></div><div class="panel"><h2>交易日账户</h2><div class="toolbar"><input id="account-date" type="date" aria-label="交易日期"><select id="account-scenario" aria-label="费用情景"><option value="configured">配置费用</option><option value="zero_slippage">零滑点</option><option value="zero_transaction_cost">零交易成本</option></select><button id="load-account">查看订单与持仓</button></div><div id="account-content"></div></div></section>
+<section data-page="archive" hidden><div id="archive-content" class="panel"></div></section>
+<section data-page="legacy" hidden><div class="panel"><h2>旧事件模板已退出研究主线</h2><p>这里仅保留历史证据和费用反事实审计。它们不属于新的技术策略，也不作为新策略的基线。</p><div id="legacy-content"></div></div></section>
+<footer>模拟结果由数据与执行假设共同决定。研究记录保留公式、参数、源码、数据快照与账户证据。</footer></main><dialog id="case-dialog"><div class="drawer-head"><div><small class="eyebrow">CASE EXPLORER</small><h2 id="case-title">案例证据</h2></div><button id="close-case" aria-label="关闭案例">关闭 ×</button></div><div id="case-content"></div></dialog><div id="help-popover" role="tooltip" hidden></div><script>window.TECHNICAL=/*BOOT*/;</script><script>/*SCRIPT*/</script></body></html>

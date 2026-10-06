@@ -1,0 +1,110 @@
+# Data source configuration and field mappings
+
+akshare:
+  kline:
+    function: "stock_zh_a_hist"
+    fields_map:
+      日期: "trade_date"
+      开盘: "open"
+      收盘: "close"
+      最高: "high"
+      最低: "low"
+      成交量: "volume"
+      成交额: "amount"
+      振幅: "amplitude"
+      涨跌幅: "pct_chg"
+      涨跌额: "chg"
+      换手率: "turnover_rate"
+
+  lhb_summary:
+    function: "stock_lhb_detail_em"
+    call_mode: "range"                # one call with start_date/end_date — returns all history
+    fields_map:
+      序号: "seq"
+      代码: "stock_code"
+      名称: "stock_name"
+      上榜日: "trade_date"            # actual API field (was "上榜日期" — incorrect)
+      解读: "lhb_interpret"           # short category label
+      收盘价: "close"
+      涨跌幅: "pct_chg"
+      龙虎榜净买额: "lhb_net_buy"
+      龙虎榜买入额: "lhb_buy_total"
+      龙虎榜卖出额: "lhb_sell_total"
+      龙虎榜成交额: "lhb_turnover"
+      市场总成交额: "daily_amount"
+      净买额占总成交比: "net_buy_ratio"
+      成交额占总成交比: "lhb_turnover_ratio"
+      换手率: "turnover_rate"
+      流通市值: "float_market_cap"
+      上榜原因: "lhb_reason"
+      上榜后1日: "return_1d"          # EastMoney pre-computed forward returns (%)
+      上榜后2日: "return_2d"
+      上榜后5日: "return_5d"
+      上榜后10日: "return_10d"
+
+  lhb_broker_detail:
+    function: "stock_lhb_stock_detail_em"   # per-stock per-date broker seat detail
+    call_mode: "per_pair"             # called once per (stock_code, date) x 2 (buy+sell)
+    fields_map:
+      序号: "rank"
+      交易营业部名称: "broker_name"
+      买入金额: "buy_amount"          # broker's purchase amount (always)
+      买入金额-占总成交比例: "buy_amount_ratio"
+      卖出金额-占总成交比例: "sell_amount_ratio"
+      净额: "net_amount"              # net = buy - sell; negative means net seller
+      类型: "_lhb_type"               # same as lhb_reason — dropped on output
+
+baostock:
+  kline:
+    function: "query_history_k_data_plus"
+    fields: "date,code,open,high,low,close,preclose,volume,amount,turn,pctChg"
+    fields_map:
+      date: "trade_date"
+      code: "stock_code"
+      open: "open"
+      high: "high"
+      low: "low"
+      close: "close"
+      preclose: "pre_close"
+      volume: "volume"
+      amount: "amount"
+      turn: "turnover_rate"
+      pctChg: "pct_chg"
+
+tushare:
+  kline:
+    function: "daily"
+    fields_map:
+      trade_date: "trade_date"
+      ts_code: "stock_code"
+      open: "open"
+      high: "high"
+      low: "low"
+      close: "close"
+      pre_close: "pre_close"
+      vol: "volume"
+      amount: "amount"
+      pct_chg: "pct_chg"
+
+  daily_basic:
+    function: "daily_basic"
+    fields_map:
+      ts_code: "stock_code"
+      trade_date: "trade_date"
+      turnover_rate: "turnover_rate"
+      turnover_rate_f: "turnover_rate_float"
+      volume_ratio: "volume_ratio"
+      total_mv: "total_market_cap"
+      circ_mv: "float_market_cap"
+
+  lhb_detail:
+    function: "top_list"
+    fields_map:
+      trade_date: "trade_date"
+      ts_code: "stock_code"
+      name: "stock_name"
+      reason: "lhb_reason"
+      buy: "lhb_buy_total"
+      sell: "lhb_sell_total"
+      net_buy: "lhb_net_buy"
+      turnover: "lhb_turnover"

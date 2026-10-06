@@ -1,0 +1,226 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>周五收盘后：两个模型怎样选股票？</title>
+<style>body{margin:0;background:#fbfaf6;color:#25322e;font:18px/1.95 system-ui,"Microsoft YaHei",sans-serif}header{background:#18473f;color:#fff;padding:42px 24px}header>div,main{max-width:920px;margin:auto}h1{font-size:32px;line-height:1.45;margin:0 0 16px}header p{margin:0;color:#dfefe3}main{padding:20px 28px 80px}h2{font-size:24px;line-height:1.55;margin-top:46px;padding-top:20px;border-top:1px solid #d4ddd5}p{margin:20px 0}a{color:#196b56}strong{color:#153c31}header strong{color:white}pre{font:15px/1.8 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#edf3e9;border-left:4px solid #569b78;padding:18px}.table-scroll{overflow:auto}table{border-collapse:collapse;width:100%;font-size:16px;line-height:1.7;margin:10px 0}th,td{padding:12px;border-bottom:1px solid #d5dfd3;text-align:left;vertical-align:top}th{background:#e8efdf}td{min-width:65px}nav{display:flex;flex-wrap:wrap;gap:10px;padding:14px 0}nav a{background:#eaf0e3;padding:4px 10px;text-decoration:none;font-size:15px;border-radius:5px}.map{background:#f0f3e9;border:1px solid #d2dfc8;padding:20px;margin:24px 0}.map>p{margin:0 0 14px;font-weight:700;text-align:center}.branches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.branches div{background:white;padding:16px;border-top:3px solid #4f8a67;font-size:16px}.branches b{display:block;font-size:19px}.branches span{display:block}footer{color:#6b7a70;font-size:13px;margin-top:40px}@media(max-width:650px){body{font-size:17px}h1{font-size:26px}h2{font-size:22px}main{padding:16px 18px 60px}header{padding:28px 18px}.branches{grid-template-columns:1fr}.branches div{padding:10px 14px}table{font-size:14px}td{min-width:90px}pre{font-size:13px}}@media print{nav{display:none}header{color:black;background:white}.table-scroll{overflow:visible}body{font-size:12px}h2{break-after:avoid}}</style>
+<header><div><h1>周五收盘了。<br>让两个模型各自选100只股票，究竟怎么做？</h1><p>每周一次 · 一只股票16个数字 · 两个模型各自排名 · 小市值并排比较</p></div></header><main><p><strong>实际账户已完成：</strong><a href="ML_ACCOUNT_RESULTS.html">打开19策略、38账户情景的完整结果与净值图</a>。</p>
+<nav aria-label="故事步骤"><a href="#step-1">先列股票名单</a><a href="#step-2">16个数字是什么</a><a href="#step-3">分别打分选股</a><a href="#step-4">小市值在哪</a><a href="#step-5">三只股票举例</a><a href="#step-6">怎样训练</a></nav>
+
+<p>先回答你最关心的三个问题：<strong>这次每周选一次；每只股票只输入 16 个数字；两个模型都直接给符合条件的整张股票名单打分，没有先选小市值。</strong></p>
+<p>下面跟着一次周五选股走。先理解人会看到什么、程序会做什么，再谈模型怎么学。我们现在是在回放历史行情，不是已经连上实时交易软件。</p>
+<h2 id="step-1">1．周五收盘后，你打开行情软件</h2>
+<p>假设现在是 2024 年 1 月 5 日，周五，收盘之后。你想知道：下周哪些股票可能比其他股票表现好？</p>
+<p>程序先准备“今天要打分的股票名单”。我以前把它叫“候选池”，这里你就把它理解成一张名单。</p>
+<p>这张名单不是先按市值挑出来的。大公司和小公司，只要符合当前的数据条件，都可以进去。</p>
+<p>目前也不是所有活跃 A 股都进去。我们现有研究数据以主板为范围；此外排除 ST、当天成交量为零、历史数据不足等股票，要求最近 20 天平均每天成交额至少 2,000 万元，并且有当时已公告、不过期的股本信息。</p>
+<p>因此，“今天能交易”不自动等于“本案例会给它打分”。例如，一只成交活跃但上市才 30 个交易日的股票，因为凑不齐 60 天历史，会被排除；一只很大的公司只要数据齐全，就可以进入。</p>
+<p>为什么用了股本条件？因为我们还想让小市值方法在同一张名单里选股，方便公平比较。<strong>这是要求市值数据齐全，没有要求市值小。</strong>20 日成交额门槛等也是本次实验的固定选择，并不是证明这些门槛最好；后面可以另行研究更宽的名单。</p>
+<p>当天实际留下了 <strong>2,962 只股票</strong>。别的周可能是另一个数量，所以“3,000 只”只是大致说法。</p>
+<h2 id="step-2">2．拿出一只股票，把它最近的情况压成 16 个数字</h2>
+<p>假如你点开一只股票，你能看到今天的 K 线，也能看到过去几十天的行情。程序不会把这些 K 线图直接交给模型。它先回答 16 个固定问题，把答案写成 16 个数字。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>第几个数字</th>
+<th>用人话说，它回答什么？</th>
+<th>用到哪段数据？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>今天涨了还是跌了、幅度多大？</td>
+<td>今天</td>
+</tr>
+<tr>
+<td>2</td>
+<td>最近 5 个交易日总体涨了还是跌了？</td>
+<td>包括今天的最近 5 天</td>
+</tr>
+<tr>
+<td>3</td>
+<td>最近 20 个交易日总体涨了还是跌了？</td>
+<td>最近 20 天</td>
+</tr>
+<tr>
+<td>4</td>
+<td>最近 60 个交易日总体涨了还是跌了？</td>
+<td>最近 60 天</td>
+</tr>
+<tr>
+<td>5</td>
+<td>最近 5 天，每天的涨跌是否忽上忽下？</td>
+<td>最近 5 天</td>
+</tr>
+<tr>
+<td>6</td>
+<td>最近 20 天，每天的涨跌是否忽上忽下？</td>
+<td>最近 20 天</td>
+</tr>
+<tr>
+<td>7</td>
+<td>最近 60 天，每天的涨跌是否忽上忽下？</td>
+<td>最近 60 天</td>
+</tr>
+<tr>
+<td>8</td>
+<td>当前价格位置，相对最近 5 天平均位置偏高还是偏低？</td>
+<td>今天与最近 5 天</td>
+</tr>
+<tr>
+<td>9</td>
+<td>相对最近 20 天平均位置偏高还是偏低？</td>
+<td>今天与最近 20 天</td>
+</tr>
+<tr>
+<td>10</td>
+<td>相对最近 60 天平均位置偏高还是偏低？</td>
+<td>今天与最近 60 天</td>
+</tr>
+<tr>
+<td>11</td>
+<td>今天最高价与最低价隔得有多远？</td>
+<td>今天</td>
+</tr>
+<tr>
+<td>12</td>
+<td>今天从开盘到收盘涨了还是跌了？</td>
+<td>今天</td>
+</tr>
+<tr>
+<td>13</td>
+<td>最近 5 天平均成交的钱，比最近 20 天平均成交的钱多了多少？</td>
+<td>最近 5 天与 20 天</td>
+</tr>
+<tr>
+<td>14</td>
+<td>最近 5 天平均成交的股数，比最近 20 天平均成交的股数多了多少？</td>
+<td>最近 5 天与 20 天</td>
+</tr>
+<tr>
+<td>15</td>
+<td>最近 20 天成交额是否忽大忽小？</td>
+<td>最近 20 天</td>
+</tr>
+<tr>
+<td>16</td>
+<td>今天收盘更靠近最高价，还是更靠近最低价？</td>
+<td>今天</td>
+</tr>
+</tbody>
+</table></div>
+<h2>所以不是 16 个特征 × 5 天，也不是给每个特征再塞五个数。</h2>
+<p>例如“过去 5 天涨跌”虽然用五天行情计算，最后只留下 <strong>一个数字</strong>；“过去 60 天波动”虽然看了六十天，也只留下 <strong>一个数字</strong>。你可以把它想成：读完过去的行情，填一张只有 16 个问题的表。</p>
+<p>这张表混合了今天、过去 5 天、20 天、60 天的信息。“每周选一次”说的是多久做一次选择，不是在说输入只能用这一周的数据。</p>
+<p>真正写入模型的涨跌摘要采用对数收益；均线位置使用过去收益衔接出的价格指数。它们与直观看价格走势的含义相近，但不是简单把原始价格直接相减。暂时不需要靠这些数学细节理解输入的结构：<strong>一股一行，一行 16 列。</strong></p>
+<h2 id="step-3">3．把这张表分别交给两个已经学好的模型</h2>
+<p>把名单里所有股票都按上面的方法整理完，你得到：</p>
+<pre><code class="language-text">                 今天这只股票的 16 个摘要
+股票 A           数字1，数字2，……，数字16
+股票 B           数字1，数字2，……，数字16
+股票 C           数字1，数字2，……，数字16
+……
+</code></pre>
+<p>如果今天恰好有 3,000 只，输入就是 <strong>3,000 行 × 16 列</strong>。2024-01-05 实际是 <strong>2,962 行 × 16 列</strong>。</p>
+<p>岭回归读同一张表，给每只股票一个预测；提升树也读同一张表，独立给每只股票一个预测。它们不会先后配合选股，也没有一个模型先筛、另一个再筛。</p>
+<p>它们想预测的是：“未来五个交易日，这只股票相对今天这批股票的平均表现，可能好多少？”</p>
+<p>例如预测 +1 个百分点，可以理解为“可能比这一批的平均表现高 1 个百分点”。这不保证它自己会涨：如果整批平均跌 3%，它跌 2%，仍然相对好 1 个百分点。</p>
+<p>下一步非常直接：岭回归把自己的分数从高到低排，取前 100；提升树把自己的分数从高到低排，也取前 100。你得到 <strong>两份选股名单</strong>，它们可能重叠，也可能不同。当前没有把两份名单合并成一个组合。</p>
+<p>先不用被模型名挡住。岭回归大致是把 16 条信息按学到的权重相加；提升树大致是通过很多条件判断组合信息。今天评分时，它们的判断方式已经从旧数据中学好，不是此时才重新训练。</p>
+<h2 id="step-4">4．小市值在哪里？它是第三位“选股的人”</h2>
+<p>第三种方法不看两个模型的评分，也不使用这 16 条价量摘要。它看同一张股票名单的估算市值，<strong>按市值从小到大排，取前 100</strong>。</p>
+<p>所以实际关系是：</p>
+<pre><code class="language-text">同一张符合条件的股票名单
+    ├─ 岭回归：看16个摘要 → 按自己的预测排 → 选100只
+    ├─ 提升树：看16个摘要 → 按自己的预测排 → 选100只
+    └─ 小市值：看估算市值 → 从小到大排 → 选100只
+</code></pre>
+<p><strong>没有“先挑小市值 100 只，再让模型从里面挑”。</strong>我们也没有“在小市值收益上叠加一个机器学习收益”。</p>
+<p>默认的两个模型连市值都没有作为输入：它们学的是这 16 条价量信息。股本只出现在共同名单的数据资格，以及第三种小市值方法里。</p>
+<p>为什么拿小市值比较？因为一个很简单的选股办法就可能不错。我们想问：“复杂一点的学习，值不值得？是否比这个简单办法好？”它是比较对象，不是模型必须依赖的基础。我们还保留了简单反转和固定随机排序的比较，只是这里先不展开。</p>
+<p>市值在当前数据里是“当天收盘价 × 当时已公告的股本”估算，不是一个保证无误的实时总市值。</p>
+<h2 id="step-5">5．把 3,000 只缩成 3 只，你就能看清‘提升’是什么意思</h2>
+<p>下面的甲、乙、丙与所有数值都是<strong>虚构教学例子</strong>，不是本项目模型的真实输出。为方便说明，把“各选 100 只”缩成“各选 1 只”。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>股票</th>
+<th style="text-align:right">岭回归预测的相对表现</th>
+<th style="text-align:right">提升树预测的相对表现</th>
+<th style="text-align:right">市值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>甲</td>
+<td style="text-align:right">+3 个百分点</td>
+<td style="text-align:right">+1 个百分点</td>
+<td style="text-align:right">1,000 亿元</td>
+</tr>
+<tr>
+<td>乙</td>
+<td style="text-align:right">+2 个百分点</td>
+<td style="text-align:right">+3 个百分点</td>
+<td style="text-align:right">100 亿元</td>
+</tr>
+<tr>
+<td>丙</td>
+<td style="text-align:right">+1 个百分点</td>
+<td style="text-align:right">+2 个百分点</td>
+<td style="text-align:right">20 亿元</td>
+</tr>
+</tbody>
+</table></div>
+<p>岭回归选 <strong>甲</strong>，因为自己的预测里甲最高。提升树选 <strong>乙</strong>，因为自己的预测里乙最高。小市值选 <strong>丙</strong>，因为丙最小。</p>
+<p>注意：岭回归挑到的甲，恰好是三个里面最大的公司。这完全允许发生。它不受“小市值优先”约束。</p>
+<p>然后把时间往后拨五个交易日。假设实际结果是甲涨 4%、乙涨 3%、丙涨 2%。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>选了谁？</th>
+<th style="text-align:right">选中股票实际涨跌</th>
+<th style="text-align:right">比小市值多多少？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>岭回归</td>
+<td>甲</td>
+<td style="text-align:right">+4%</td>
+<td style="text-align:right">4% − 2% = <strong>+2 个百分点</strong></td>
+</tr>
+<tr>
+<td>提升树</td>
+<td>乙</td>
+<td style="text-align:right">+3%</td>
+<td style="text-align:right">3% − 2% = <strong>+1 个百分点</strong></td>
+</tr>
+<tr>
+<td>小市值</td>
+<td>丙</td>
+<td style="text-align:right">+2%</td>
+<td style="text-align:right">自己与自己相比为 0</td>
+</tr>
+</tbody>
+</table></div>
+<p>这里的“相对小市值提升”，只是<strong>两种独立方法选出的股票，之后表现相减</strong>。选股时没有相互依赖。</p>
+<p>这三只的平均涨幅是 3%。如果报告写“相对这批股票平均表现”，那么岭回归是 4%−3%=+1 个百分点，提升树是 3%−3%=0，小市值是 2%−3%=−1 个百分点。</p>
+<p><strong>“比名单平均表现好多少”和“比小市值方法好多少”是两次不同的减法。</strong>以前我把它们都压成几个术语，所以看起来像是在小市值上层层加模型。</p>
+<p>实际有 3,000 只时，道理一样，只是每种方法选 100 只，然后看这 100 只的平均结果。</p>
+<h2 id="step-6">6．那模型最开始怎样学好？下周又做什么？</h2>
+<p>把日历拨回 2020 年某个周末。我们也为每只合格股票填好那 16 个数字。等接下来五个交易日结束，就知道实际涨跌；再减去那批股票的平均涨跌，得到这行样本的正确答案。</p>
+<p>例如某股五日涨 4%，同批平均涨 3%，我们就告诉模型：“这样的 16 个数字，对应的答案是 +1 个百分点。”另一只五日跌 2%、同批平均跌 1%，答案就是 −1 个百分点。</p>
+<p>对 2020—2022 年的周末反复做这件事，收集成几十万行“16 个数字 + 之后的答案”，让两个模型分别学习数字与答案的关系。学完保存。</p>
+<p>到了 2024 年周五，评分时只给它新的 16 个数字，不给它下周答案。等下周结束才查看预测是否有用。最初固定基准的2023年只看表现；本次新增的参数对照另用2023年选参数，原模型保持原样。</p>
+<p>下一周，再拿那个周末的新行情，重新填 16 个数字、重新打分、各取前 100。股票名单也会随数据条件变化。<strong>本次更新的是输入和排名；原模型本身沿用2020—2022学好的版本。本次新增年度重训是另外的并列策略，也没有每周重新学习。</strong></p>
+<h2>看一个真实股票：它确实是这样被打分的</h2>
+<p>2024-01-05 的 <code>000001.SZ</code>，16 个真实输入依次是：</p>
+<pre><code class="language-text">[0.017411, -0.019231, -0.018173, -0.181062, 0.013622, 0.013945, 0.011089, 0.003681,
+ 0.006187, -0.066606, 0.040615, 0.018661, 0.202562, 0.198185, 0.401477, 0.540541]
+</code></pre>
+<p>例如第 2 个数 −0.019231 是最近 5 日的涨跌摘要，对应累计简单收益约 −1.90%；第 13 个数 0.202562 表示最近 5 日平均成交额比 20 日平均高约 20.26%。16 个数的含义按上面的编号查。</p>
+<p>岭回归预测它未来五日相对平均表现约 <strong>+0.348 个百分点</strong>，在 2,962 只里排 <strong>303</strong>，所以没进入它的前 100。提升树预测约 <strong>+0.084 个百分点</strong>，排 <strong>1,205</strong>，也没选中。</p>
+<p>这就是一个股票从“过去行情”到“16 个数字”再到“预测与是否选中”的完整过程。模型给正预测，也不意味着一定入选，还要比其他股票的预测高。</p>
+<h2>现在做到哪一步了？</h2>
+<p>现在程序已经实际做了上述历史样本整理、模型训练、每周预测、两份 Top100 名单的评价，以及与小市值等方法的比较。</p>
+<p>现在这些名单也已进入实际资金账户：周末收盘后选股，下个交易日开盘开始调仓，目标100只等权、总仓位98%；每天保留现金、持仓和买卖流水。固定19种策略、两种费用情景均已跑完，还补了特征消融、年度重训和验证期选参数。具体结果见新的完整账户报告。</p>
+<p>想看数学、参数、文件和代码，可继续读<a href="ML_FROM_ZERO_TECHNICAL.html">旧版详细说明</a>或<a href="ML_CODE_WALKTHROUGH.html">逐行代码阅读器</a>。先把这篇故事里的股票、16 个数字和三种独立选法对应起来，再看那些细节。</p>
+<footer>依据项目现有基准代码与已保存运行 20261003T165732-991ae261。真实输入来自000001.SZ的2024-01-05样本；甲乙丙均为虚构教学例子。本页选股故事基于原模型；后续实际账户及扩展研究已完成，结果见上方新报告。</footer></main></html>

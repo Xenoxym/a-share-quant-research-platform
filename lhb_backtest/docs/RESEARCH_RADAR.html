@@ -1,0 +1,297 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>研究雷达：主动发现与未回答的问题</title><style>
+:root{color-scheme:light;--ink:#193246;--muted:#546a7b;--line:#d9e4ec;--accent:#126b84}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:#f2f6fa;font:17px/1.85 'Microsoft YaHei','Segoe UI',sans-serif}
+.wrap{max-width:1450px;margin:32px auto;display:grid;grid-template-columns:275px minmax(0,1fr);gap:28px;padding:0 25px}
+nav{position:sticky;top:22px;align-self:start;max-height:calc(100vh - 44px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
+nav summary{font-weight:700;cursor:pointer}nav a{display:block;font-size:14px;line-height:1.6;padding:6px 0;text-decoration:none}
+article{min-width:0;background:#fff;border:1px solid var(--line);border-radius:20px;padding:35px 48px 65px}
+a{color:var(--accent);overflow-wrap:anywhere}h1{font-size:34px;line-height:1.4;margin:0 0 20px}h2{font-size:25px;border-top:1px solid var(--line);padding-top:27px;margin-top:45px;scroll-margin-top:20px}h3{font-size:21px;margin-top:28px}
+p,li{overflow-wrap:anywhere}p{margin:16px 0}strong{color:#153e53}.table-wrap{overflow:auto;margin:24px 0}table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.75;min-width:650px}th,td{border:1px solid var(--line);padding:13px;vertical-align:top}th{background:#eaf2f7;text-align:left}
+blockquote{margin:22px 0;border-left:4px solid #3893a4;padding:5px 20px;background:#eff7f9}code{background:#edf3f7;border-radius:4px;padding:2px 5px;font-size:.87em;overflow-wrap:anywhere}img{display:block;width:100%;height:auto;border-radius:12px;margin:24px 0}.links{font-size:14px;color:var(--muted);margin-bottom:25px}.footer{border-top:1px solid var(--line);margin-top:38px;padding-top:15px;color:var(--muted);font-size:14px}
+@media(max-width:1050px){.wrap{display:block;max-width:950px}nav{position:static;max-height:290px;margin-bottom:20px}article{padding:28px}}
+@media(max-width:600px){body{font-size:16px}.wrap{margin:12px auto;padding:0 10px}article{padding:23px 18px;border-radius:14px}h1{font-size:27px}h2{font-size:22px}h3{font-size:19px}nav{padding:14px}table{font-size:14px}}
+</style></head><body><div class="wrap"><nav aria-label="目录"><details open><summary>本页目录</summary><a href="#chapter-1">1. 怎样使用和更新</a><a href="#chapter-2">2. 首批导航</a><a href="#chapter-3">3. 具体问题、最小试验与限制</a><a href="#chapter-4">4. 来源卡：原文主张与我们的推断分开</a><a href="#chapter-5">5. 下一次覆盖审查记录</a></details></nav><article><div class="links"><a href="PROJECT_CHARTER.html">长期纲领</a> · <a href="RESEARCH_RADAR.html">研究雷达</a> · <a href="RESEARCH_STAGE_TEMPLATE.html">阶段记录模板</a> · <a href="ML_SYSTEM_BLUEPRINT_20261005.html">系统蓝图</a> · <a href="CODEX_PROJECT_DELIVERY_PLAN_20261005.html">交付路线</a></div><h1>研究雷达：主动发现与未回答的问题</h1>
+<p>更新：2026-10-05 · 来源任务：<code>task-f162cedea988</code> · <a href="PROJECT_CHARTER.html">项目纲领</a></p>
+<p><strong>这是下一步研究的导航，不是已经跑通的策略排行榜。</strong> 原始记录保存在 <a href="RESEARCH_RADAR.json">JSON</a>。目前只有首批16个主题和6张来源卡；长期范围以纲领的开放地图为准。实际进度以任务库为准，本轮零新增训练、零账户路径。</p>
+<h2 id="chapter-1">1. 怎样使用和更新</h2>
+<p>先核对已有任务与证据，避免重复。选择新主题时比较当前证据的深化与不同方向，补充来源、竞争解释和最小否证试验；按当前任务范围登记后再运行。新知识先加入雷达，不必立刻增加大模型或新数据依赖。</p>
+<p>条目中的最小试验是设计建议，尚未登记或运行。更新时添加任务/证据ID与日期，区分尚未调查、缺数据、工程受阻、有限范围测试和有限范围否证。搜索失败或拒绝也记录。雷达状态不能替代实验数据库或执行收据。</p>
+<h2 id="chapter-2">2. 首批导航</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+  <th>ID</th>
+  <th>主题</th>
+  <th>当前状态</th>
+  <th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>R01</td>
+  <td><a href="#r01">真实源码与时间契约</a></td>
+  <td>工程前置；已有P0任务，R0为草案</td>
+  <td>P1, P2</td>
+</tr>
+<tr>
+  <td>R02</td>
+  <td><a href="#r02">龙虎榜、席位与交易状态的事件结构</a></td>
+  <td>已有设计；实现与实测待核对</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R03</td>
+  <td><a href="#r03">财务变化、行业和市场上下文</a></td>
+  <td>前次训练前工程失败；有效性未回答</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R04</td>
+  <td><a href="#r04">样本、股票范围和目标重定义</a></td>
+  <td>待新主题选择与分项登记</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R05</td>
+  <td><a href="#r05">机制交互与自动公式发现</a></td>
+  <td>已有设计；受控流水线待建设</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R06</td>
+  <td><a href="#r06">序列、事件流和多尺度表示</a></td>
+  <td>已有设计；数据适配与实测待核对</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R07</td>
+  <td><a href="#r07">自监督股票相似性与关系表示</a></td>
+  <td>新来源线索；摘要阅读，待方法核查</td>
+  <td>S4</td>
+</tr>
+<tr>
+  <td>R08</td>
+  <td><a href="#r08">预测不确定性与选择性配置</a></td>
+  <td>新来源线索；理论条件待核查</td>
+  <td>S3</td>
+</tr>
+<tr>
+  <td>R09</td>
+  <td><a href="#r09">小事件样本的表格基础模型</a></td>
+  <td>新来源线索；评估适配性后再决定</td>
+  <td>S1</td>
+</tr>
+<tr>
+  <td>R10</td>
+  <td><a href="#r10">直接学习组合的经济目标</a></td>
+  <td>作者机构介绍页线索；全文待审查</td>
+  <td>S2</td>
+</tr>
+<tr>
+  <td>R11</td>
+  <td><a href="#r11">状态漂移、稳健学习与在线适应</a></td>
+  <td>待主动检索原始方法与失效反例</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R12</td>
+  <td><a href="#r12">负对照、风险归因和大量搜索偏差</a></td>
+  <td>贯穿性要求；批量强制能力待建设</td>
+  <td>P1, P2</td>
+</tr>
+<tr>
+  <td>R13</td>
+  <td><a href="#r13">组合相关性、尾部与持有路径</a></td>
+  <td>待分项设计与主动方法检索</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R14</td>
+  <td><a href="#r14">受控批处理与实验价值排序</a></td>
+  <td>已有交付设计；吞吐实测待建设</td>
+  <td>P1, P2</td>
+</tr>
+<tr>
+  <td>R15</td>
+  <td><a href="#r15">未来数据、跨领域方法与暂缺信息</a></td>
+  <td>开放区域；新来源和接入评估待持续补充</td>
+  <td>P1</td>
+</tr>
+<tr>
+  <td>R16</td>
+  <td><a href="#r16">前瞻影子观察与失效管理</a></td>
+  <td>长期目标；真正新观察流程待建设</td>
+  <td>P1, P2</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="chapter-3">3. 具体问题、最小试验与限制</h2>
+<p><a id="r01"></a></p>
+<h3>R01 · 真实源码与时间契约</h3>
+<p>领域：工程 / 数据。状态：工程前置；已有P0任务，R0为草案。来源：P1, P2。</p>
+<p><strong>为什么可能值得做：</strong> 先消除日期、信息可见性和实际源码不完整的错误，后续模型试验才能回答策略问题。</p>
+<p><strong>最小下一步：</strong> 按已有工程包核对日历与行情交集、标签成熟时间、序列回看及冻结实际源码；不新增策略训练。</p>
+<p><strong>限制与反例：</strong> 不改旧冻结运行；软件已知失败需明确处理，不以文档验收代替测试。</p>
+<p><strong>证据边界：</strong> 既有工程失败不是财务信息无效的证据。</p>
+<p>关联任务：<code>task-28ab0d6b9fe2</code>、<code>task-b2bac8817dbb</code></p>
+<p><a id="r02"></a></p>
+<h3>R02 · 龙虎榜、席位与交易状态的事件结构</h3>
+<p>领域：A股事件 / 特征。状态：已有设计；实现与实测待核对。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 事件强度、集中度、持续参与和事件后的状态转移，可能比只有价格量更能区分股票。</p>
+<p><strong>最小下一步：</strong> 先审计事件去重、席位完整度和known_at；固定模型比较事件特征增量，再决定是否进账户。</p>
+<p><strong>限制与反例：</strong> 日OHLC不推断天地板顺序；多日榜与单日榜不可直接混合；缺席位不等于无交易。</p>
+<p><strong>证据边界：</strong> 94个设计候选并非94个已测特征。</p>
+<p>关联任务：<code>task-1c49d3f311dc</code></p>
+<p><a id="r03"></a></p>
+<h3>R03 · 财务变化、行业和市场上下文</h3>
+<p>领域：基本面 / 环境。状态：前次训练前工程失败；有效性未回答。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 已公告信息的变化、相对行业位置和市场环境可能改善单只股票的判断。</p>
+<p><strong>最小下一步：</strong> P0通过后登记有限的时点正确信息块消融，保持相同股票范围、切分和账户口径。</p>
+<p><strong>限制与反例：</strong> 不能用最新修订覆盖历史，也不能根据未来事件删除样本后声称可执行。</p>
+<p><strong>证据边界：</strong> 没有新账户证据支持该信息块有效或无效。</p>
+<p>关联任务：<code>task-d9034f6e1b3a</code>、<code>task-28ab0d6b9fe2</code></p>
+<p><a id="r04"></a></p>
+<h3>R04 · 样本、股票范围和目标重定义</h3>
+<p>领域：问题定义。状态：待新主题选择与分项登记。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 模型失败可能由样本选择或Y与决策不匹配造成，而非所有输入都是噪声。</p>
+<p><strong>最小下一步：</strong> 分别比较股票范围或持有目标；每次保持其余定义不变，核对标签成熟与交易端点。</p>
+<p><strong>限制与反例：</strong> 全市场与小市值子池是不同问题；终点收益、期间路径和尾部风险不是同一个Y。</p>
+<p><strong>证据边界：</strong> 新定义仍用已看历史；不重新称为未见样本。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r05"></a></p>
+<h3>R05 · 机制交互与自动公式发现</h3>
+<p>领域：高阶特征 / 搜索。状态：已有设计；受控流水线待建设。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 有类型与时点约束的机制交互及符号候选，可以扩大特征范围且保留可解释性。</p>
+<p><strong>最小下一步：</strong> 先实现少量算子、去重与异常值检查；用固定有限候选证明筛选和账户接口可追溯。</p>
+<p><strong>限制与反例：</strong> GP、RL和LLM只是候选生成器；全部尝试计数，不能反复在评价期择优。</p>
+<p><strong>证据边界：</strong> 不先承诺上万候选都完成有效账户核查。</p>
+<p>关联任务：<code>task-1c49d3f311dc</code></p>
+<p><a id="r06"></a></p>
+<h3>R06 · 序列、事件流和多尺度表示</h3>
+<p>领域：表示 / 模型。状态：已有设计；数据适配与实测待核对。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 顺序和路径信息可能被压成一行指标后丢失；不同表示可能适合不同学习器。</p>
+<p><strong>最小下一步：</strong> 固定过去观察范围，比较聚合表格与有限序列；简单模型和容量匹配模型一起保留。</p>
+<p><strong>限制与反例：</strong> 序列只用决策前数据；观察频率提高不自动提高独立有效样本数。</p>
+<p><strong>证据边界：</strong> 分钟数据扩展先做覆盖与接入评估，不假设现有快照已具备。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r07"></a></p>
+<h3>R07 · 自监督股票相似性与关系表示</h3>
+<p>领域：知识扩展 / 表示学习。状态：新来源线索；摘要阅读，待方法核查。来源：S4。</p>
+<p><strong>为什么可能值得做：</strong> 先从过去无标签序列学习相似性，再用于选股或风险分散，可能提供不同于人工行业的关系。</p>
+<p><strong>最小下一步：</strong> 先阅读全文和切分；设计固定过去窗口关系与简单滚动相关对照，严格时间隔离后再小试。</p>
+<p><strong>限制与反例：</strong> 表示预训练不能使用评价期未来序列；当前不假设可融券，优先设计多头用途。</p>
+<p><strong>证据边界：</strong> 作者摘要线索，不是本项目实验，也不是已确认A股适用。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r08"></a></p>
+<h3>R08 · 预测不确定性与选择性配置</h3>
+<p>领域：知识扩展 / 风险。状态：新来源线索；理论条件待核查。来源：S3。</p>
+<p><strong>为什么可能值得做：</strong> 将预测区间或不确定性用于是否持有、持有多少，可能比只看点预测更适合风险目标。</p>
+<p><strong>最小下一步：</strong> 先阅读理论条件；设计滚动校准诊断和固定配置规则，以等现金/等风险对照排除减仓解释。</p>
+<p><strong>限制与反例：</strong> 漂移和标签依赖可能破坏覆盖条件；校准期不能和评价期反复共同择优。</p>
+<p><strong>证据边界：</strong> 只提高区间覆盖或校准指标不能宣布账户改善。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r09"></a></p>
+<h3>R09 · 小事件样本的表格基础模型</h3>
+<p>领域：知识扩展 / 模型。状态：新来源线索；评估适配性后再决定。来源：S1。</p>
+<p><strong>为什么可能值得做：</strong> 特定事件或小子任务中，通用表格预训练可能形成与树不同的基线。</p>
+<p><strong>最小下一步：</strong> 核对官方实现、许可、依赖与资源；先用很小的过去事件样本比较固定树/线性/预训练模型。</p>
+<p><strong>限制与反例：</strong> 通用小表格胜出不等于数百万股票行适用；上下文样本与预训练数据需审计时间污染。</p>
+<p><strong>证据边界：</strong> 本轮未安装模型、未下载权重、未运行fit。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r10"></a></p>
+<h3>R10 · 直接学习组合的经济目标</h3>
+<p>领域：知识扩展 / 目标与决策。状态：作者机构介绍页线索；全文待审查。来源：S2。</p>
+<p><strong>为什么可能值得做：</strong> 学习权重和经济目标可能减少预测分数与实际组合价值之间的断层。</p>
+<p><strong>最小下一步：</strong> 先审查方法和约束；用简单可微权重代理及同预测等权对照，检查代理与原生账户差异。</p>
+<p><strong>限制与反例：</strong> 不能把介绍页当作私有现役策略；换目标与换模型分别消融，风险下降需排查现金和暴露。</p>
+<p><strong>证据边界：</strong> 研究重点是学习决策；账户约束用于检验其经济含义。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r11"></a></p>
+<h3>R11 · 状态漂移、稳健学习与在线适应</h3>
+<p>领域：学习 / 维护。状态：待主动检索原始方法与失效反例。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 旧规律失效可能来自分布改变；滚动、稳健或适应式方法需要与固定训练对照。</p>
+<p><strong>最小下一步：</strong> 先诊断分期和特征/标签漂移；固定少量更新协议比较，所有阈值只在选择期决定。</p>
+<p><strong>限制与反例：</strong> 状态分类可能仅描述历史；复杂门控本身也会过拟合。</p>
+<p><strong>证据边界：</strong> 暂未锁定新增方法来源，不能声称已广泛读完该领域。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r12"></a></p>
+<h3>R12 · 负对照、风险归因和大量搜索偏差</h3>
+<p>领域：验证 / 统计。状态：贯穿性要求；批量强制能力待建设。来源：P1, P2。</p>
+<p><strong>为什么可能值得做：</strong> 模型表面优势可能来自市值/风险暴露、共同市场因素或大量搜索择优。</p>
+<p><strong>最小下一步：</strong> 登记负对照和暴露对照；保存累计候选、切分、晋级及拒绝记录，报告分期不确定性。</p>
+<p><strong>限制与反例：</strong> 统计显著不等于因果；历史重用后不能用新名称恢复独立验证。</p>
+<p><strong>证据边界：</strong> 是否需要更强多重检验方法，按实际搜索规模与原始来源另行评估。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r13"></a></p>
+<h3>R13 · 组合相关性、尾部与持有路径</h3>
+<p>领域：组合 / 风险。状态：待分项设计与主动方法检索。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 不同股票信号的相关性和尾部共振，可能比单股票预测分数更决定组合回撤。</p>
+<p><strong>最小下一步：</strong> 固定预测比较等权、简单分散及有限风险约束；分别说明仓位和暴露变化。</p>
+<p><strong>限制与反例：</strong> 风险估计本身有误差；不在评价期选择最有利的约束或风险缩放。</p>
+<p><strong>证据边界：</strong> 平均收益近似不保证相同最大回撤或相同风险。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r14"></a></p>
+<h3>R14 · 受控批处理与实验价值排序</h3>
+<p>领域：资源 / 调度。状态：已有交付设计；吞吐实测待建设。来源：P1, P2。</p>
+<p><strong>为什么可能值得做：</strong> 共享缓存、早期否证与有限并发可增加有价值试验数，减少重复算和无信息调参。</p>
+<p><strong>最小下一步：</strong> 先在小型有限批次测内存、耗时、收据完整性和去重，再扩预算；失败也计数。</p>
+<p><strong>限制与反例：</strong> 候选生成数、fit数、账户路径和调用数分别记录；并行不能破坏时间或选择协议。</p>
+<p><strong>证据边界：</strong> 探索算法的选择应主动找原始方法，不只提高随机枚举数量。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r15"></a></p>
+<h3>R15 · 未来数据、跨领域方法与暂缺信息</h3>
+<p>领域：开放扩展。状态：开放区域；新来源和接入评估待持续补充。来源：P1。</p>
+<p><strong>为什么可能值得做：</strong> 额外观察、关系或外部领域方法可能改变当前问题的可识别性，而非只优化旧数据。</p>
+<p><strong>最小下一步：</strong> 每个新线索保存来源、成本、时点、授权、最小样本和潜在信息增量；先判断是否值得接入。</p>
+<p><strong>限制与反例：</strong> 当前不声称有完整订单簿、实时tick、新闻或所有关系数据；不能默认可做HFT/做市。</p>
+<p><strong>证据边界：</strong> 没有被用户点名的方向也可以进入雷达；未调查不是无价值。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<p><a id="r16"></a></p>
+<h3>R16 · 前瞻影子观察与失效管理</h3>
+<p>领域：验证 / 维护。状态：长期目标；真正新观察流程待建设。来源：P1, P2。</p>
+<p><strong>为什么可能值得做：</strong> 冻结策略后的后续新观察能减少持续回看历史带来的误判，并发现失效。</p>
+<p><strong>最小下一步：</strong> 先定义冻结版本、前瞻起点、变更日志、影子组合和停止条件，再积累尚未观察的新数据。</p>
+<p><strong>限制与反例：</strong> 历史已看区间不得装成前瞻；改策略后区分旧版结果与新假设。</p>
+<p><strong>证据边界：</strong> 本文没有开启影子交易，也没有宣称已拥有真正未见验证集。</p>
+<p>关联任务：待创建或关联；不据此自动派发。</p>
+<h2 id="chapter-4">4. 来源卡：原文主张与我们的推断分开</h2>
+<p>新外部线索包括：股票相似性表示、预测不确定性、事件小样本的表格基础模型，以及直接学习组合目标。它们用于扩大视野；尚未证明优于本项目基线，也不是本项目的新策略成果。</p>
+<h3>P1 · <a href="ML_SYSTEM_BLUEPRINT_20261005.html">项目系统蓝图</a></h3>
+<p>作者/组织：本项目。日期/版本：2026-10-05。访问：2026-10-05。</p>
+<p><strong>阅读深度：</strong> 已复核设计与任务交接；非实现或策略实验。</p>
+<p><strong>来源主张：</strong> 保存多源数据、候选特征、DSL、模型、账户桥接和受控批量研究的初步设计。</p>
+<p><strong>项目推断：</strong> 其中的阶段清单与候选数可以扩展，不能当作全部研究的上限。</p>
+<p><strong>尚未证明：</strong> 设计证据不等于功能完成或收益证明。task-1c49d3f311dc / evidence-702bac20426f。</p>
+<h3>P2 · <a href="CODEX_PROJECT_DELIVERY_PLAN_20261005.html">Codex 项目建设与交付规划</a></h3>
+<p>作者/组织：本项目。日期/版本：2026-10-05。访问：2026-10-05。</p>
+<p><strong>阅读深度：</strong> 已复核交付规划与任务交接；非全部工程完成。</p>
+<p><strong>来源主张：</strong> 保存分包、实施依赖、审查、软件基线及 GitHub 准备方案。</p>
+<p><strong>项目推断：</strong> 必须先保全实际源码和验证契约，再扩大研究吞吐。</p>
+<p><strong>尚未证明：</strong> GitHub 文件为草案，远程发布未完成。task-b2bac8817dbb / evidence-1a03e0d017cb。</p>
+<h3>S1 · <a href="https://www.nature.com/articles/s41586-024-08328-6">Accurate predictions on small data with a tabular foundation model</a></h3>
+<p>作者/组织：Noah Hollmann 等。日期/版本：2025-01-08。访问：2026-10-05。</p>
+<p><strong>阅读深度：</strong> 已读取作者论文网页的摘要、方法介绍与评估范围；未复现或完整逐节审查。</p>
+<p><strong>来源主张：</strong> TabPFN 使用合成任务预训练，在论文的小型通用表格基准中表现较强。该评估重点覆盖最多一万样本、五百特征的任务。</p>
+<p><strong>项目推断：</strong> 可考虑少量事件样本或子任务的模型对照，先评估适配性和资源。</p>
+<p><strong>尚未证明：</strong> 通用基准不是金融账户；论文评估范围不是最新产品的绝对容量限制；跨日期验证不能沿用随机表格切分。</p>
+<h3>S2 · <a href="https://www.aqr.com/insights/research/working-paper/machine-learning-and-the-implementable-efficient-frontier">Machine Learning and the Implementable Efficient Frontier</a></h3>
+<p>作者/组织：Theis Ingerslev Jensen、Bryan Kelly、Semyon Malamud、Lasse H. Pedersen。日期/版本：2022-08-18。访问：2026-10-05。</p>
+<p><strong>阅读深度：</strong> 已读取作者机构工作论文介绍页；尚未完整审查论文推导与代码。</p>
+<p><strong>来源主张：</strong> 介绍以经济目标学习组合权重，并在风险和交易成本约束下评价可实现收益的方法框架。</p>
+<p><strong>项目推断：</strong> 研究可以改造学习目标和组合决策，不必只优化下一期收益预测误差。</p>
+<p><strong>尚未证明：</strong> 不是 AQR 现役产品策略披露；不是我们的 A 股收益证明；可微代理仍需原生账户核查。</p>
+<h3>S3 · <a href="https://arxiv.org/abs/2410.16333v2">Conformal Predictive Portfolio Selection</a></h3>
+<p>作者/组织：Masahiro Kato。日期/版本：2025-02-13（v2；首版2024-10-19）。访问：2026-10-05。</p>
+<p><strong>阅读深度：</strong> 已读取作者预印本摘要与版本信息；待阅读全文及理论假设。</p>
+<p><strong>来源主张：</strong> 提出用未来组合收益的预测区间辅助组合选择的框架。</p>
+<p><strong>项目推断：</strong> 除了谁预测得高，还可以检验预测的不确定性是否有助于风险和仓位决策。</p>
+<p><strong>尚未证明：</strong> 不得由摘要宣称 A 股有效或漂移下覆盖有保证；需要检查时间序列依赖、校准和分布假设。</p>
+<h3>S4 · <a href="https://arxiv.org/abs/2407.13751v1">Temporal Representation Learning for Stock Similarities and Its Applications in Investment Management</a></h3>
+<p>作者/组织：Yoontae Hwang、Stefan Zohren、Yongjae Lee。日期/版本：2024-07-18。访问：2026-10-05。</p>
+<p><strong>阅读深度：</strong> 已读取作者预印本摘要与版本信息；待阅读全文和具体评估切分。</p>
+<p><strong>来源主张：</strong> 研究通过时序自监督表示识别股票相似性，并讨论其投资管理应用。</p>
+<p><strong>项目推断：</strong> 输入未必只能是一只股票的一行指标，股票之间的相似关系也是可研究的信息表示。</p>
+<p><strong>尚未证明：</strong> 关系表示可能有用不等于可迁移论文收益；不可直接假设 A 股可做原文的双边配对交易。</p>
+<h2 id="chapter-5">5. 下一次覆盖审查记录</h2>
+<p>当前为初始化，尚无本轮之后的研究阶段或投入统计。三个独立研究阶段完成或一个完整批次结束时，补充近期方向、真实预算、空白领域、共同依赖、竞争候选与选择理由。不要为了填写次数制造无意义研究；包内修复不计作一个新研究主题。</p>
+<div class="footer">文档与入场准则 · 实际能力和研究状态以任务库、代码与核查证据为准 · <a href="RESEARCH_RADAR.md">Markdown 原文</a></div></article></div></body></html>

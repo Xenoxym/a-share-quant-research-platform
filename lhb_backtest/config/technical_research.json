@@ -1,0 +1,27 @@
+{
+  "strategy": {
+    "name": "价格动量 MOM(252,21) · 月度排名",
+    "direction": "momentum",
+    "lookback": 252,
+    "skip": 21,
+    "trend_window": 0,
+    "min_score": null,
+    "top_k": 20,
+    "rebalance": "monthly",
+    "allocation": 0.98,
+    "min_avg_amount": 20000000.0
+  },
+  "execution": {
+    "initial_cash": 1000000.0,
+    "commission_rate": 0.0003,
+    "minimum_commission": 5.0,
+    "other_fee_rate": 2e-05,
+    "slippage_bps": 10.0,
+    "max_participation": 0.001,
+    "dividend_tax_reserve": 0.2
+  },
+  "experiment": {
+    "start_date": "2020-01-01",
+    "end_date": "latest"
+  }
+}
