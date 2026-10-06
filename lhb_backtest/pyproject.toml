@@ -16,6 +16,7 @@ dependencies = [
     "duckdb>=0.10.0",
     "pyarrow>=14.0.0",
     "pyyaml>=6.0",
+    "tzdata>=2022.7",
     "loguru>=0.7.0",
     "matplotlib>=3.7.0",
     "seaborn>=0.13.0",
