@@ -171,6 +171,9 @@ class Research:
         )
 
     def register(self, session, proposal):
+        if isinstance(proposal, dict) and proposal.get("kind") == "alpha_batch":
+            from .alpha_experiments import register
+            return register(self, session, proposal)
         if isinstance(proposal, dict) and proposal.get("kind") == "ml":
             from .ml_experiments import register
             return register(self, session, proposal)
@@ -306,6 +309,9 @@ class Research:
 
     def execute(self, session, eid):
         ex = self.store.experiment(eid)
+        if ex["proposal"].get("kind") == "alpha_batch":
+            from .alpha_experiments import execute
+            return execute(self, session, eid)
         job = self.root / "worker_jobs" / eid
         self.store.start(session, eid)
         self.store.heartbeat(session)
@@ -389,6 +395,9 @@ class Research:
         receipt = json.loads(p.read_text(encoding="utf-8"))
         if receipt["status"] == "failed":
             return self.store.finish(eid, "failed", error=receipt["error"])
+        if ex["proposal"].get("kind") == "alpha_batch":
+            from .alpha_experiments import recover
+            return recover(self, ex, receipt)
         if ex["proposal"].get("kind") == "ml":
             from .ml_experiments import recover
             return recover(self, ex, receipt)
@@ -505,6 +514,10 @@ class Research:
         task = self.store.get(session["task_id"])
         for ex in task["experiments"]:
             if ex["status"] == "completed":
+                if ex["proposal"].get("kind") == "alpha_batch":
+                    from .alpha_experiments import verify_completed
+                    verify_completed(self, ex)
+                    continue
                 p = self.run_folder(ex["run_id"])
                 if digest(p / "manifest.json") != ex["result"]["manifest_hash"]:
                     raise ValueError("结果清单已变化")
@@ -519,6 +532,10 @@ class Research:
         self.verify_evidence(task)
         for ex in self.store.get(task)["experiments"]:
             if ex["status"] == "completed":
+                if ex["proposal"].get("kind") == "alpha_batch":
+                    from .alpha_experiments import verify_completed
+                    verify_completed(self, ex)
+                    continue
                 p = self.run_folder(ex["run_id"])
                 if digest(p / "manifest.json") != ex["result"]["manifest_hash"]:
                     raise ValueError("结果清单已变化")
