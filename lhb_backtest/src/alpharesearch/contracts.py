@@ -30,6 +30,7 @@ class MissingReason(str, Enum):
     INCOMPLETE = 'incomplete_window'
     NOT_KNOWN = 'not_yet_known'
     HISTORY = 'insufficient_history'
+    STALE = 'stale_observation'
     STATUS = 'unknown_status'
 
 
