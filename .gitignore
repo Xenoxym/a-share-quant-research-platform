@@ -16,3 +16,11 @@
 # Local delivery evidence and machine-specific settings are never public sources.
 /lhb_backtest/research/local_delivery_20261006/
 /lhb_backtest/docs/LOCAL_WORKSPACE.md
+/lhb_backtest/docs/LOCAL_DELIVERY_20261006.*
+/lhb_backtest/research/workspace_rename_20261006/
+
+/lhb_backtest/research/**/*_session.json
+
+/lhb_backtest/research/structure_audit_*/
+
+/lhb_backtest/research/autonomous_delivery_*/

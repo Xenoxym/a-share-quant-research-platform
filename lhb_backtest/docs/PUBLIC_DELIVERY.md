@@ -1,6 +1,6 @@
 # 公开源码交付约定
 
-当前交付是本地可审阅候选。尚未创建远程仓库、推送、运行 GitHub Actions 或授予开源许可证。候选名称为 `a-share-quant-research-platform`，版本为 `0.2.0`。
+用户于 2026-10-06 后续消息授权直接发布并持续建设。公开仓库已建立并首次推送；GitHub Actions 已运行，具体结果见 [建设进度](BUILD_PROGRESS_20261006.md)。公开许可证仍未决定。候选名称为 `a-share-quant-research-platform`，版本为 `0.2.0`。
 
 ## 目录与兼容
 
@@ -41,8 +41,8 @@ repository/
 
 ## 首次发布前
 
-项目所有者审阅准确候选目录、文件清单、变更说明、测试证据及扫描边界，选择许可证并确认仓库名和首次发布。之后再创建远程或推送。是否保留旧 Git 历史也单独说明；源码候选的检查不能代替整个历史的检查。
+首次发布已按用户后续明确授权完成。后续增量仍保留准确清单、测试、扫描范围及许可证状态；不重复要求已授权的发布审批。是否保留旧 Git 历史也单独说明；源码候选的检查不能代替整个历史的检查。
 
-已准备 Windows/Linux、Python 3.12 的软件 CI 定义，只运行合成测试、打包和模板输出；尚未在 GitHub 运行。动作固定到官方发布提交：[checkout v6.0.3](https://github.com/actions/checkout/commit/df4cb1c069e1874edd31b4311f1884172cec0e10)、[setup-python v6.3.0](https://github.com/actions/setup-python/commit/ece7cb06caefa5fff74198d8649806c4678c61a1)。这是可核查的依赖固定，不代表 CI 已通过。
+已准备 Windows/Linux、Python 3.12 的软件 CI 定义，只运行合成测试、打包和模板输出；已在 GitHub 运行；首次打包失败已定位并修复，后续结果须检查实际运行。动作固定到官方发布提交：[checkout v6.0.3](https://github.com/actions/checkout/commit/df4cb1c069e1874edd31b4311f1884172cec0e10)、[setup-python v6.3.0](https://github.com/actions/setup-python/commit/ece7cb06caefa5fff74198d8649806c4678c61a1)。这是可核查的依赖固定，不代表 CI 已通过。
 
 后续建设按项目纲领推进：先完善数据与特征契约，再扩展 A 股事件和财务/市场特征，建设表达式与搜索流水线，接入多模型和组合研究。各阶段保留适当对照，重大策略成果以核查后的收益与回撤为准。

@@ -10,6 +10,7 @@ import sys
 import time
 
 from .store import Store, text, task_spec
+from .locations import evidence_folder, verify_evidence_paths
 from ..technical.artifacts import content_id, digest, write_json, verify_artifacts
 from ..technical.contracts import ResearchSpec
 from ..technical.runner import verify
@@ -116,6 +117,12 @@ class Research:
 
     def context(self, task):
         value = self.store.get(task)
+        # Derived access paths do not alter the recorded historical payload.
+        for evidence in value["evidence"]:
+            payload = evidence["payload"]
+            evidence["access_folder"] = str(
+                evidence_folder(self.root, payload["folder"], evidence["fingerprint"])
+            )
         catalog = self.catalog()
         baselines = []
         for rid in value["spec"]["baseline_runs"]:
@@ -487,12 +494,10 @@ class Research:
     def verify_evidence(self, task):
         for evidence in self.store.get(task)["evidence"]:
             payload = evidence["payload"]
-            folder = self.root / "analysis_evidence" / evidence["fingerprint"]
-            if (
-                str(folder) != payload["folder"]
-                or content_id(payload["artifacts"]) != evidence["fingerprint"]
-            ):
+            if content_id(payload["artifacts"]) != evidence["fingerprint"]:
                 raise ValueError("分析证据身份变化")
+            folder = evidence_folder(self.root, payload["folder"], evidence["fingerprint"])
+            verify_evidence_paths(folder, payload["artifacts"])
             verify_artifacts(folder, payload)
 
     def submit(self, session, report):

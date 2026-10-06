@@ -13,6 +13,5 @@
 
 应用目录保留 `lhb_backtest`，Python 导入保留 `src.*` / `compat.*`，以兼容已有实验；产品和发行包名称已扩展为 `a-share-quant-research-platform`。原始行情、任务数据库、模型和私有研究结果不随公开源码交付。公开许可证尚待项目所有者选择；当前没有 MIT 或其他开源许可证授权。
 
-## 项目结构审查
-
-完整结构、外部依赖、总体蓝图差距与分级清理说明见 [2026-10-06 审查报告](lhb_backtest/docs/LOCAL_STRUCTURE_REVIEW_20261006.md)，或在本地浏览器打开同目录 HTML。报告为阶段快照，不代表全部规划已经实现；原始数据、模型和私人证据未上传。
+- [项目结构与总体蓝图审查](lhb_backtest/docs/LOCAL_STRUCTURE_REVIEW_20261006.md)
+- [当前建设与接续进度](lhb_backtest/docs/BUILD_PROGRESS_20261006.md)

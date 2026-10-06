@@ -619,7 +619,7 @@ continue必须给完整next_task，其他决定next_task=null；新任务需说�
         return (
             common
             + f"""你是独立新会话的复核者，重点检查{focus}。你没参加原研究，也不要读取另一复核者的报告。
-先看submission和evidence里的冻结folder，再读取报告、设计、关键代码和数字文件；至少做针对性的只读交叉核对。
+先看submission和evidence里的access_folder（当前可访问位置；payload.folder保留历史位置），再读取报告、设计、关键代码和数字文件；至少做针对性的只读交叉核对。
 不写项目文件、不重新跑完整模型、不调参。允许内存中独立计算核对。检查失败尝试与数据局限是否诚实保留。
 accept表示在明确限制下接受研究结论(包括负面结论)，不表示认可策略有效。实质计算错误/泄漏/证据缺失给revise；需外部新证据给defer。
 blockers只列会改变当前结论可靠性的具体缺陷；有blockers不能accept；一般未来改进写limitations。不要把事后导入伪称预登记。
