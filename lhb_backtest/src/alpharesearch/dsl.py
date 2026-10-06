@@ -154,6 +154,7 @@ def compile_expression(expr: Expr, registry: FeatureRegistry, *, limits=None, re
             window=params['window']
             if type(window) is not int or window<2:raise ValueError('Full rolling windows require integer window >=2')
             if domain not in {'stock_day','market_day'}:raise ValueError('Rolling session operators need daily data')
+            if any(child[2]!=domain for child in children):raise ValueError('Every rolling operand must have the same daily domain; scalar rolling pairs are forbidden')
             history+=window-1
             if op in {'ts_rank','ts_corr'}:dimension=(0,0,0)
             if op=='ts_cov':dimension=tuple(a+b for a,b in zip(dims[0],dims[1]))
