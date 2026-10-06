@@ -62,6 +62,18 @@ def timestamp(value):
     return value.astimezone(timezone.utc)
 
 
+def timestamps(values):
+    """Vector fast path for already-aware pandas clocks; objects keep strict checks.
+
+    No timezone is inferred for naive values. NaT is rejected on both paths.
+    """
+    import pandas as pd
+    if isinstance(values.dtype,pd.DatetimeTZDtype):
+        if values.isna().any():raise ValueError('Timestamp cannot be missing')
+        return values.dt.tz_convert('UTC')
+    return pd.to_datetime(values.map(timestamp),utc=True)
+
+
 def known_at_from_publication(value, precision, market_timezone='Asia/Shanghai'):
     """Date-only publication is usable after that complete local civil date.
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from ..contracts import MissingReason, Unit, VintagePolicy, timestamp, required_id
+from ..contracts import MissingReason, Unit, VintagePolicy, timestamps, required_id
 
 
 @dataclass
@@ -29,8 +29,8 @@ class FeatureBlock:
             raise ValueError('Every feature needs exactly one missing reason column')
         if set(self.values) != set(keys) | set(self.units) | {'observed_end', 'known_at'}:
             raise ValueError('Undeclared columns or labels cannot enter a feature block')
-        end = pd.to_datetime(self.values.observed_end.map(timestamp), utc=True)
-        known = pd.to_datetime(self.values.known_at.map(timestamp), utc=True)
+        end = timestamps(self.values.observed_end)
+        known = timestamps(self.values.known_at)
         if known.lt(end).any():
             raise ValueError('Feature cannot be available before observation ends')
         for name, unit in self.units.items():

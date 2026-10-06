@@ -9,7 +9,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from .contracts import MissingReason as M, VintagePolicy, required_id, timestamp
+from .contracts import MissingReason as M, VintagePolicy, required_id, timestamps
 from .dsl import CompiledExpression, verify_compiled
 from .features.base import FeatureBlock
 from .registry import FeatureRegistry, SHA, implementation_hashes
@@ -61,10 +61,10 @@ class ExpressionEvaluator:
         if not p.stock_code.map(lambda x:isinstance(x,str) and bool(x.strip())).all() or not p.trade_date.isin(days).all():raise ValueError('Membership stock IDs and bounded calendar dates required')
         clocks=decision_clocks[['trade_date','decision_at']].copy()
         if clocks.trade_date.duplicated().any() or set(clocks.trade_date)!=set(days):raise ValueError('One explicit decision clock per calendar session required')
-        clocks['decision_at']=pd.to_datetime(clocks.decision_at.map(timestamp),utc=True)
+        clocks['decision_at']=timestamps(clocks.decision_at)
         if clocks.decision_at.dt.tz_convert('Asia/Shanghai').dt.strftime('%Y-%m-%d').ne(clocks.trade_date).any():raise ValueError('Decision clock must belong to its local trading date')
         self.clocks=clocks.set_index('trade_date').reindex(days).decision_at
-        p['decision_at']=pd.to_datetime(p.decision_at.map(timestamp),utc=True)
+        p['decision_at']=timestamps(p.decision_at)
         if not p.decision_at.reset_index(drop=True).equals(p.trade_date.map(self.clocks).reset_index(drop=True)):raise ValueError('Membership and session decision clocks differ')
         stocks=sorted(p.stock_code.unique());cells=len(days)*len(stocks)
         if cells>max_grid_cells:raise ValueError('Calendar grid resource budget exceeded before allocation')
