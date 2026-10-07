@@ -69,15 +69,22 @@ def test_refuses_child_identity_relaxation(monkeypatch, fault):
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows exact hidden-console process integration")
 @pytest.mark.parametrize("direct", [False, True])
-def test_actual_windows_interpreters_account_for_known_helpers(monkeypatch, direct):
+def test_actual_windows_interpreters_account_for_known_helpers(tmp_path, monkeypatch, direct):
     executable = sys._base_executable if direct else sys.executable
     if direct:
         monkeypatch.setattr(execution, "sys", SimpleNamespace(executable=executable, _base_executable=executable))
-    command = [executable, "-c", "import time; time.sleep(1)"]
+    marker = tmp_path / "python_body_started"
+    command = [executable, "-c",
+               "import pathlib,sys,time; pathlib.Path(sys.argv[1]).touch(); time.sleep(1)",
+               str(marker)]
     proc = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             creationflags=subprocess.CREATE_NO_WINDOW)
     try:
         created = psutil.Process(proc.pid).create_time()
+        deadline = time.monotonic()+5
+        while not marker.exists() and proc.poll() is None and time.monotonic()<deadline:
+            time.sleep(.02)
+        assert marker.exists(), "Python body did not start"
         chain = execution._interpreter_chain(proc, created, command)
         launch = dict(pid=proc.pid, created=created, interpreter_chain=chain)
         assert execution._sample(launch) > 0
@@ -163,3 +170,41 @@ def test_actual_direct_python_frozen_worker_completes_without_watchdog_false_fai
     assert result["status"] == "completed", (result.get("error"), (job/"execution.log").read_text())
     assert not list((ops.root/".alpha_slots").glob("slot*.json"))
     assert ops.recover(experiment["id"])["status"] == "completed"
+
+
+@pytest.mark.parametrize("fault", [None, "schema", "experiment", "input", "extra", "dead", "oversized"])
+def test_startup_handshake_binds_job_and_alive_identity(tmp_path, monkeypatch, fault):
+    import json
+    from src.technical.artifacts import digest
+    (tmp_path/"input.json").write_text("{}", encoding="utf-8")
+    value = dict(schema="alpha-worker-startup-v1", experiment_id=tmp_path.name,
+                 input_hash=digest(tmp_path/"input.json"), pid=123, created=10.)
+    if fault == "schema": value["schema"] = "other"
+    if fault == "experiment": value["experiment_id"] = "other"
+    if fault == "input": value["input_hash"] = "0"*64
+    if fault == "extra": value["other"] = 1
+    raw = json.dumps(value) if fault != "oversized" else " "*16_385
+    (tmp_path/"worker_started.json").write_text(raw, encoding="utf-8")
+    seen = []
+    def alive(pid, created):
+        seen.append((pid, created))
+        return fault != "dead"
+    monkeypatch.setattr(execution, "process_alive", alive)
+    proc = SimpleNamespace(poll=lambda: None)
+    if fault is None:
+        assert execution._wait_worker_started(tmp_path, proc, 2) == value
+        assert seen == [(123, 10.)]
+    else:
+        with pytest.raises(ValueError):
+            execution._wait_worker_started(tmp_path, proc, 2)
+
+
+@pytest.mark.parametrize("exited", [False, True])
+def test_missing_startup_handshake_is_bounded_and_never_relaunched(tmp_path, monkeypatch, exited):
+    ticks = iter([0., 16.])
+    monkeypatch.setattr(execution, "time", SimpleNamespace(
+        monotonic=lambda: next(ticks), sleep=lambda _: None))
+    proc = SimpleNamespace(poll=lambda: 1 if exited else None)
+    with pytest.raises(ValueError if exited else TimeoutError):
+        execution._wait_worker_started(tmp_path, proc, 30)
+    assert not (tmp_path/"worker_started.json").exists()

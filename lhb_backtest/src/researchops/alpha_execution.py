@@ -68,6 +68,29 @@ def _alive(launch):
 
 
 
+def _wait_worker_started(job, proc, timeout_seconds):
+    """Bounded Python-body handshake before freezing Windows helper identities."""
+    path = job / "worker_started.json"
+    deadline = time.monotonic() + min(15., timeout_seconds)
+    while not path.exists():
+        if proc.poll() is not None:
+            raise ValueError("Worker exited before startup handshake")
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Worker startup handshake not observed")
+        time.sleep(.02)
+    if path.stat().st_size > 16_384:
+        raise ValueError("Oversized startup handshake")
+    value = _read_json(path)
+    expected = dict(schema="alpha-worker-startup-v1", experiment_id=job.name,
+                    input_hash=digest(job / "input.json"))
+    if (not isinstance(value, dict) or set(value) != set(expected) | {"pid", "created"}
+            or any(value.get(k) != v for k, v in expected.items())):
+        raise ValueError("Worker startup handshake differs from frozen job")
+    if not process_alive(value["pid"], value["created"]):
+        raise ValueError("Startup worker identity is no longer alive")
+    return value
+
+
 def _interpreter_chain(proc, created, command):
     # The Windows venv launcher and hidden console host are bookkeeping,
     # alongside one actual Python interpreter, not extra numerical workers.
@@ -231,7 +254,7 @@ def execute(research, session, eid):
     job=research.root/"worker_jobs"/eid
     if "resources" not in experiment["proposal"] or not (job/"code/src/researchops/alpha_worker.py").is_file():
         raise ValueError("Old registration has no frozen E12 worker/resources; register a new version without rewriting history")
-    if any((job/name).exists() for name in ("launch.json","receipt.json","alpha_result","execution_stats.json","cancel_request.json","supervision_failure.json")):
+    if any((job/name).exists() for name in ("launch.json","receipt.json","alpha_result","execution_stats.json","cancel_request.json","supervision_failure.json","worker_started.json","worker_started.tmp")):
         raise ValueError("Unexpected existing execution artifacts; preserve and inspect")
     verify_job(job)
     resources=WorkerResources.from_dict(experiment["proposal"]["resources"])
@@ -254,7 +277,12 @@ def execute(research, session, eid):
                                           cwd=job/"code",env=env,stdout=log,stderr=subprocess.STDOUT,
                                           creationflags=flags)
                     created=reservation.bind(proc)
+                    started=_wait_worker_started(job,proc,experiment["proposal"]["timeout_seconds"])
                     chain=_interpreter_chain(proc,created,command)
+                    actual=next((c for c in chain if c["role"]=="interpreter"),
+                                dict(pid=proc.pid,created=created))
+                    if any(started[k]!=actual[k] for k in ("pid","created")):
+                        raise ValueError("Startup handshake belongs to another interpreter")
                     reservation.bind_chain(chain)
                 except BaseException:
                     if proc is not None and proc.poll() is None:research._stop(proc)

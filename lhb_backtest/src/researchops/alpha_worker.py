@@ -188,6 +188,13 @@ def main():
     args=parser.parse_args();job=args.job.resolve();done=threading.Event();watchdog=None
     try:
         cfg=verify_job(job)
+        startup=dict(schema="alpha-worker-startup-v1",experiment_id=job.name,
+                     input_hash=digest(job/"input.json"),pid=os.getpid(),
+                     created=psutil.Process().create_time())
+        # Atomic visibility: parent never reads a partially written handshake.
+        temp=job/"worker_started.tmp"
+        write_json(temp,startup)
+        temp.replace(job/"worker_started.json")
         watchdog=threading.Thread(target=_watchdog,args=(job,cfg,done),daemon=True);watchdog.start()
         folder=compute(job)
         done.set();watchdog.join()
