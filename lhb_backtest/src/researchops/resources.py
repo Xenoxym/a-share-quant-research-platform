@@ -274,3 +274,18 @@ def release_terminal_reservation(root, experiment_id, launch):
                     process_alive(c["pid"],c["created"]) for c in record["child_chain"]):return False
             path.unlink()
     return True
+
+
+def hidden_console_record(child, parent_pid, *, windows, system_root):
+    """Validate the one observed hidden console helper, never a numeric child."""
+    if not windows or not isinstance(system_root, str) or not system_root:
+        raise ValueError("Hidden console helper requires Windows system root")
+    expected = os.path.normcase(os.path.join(system_root, "System32", "conhost.exe"))
+    if (child.ppid() != parent_pid or os.path.normcase(child.exe()) != expected
+            or child.cmdline()[1:] != ["0x4"]):
+        raise ValueError("Worker child is not the exact hidden console host")
+    created = child.create_time()
+    if (type(child.pid) is not int or child.pid < 1 or type(created) not in (int, float)
+            or not math.isfinite(created) or created <= 0):
+        raise ValueError("Hidden console identity requires exact PID and creation time")
+    return dict(pid=child.pid, created=created, role="console_host")

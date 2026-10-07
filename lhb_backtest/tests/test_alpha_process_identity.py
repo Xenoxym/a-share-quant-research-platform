@@ -95,3 +95,71 @@ def test_actual_windows_interpreters_account_for_known_helpers(monkeypatch, dire
         if proc.poll() is None:
             proc.kill()
             proc.wait(timeout=3)
+
+
+def test_self_watchdog_freezes_helpers_and_counts_their_memory(monkeypatch):
+    from src.researchops import alpha_worker as worker
+
+    monkeypatch.setattr(worker, "os", SimpleNamespace(name="nt", environ={"SystemRoot": "/windows"}))
+    helper = child(); helper.memory_info = lambda: SimpleNamespace(rss=20)
+    children = [helper]
+    current = SimpleNamespace(pid=100, children=lambda **kwargs: children,
+                              memory_info=lambda: SimpleNamespace(rss=100))
+    rss, accepted = worker._watchdog_memory(current, None)
+    assert rss == 120 and accepted == (dict(pid=101, created=11, role="console_host"),)
+    assert worker._watchdog_memory(current, accepted) == (120, accepted)
+    children.clear()
+    assert worker._watchdog_memory(current, accepted) == (100, accepted)
+    changed = child(pid=102); changed.memory_info = helper.memory_info
+    children.append(changed)
+    with pytest.raises(ValueError, match="identity changed"):
+        worker._watchdog_memory(current, accepted)
+    with pytest.raises(ValueError, match="after first sample"):
+        worker._watchdog_memory(current, ())
+
+
+@pytest.mark.parametrize("fault", ["python", "foreign_parent", "wrong_path", "wrong_args",
+                                  "multiple", "linux", "invalid_created"])
+def test_self_watchdog_refuses_any_unregistered_numeric_or_wrong_helper(monkeypatch, fault):
+    from src.researchops import alpha_worker as worker
+
+    monkeypatch.setattr(worker, "os", SimpleNamespace(name="posix" if fault=="linux" else "nt",
+                                                    environ={"SystemRoot": "/windows"}))
+    helper = child(); helper.memory_info = lambda: SimpleNamespace(rss=20)
+    if fault=="python": helper = child("interpreter")
+    if fault=="foreign_parent": helper = child(ppid=999)
+    if fault=="wrong_path": helper = child(executable="/tmp/conhost.exe")
+    if fault=="wrong_args": helper = child(args=["0x8"])
+    if fault=="invalid_created": helper.create_time = lambda: float("nan")
+    children = [helper, child(pid=102)] if fault=="multiple" else [helper]
+    current = SimpleNamespace(pid=100, children=lambda **kwargs: children,
+                              memory_info=lambda: SimpleNamespace(rss=100))
+    with pytest.raises(ValueError):
+        worker._watchdog_memory(current, None)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows actual direct interpreter feature worker")
+def test_actual_direct_python_frozen_worker_completes_without_watchdog_false_failure(tmp_path, monkeypatch):
+    import sysconfig
+    from tests.test_alpha_batch_registration import setup
+
+    ops, session, proposal, _, _ = setup(tmp_path)
+    experiment = ops.register(session, proposal)
+    real_popen = subprocess.Popen
+    base = sys._base_executable
+    purelib = sysconfig.get_path("purelib")
+    def launch(command, **kwargs):
+        assert command[0] == base
+        # Local base Python uses the already-installed venv dependencies.
+        # CI's direct Python has its installed site packages naturally.
+        env = dict(kwargs["env"])
+        env["PYTHONPATH"] = os.pathsep.join([env["PYTHONPATH"], purelib])
+        return real_popen(command, **dict(kwargs, env=env))
+    monkeypatch.setattr(execution, "sys", SimpleNamespace(executable=base, _base_executable=base))
+    monkeypatch.setattr(execution, "subprocess", SimpleNamespace(Popen=launch,
+                        CREATE_NO_WINDOW=subprocess.CREATE_NO_WINDOW, STDOUT=subprocess.STDOUT))
+    result = ops.execute(session, experiment["id"])
+    job = ops.root/"worker_jobs"/experiment["id"]
+    assert result["status"] == "completed", (result.get("error"), (job/"execution.log").read_text())
+    assert not list((ops.root/".alpha_slots").glob("slot*.json"))
+    assert ops.recover(experiment["id"])["status"] == "completed"

@@ -7,7 +7,7 @@ import time
 
 import psutil
 
-from .resources import WorkerResources, process_alive, reserve, release_terminal_reservation, check_terminal_reservation, _guard, GuardBusy
+from .resources import WorkerResources, process_alive, reserve, release_terminal_reservation, check_terminal_reservation, _guard, GuardBusy, hidden_console_record
 from ..technical.artifacts import digest, write_json
 
 THREAD_ENV=("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS",
@@ -72,7 +72,6 @@ def _interpreter_chain(proc, created, command):
     # The Windows venv launcher and hidden console host are bookkeeping,
     # alongside one actual Python interpreter, not extra numerical workers.
     launcher=(os.name=="nt" and os.path.normcase(sys.executable)!=os.path.normcase(sys._base_executable))
-    console=os.path.normcase(os.path.join(os.environ.get("SystemRoot",""),"System32","conhost.exe"))
     deadline=time.monotonic()+2
     while proc.poll() is None:
         parent=psutil.Process(proc.pid)
@@ -84,11 +83,11 @@ def _interpreter_chain(proc, created, command):
                 executable=os.path.normcase(child.exe());args=child.cmdline()
                 if child.ppid()!=proc.pid:raise ValueError("Unexpected worker child ancestry")
                 if launcher and executable==os.path.normcase(sys._base_executable) and args[1:]==command[1:]:
-                    role="interpreter"
-                elif os.name=="nt" and executable==console and args[1:]==["0x4"]:
-                    role="console_host"
-                else:raise ValueError("Worker child is not the declared interpreter/hidden console host")
-                chain.append(dict(pid=child.pid,created=child.create_time(),role=role))
+                    record=dict(pid=child.pid,created=child.create_time(),role="interpreter")
+                else:
+                    record=hidden_console_record(child,proc.pid,windows=os.name=="nt",
+                                                 system_root=os.environ.get("SystemRoot",""))
+                chain.append(record)
             except psutil.NoSuchProcess:pass
         if len({c["role"] for c in chain})!=len(chain):raise ValueError("Duplicate interpreter/helper process")
         if any(c["role"]=="interpreter" for c in chain):return sorted(chain,key=lambda c:c["role"])

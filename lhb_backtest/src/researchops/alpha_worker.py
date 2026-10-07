@@ -13,7 +13,7 @@ from .alpha_experiments import inspect_inputs
 import psutil
 import pyarrow as pa
 
-from .resources import WorkerResources
+from .resources import WorkerResources, hidden_console_record
 from ..alpharesearch.dsl import verify_compiled
 from ..alpharesearch.features.base import FeatureBlock
 from ..technical.artifacts import content_id, digest, verify_artifacts, write_json
@@ -136,19 +136,39 @@ def compute(job):
     return folder
 
 
+def _watchdog_memory(current, accepted_helpers):
+    """Freeze first observed helper identities; count RSS and reject later children."""
+    children=current.children(recursive=True)
+    if len(children)>1:
+        raise ValueError("Worker spawned unregistered processes")
+    observed=[];helper_rss=0
+    for child in children:
+        try:
+            record=hidden_console_record(child,current.pid,windows=os.name=="nt",
+                                         system_root=os.environ.get("SystemRoot",""))
+            observed.append(record)
+            helper_rss+=child.memory_info().rss
+        except psutil.NoSuchProcess:pass
+    if accepted_helpers is None:
+        accepted_helpers=tuple(observed)
+    elif any(record not in accepted_helpers for record in observed):
+        raise ValueError("Worker hidden-console identity changed or appeared after first sample")
+    return current.memory_info().rss+helper_rss,accepted_helpers
+
+
 def _watchdog(job, cfg, done):
     # Survives loss of the supervising parent. A sampled soft limit can overshoot;
     # this is not an OS memory sandbox. Startup imports precede this thread.
     from .alpha_execution import cancel_reason
-    resources=WorkerResources.from_dict(cfg["resources"]);began=time.monotonic()
+    resources=WorkerResources.from_dict(cfg["resources"]);began=time.monotonic();helpers=None
     while not done.wait(.2):
         try:
             reason=cancel_reason(job)
             if reason is not None:raise RuntimeError("Cancellation requested: "+reason)
             if time.monotonic()-began>cfg["timeout_seconds"]:raise TimeoutError("Worker self-watchdog timeout exceeded")
             current=psutil.Process()
-            if current.children(recursive=True):raise ValueError("Worker spawned unregistered processes")
-            if current.memory_info().rss>resources.max_process_rss_bytes:raise MemoryError("Worker self-watchdog RSS limit exceeded")
+            rss,helpers=_watchdog_memory(current,helpers)
+            if rss>resources.max_process_rss_bytes:raise MemoryError("Worker self-watchdog RSS limit exceeded")
             if psutil.virtual_memory().available<resources.min_available_memory_bytes:
                 raise MemoryError("Worker self-watchdog available-memory floor crossed")
         except BaseException as exc:

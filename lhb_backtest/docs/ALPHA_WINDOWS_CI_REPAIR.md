@@ -19,3 +19,12 @@
 微软的 [进程创建标志说明](https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags)描述 CREATE_NO_WINDOW 的用途；[Windows Console 说明](https://devblogs.microsoft.com/commandline/windows-command-line-inside-the-windows-console/)区分应用进程与控制台宿主。这里具体允许的路径、参数与父子形态依据本项目观察，文档并不保证所有 Windows 环境都会呈现相同的树。
 
 完整监督、资源预留与收取边界见 [Alpha 批次执行说明](ALPHA_BATCH_EXECUTION.md)。修复完成后接续候选筛选模块 E13。
+
+
+## 第二次云端复查与 worker 自监测
+
+第一版 c4bb4aa 修复后，Linux 仍通过，Windows 的父监督身份检查通过，但 worker 自监测继续拒绝隐藏控制台，出现 15 失败、1012 通过、35 错误。这次失败也保留，第一版不算完成验收。
+
+第二版父监督和 worker 共用同一个确切隐藏控制台身份校验。worker 固定首次采样的宿主 PID/创建时间，计入其 RSS；后来新增或替换宿主、另一 Python 子进程、错误父子关系/路径/参数仍拒绝。宿主消失后不必保留内存占用，原身份仍保留以防再出现另一进程。
+
+新增直接基础 Python 的冻结公式 worker 集成检查，而不只是一秒等待程序。本机基础解释器借用已经安装的虚拟环境依赖路径，不新安装服务；云端直接解释器已有依赖。该检查与后续双平台 CI 才用于验证整条执行路径。
