@@ -82,17 +82,17 @@ def _interpreter_chain(proc, created, command):
         for child in children:
             try:
                 executable=os.path.normcase(child.exe());args=child.cmdline()
-                if not launcher or child.ppid()!=proc.pid:raise ValueError("Unexpected worker child ancestry")
-                if executable==os.path.normcase(sys._base_executable) and args[1:]==command[1:]:
+                if child.ppid()!=proc.pid:raise ValueError("Unexpected worker child ancestry")
+                if launcher and executable==os.path.normcase(sys._base_executable) and args[1:]==command[1:]:
                     role="interpreter"
-                elif executable==console and args[1:]==["0x4"]:
+                elif os.name=="nt" and executable==console and args[1:]==["0x4"]:
                     role="console_host"
                 else:raise ValueError("Worker child is not the declared interpreter/hidden console host")
                 chain.append(dict(pid=child.pid,created=child.create_time(),role=role))
             except psutil.NoSuchProcess:pass
         if len({c["role"] for c in chain})!=len(chain):raise ValueError("Duplicate interpreter/helper process")
         if any(c["role"]=="interpreter" for c in chain):return sorted(chain,key=lambda c:c["role"])
-        if not launcher:return []
+        if not launcher:return sorted(chain,key=lambda c:c["role"])
         if time.monotonic()>deadline:raise ValueError("Windows interpreter launch identity not observed")
         time.sleep(.02)
     raise ValueError("Worker exited before exact interpreter identity was recorded")
