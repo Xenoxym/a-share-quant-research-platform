@@ -248,7 +248,14 @@ class Store:
             )
         return self.get(row["id"])
 
-    def register(self, session, proposal, fingerprint):
+    def register(self, session, proposal, fingerprint, *, channel_budget=None):
+        if proposal.get("kind") == "alpha_screen":
+            declared = proposal.get("spec", {}).get("budget", {}).get("max_task_channel_intents")
+            if channel_budget is None:
+                channel_budget = declared
+            if (type(declared) is not int or channel_budget != declared
+                    or type(channel_budget) is not int or not 1 <= channel_budget <= 100000):
+                raise ValueError("Strict persisted screen intent budget required")
         with self.connection(True) as db:
             row = self.owned(db, session)
             spec = json.loads(row["spec"])
@@ -263,6 +270,19 @@ class Store:
             ).fetchone()[0]
             if count >= spec["max_experiments"]:
                 raise ValueError("已达到任务实验预算，失败尝试也计入预算")
+            if channel_budget is not None:
+                if (proposal.get("kind") != "alpha_screen" or type(channel_budget) is not int
+                        or not 1 <= channel_budget <= 100000
+                        or type(proposal.get("candidate_count")) is not int
+                        or proposal["candidate_count"] < 1):
+                    raise ValueError("Strict persisted screen intent budget required")
+                histories = [json.loads(r["proposal"]) for r in db.execute(
+                    "SELECT proposal FROM experiments WHERE task_id=?", (row["id"],))]
+                screens = [p for p in histories if p.get("kind") == "alpha_screen"]
+                if any(p["spec"]["budget"]["max_task_channel_intents"] != channel_budget for p in screens):
+                    raise ValueError("Task screen intent budget already frozen; cannot reset it")
+                if sum(p["candidate_count"] for p in screens) + proposal["candidate_count"] > channel_budget:
+                    raise ValueError("Persisted screen intent budget exhausted; failures are counted")
             eid = "exp-" + uuid.uuid4().hex[:12]
             now = time.time()
             db.execute(

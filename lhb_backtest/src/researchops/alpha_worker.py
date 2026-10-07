@@ -19,14 +19,16 @@ from ..alpharesearch.features.base import FeatureBlock
 from ..technical.artifacts import content_id, digest, verify_artifacts, write_json
 
 
-def verify_job(job):
+def verify_frozen_job(job, kind):
+    if kind not in {"alpha_batch", "alpha_screen"}:
+        raise ValueError("Unsupported frozen worker protocol")
     job = Path(job).resolve();code = job/"code"
     cfg = json.loads((job/"input.json").read_text(encoding="utf-8"))
     ready = json.loads((job/"ready.json").read_text(encoding="utf-8"))
-    expected = dict(kind="alpha_batch", input_hash=digest(job/"input.json"),
+    expected = dict(kind=kind, input_hash=digest(job/"input.json"),
         code_manifest_hash=digest(job/"code_manifest.json"),
         candidate_manifest_hash=digest(job/"candidate_manifest.json"))
-    if ready!=expected or cfg["experiment_id"]!=job.name or Path(cfg["root"]).resolve()!=job.parent.parent:
+    if cfg.get("kind")!=kind or ready!=expected or cfg["experiment_id"]!=job.name or Path(cfg["root"]).resolve()!=job.parent.parent:
         raise ValueError("Frozen batch job identity differs")
     inventory = json.loads((job/"code_manifest.json").read_text(encoding="utf-8"))
     actual = {p.relative_to(code).as_posix() for p in code.rglob("*") if p.is_file()}
@@ -47,6 +49,10 @@ def verify_job(job):
         raise ValueError("Worker environment differs from registration")
     WorkerResources.from_dict(cfg["resources"])
     return cfg
+
+
+def verify_job(job):
+    return verify_frozen_job(job, "alpha_batch")
 
 
 def compute(job):
@@ -157,6 +163,9 @@ def _watchdog_memory(current, accepted_helpers):
 
 
 def _watchdog(job, cfg, done):
+    kind=cfg.get("kind", "alpha_batch")
+    if kind not in {"alpha_batch", "alpha_screen"}:
+        raise ValueError("Unsupported watchdog protocol")
     # Survives loss of the supervising parent. A sampled soft limit can overshoot;
     # this is not an OS memory sandbox. Startup imports precede this thread.
     from .alpha_execution import cancel_reason
@@ -177,7 +186,7 @@ def _watchdog(job, cfg, done):
                 print("Worker watchdog stopped: "+str(exc),flush=True)
                 path=job/"receipt.json"
                 if not path.exists():
-                    write_json(path,dict(status="failed",kind="alpha_batch",experiment_id=job.name,error=str(exc)))
+                    write_json(path,dict(status="failed",kind=kind,experiment_id=job.name,error=str(exc)))
             finally:
                 # Record-write failure must not leave an unmonitored worker alive.
                 os._exit(1)

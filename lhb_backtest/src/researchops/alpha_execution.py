@@ -10,6 +10,18 @@ import psutil
 from .resources import WorkerResources, process_alive, reserve, release_terminal_reservation, check_terminal_reservation, _guard, GuardBusy, hidden_console_record
 from ..technical.artifacts import digest, write_json
 
+def _protocol(experiment):
+    """Dispatch only persisted typed protocols; metadata cannot name a module."""
+    kind = experiment["proposal"].get("kind")
+    if kind == "alpha_batch":
+        from . import alpha_experiments as registration, alpha_worker as worker, alpha_output_audit as audit
+        return kind, registration, worker, audit, "alpha_result", "registered_alpha_feature_execution"
+    if kind == "alpha_screen":
+        from . import screen_experiments as registration, screen_worker as worker, screen_output_audit as audit
+        return kind, registration, worker, audit, "screen_result", "registered_alpha_screen_execution"
+    raise ValueError("Unsupported typed alpha execution kind")
+
+
 THREAD_ENV=("OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS",
             "VECLIB_MAXIMUM_THREADS","BLIS_NUM_THREADS","ARROW_NUM_THREADS")
 
@@ -142,12 +154,12 @@ def _sample(launch):
 
 
 def _receipt(research, experiment, receipt):
-    if not isinstance(receipt,dict) or receipt.get("kind")!="alpha_batch" or receipt.get("experiment_id")!=experiment["id"]:
+    if not isinstance(receipt,dict) or receipt.get("kind")!=_protocol(experiment)[0] or receipt.get("experiment_id")!=experiment["id"]:
         raise ValueError("Execution receipt ownership differs")
     if receipt.get("status")=="completed":
         if set(receipt)!={"status","kind","experiment_id","result_manifest_hash"}:
             raise ValueError("Strict completed alpha receipt required")
-        if receipt["result_manifest_hash"]!=digest(research.root/"worker_jobs"/experiment["id"]/"alpha_result/manifest.json"):
+        if receipt["result_manifest_hash"]!=digest(research.root/"worker_jobs"/experiment["id"]/(_protocol(experiment)[4]+"/manifest.json")):
             raise ValueError("Execution receipt result manifest changed")
     elif receipt.get("status")=="failed":
         if set(receipt)!={"status","kind","experiment_id","error"} or not isinstance(receipt["error"],str) or not receipt["error"]:
@@ -156,9 +168,15 @@ def _receipt(research, experiment, receipt):
         raise ValueError("Unknown alpha receipt status")
 
 
-def _write_once(path, value):
+def _write_once(path, value, *, strict_json=False):
     if path.exists():
-        if _read_json(path)!=value:raise ValueError("Existing execution metadata differs; preserve it")
+        saved = _read_json(path)
+        if strict_json:
+            from .screen_experiments import same_json
+            changed = not same_json(saved, value)
+        else:
+            changed = saved != value
+        if changed:raise ValueError("Existing execution metadata differs; preserve it")
     else:write_json(path,value)
 
 
@@ -181,7 +199,7 @@ def request_cancel(research, session, eid, reason):
     reason=text(reason,"Cancellation reason")
     with research.store.connection(True) as db:
         task=research.store.owned(db,session);ex=research.store.experiment(eid)
-        if ex["task_id"]!=task["id"] or ex["status"]!="running" or ex["proposal"].get("kind")!="alpha_batch":
+        if ex["task_id"]!=task["id"] or ex["status"]!="running" or ex["proposal"].get("kind") not in {"alpha_batch", "alpha_screen"}:
             raise ValueError("Only an owned running alpha batch supports cancellation requests")
         job=research.root/"worker_jobs"/eid
         value=dict(schema="alpha-cancel-request-v1",experiment_id=eid,
@@ -235,28 +253,27 @@ def _record_supervision_failure(job, eid, error):
         return _supervision_failure(job,eid,error)
 
 
-def _failure_receipt(job, eid, error):
+def _failure_receipt(job, eid, error, kind="alpha_batch"):
     path=job/"receipt.json"
     # Only called after stopping the worker; collection uses this same job lock.
     with _guard(job):
         if not path.exists():
-            write_json(path,dict(status="failed",kind="alpha_batch",experiment_id=eid,error=error))
+            write_json(path,dict(status="failed",kind=kind,experiment_id=eid,error=error))
 
 
 def execute(research, session, eid):
-    from .alpha_experiments import verify_registered
-    from .alpha_worker import verify_job
     with research.store.connection() as db:research.store.owned(db,session)
     experiment=research.store.experiment(eid)
     if experiment["task_id"]!=session["task_id"] or experiment["status"]!="planned":
         raise ValueError("Batch belongs to another task or already started; never repeat execution")
-    verify_registered(research,experiment)
+    kind, registration, worker, audit_module, result_folder, result_kind = _protocol(experiment)
+    registration.verify_registered(research,experiment)
     job=research.root/"worker_jobs"/eid
-    if "resources" not in experiment["proposal"] or not (job/"code/src/researchops/alpha_worker.py").is_file():
+    if "resources" not in experiment["proposal"] or not (job/("code/"+worker.__name__.replace(".","/")+".py")).is_file():
         raise ValueError("Old registration has no frozen E12 worker/resources; register a new version without rewriting history")
-    if any((job/name).exists() for name in ("launch.json","receipt.json","alpha_result","execution_stats.json","cancel_request.json","supervision_failure.json","worker_started.json","worker_started.tmp")):
+    if any((job/name).exists() for name in ("launch.json","receipt.json",result_folder,"execution_stats.json","cancel_request.json","supervision_failure.json","worker_started.json","worker_started.tmp")):
         raise ValueError("Unexpected existing execution artifacts; preserve and inspect")
-    verify_job(job)
+    worker.verify_job(job)
     resources=WorkerResources.from_dict(experiment["proposal"]["resources"])
     # Resource denial occurs before Store.start, so no running job is stranded.
     with reserve(research.root,eid,resources) as reservation:
@@ -272,7 +289,7 @@ def execute(research, session, eid):
                 flags=subprocess.CREATE_NO_WINDOW if os.name=="nt" else 0
                 reservation.launching()
                 try:
-                    command=[sys.executable,"-B","-m","src.researchops.alpha_worker",str(job)]
+                    command=[sys.executable,"-B","-m",worker.__name__,str(job)]
                     proc=subprocess.Popen(command,
                                           cwd=job/"code",env=env,stdout=log,stderr=subprocess.STDOUT,
                                           creationflags=flags)
@@ -375,7 +392,7 @@ def execute(research, session, eid):
             except Exception as observation_error:
                 gaps.append("observation: "+str(observation_error))
             try:
-                _failure_receipt(job,eid,cause)
+                _failure_receipt(job,eid,cause,kind)
             except Exception as receipt_error:
                 gaps.append("failure receipt: "+str(receipt_error))
             if gaps:
@@ -440,15 +457,17 @@ def _recover_locked(research, experiment, receipt=None):
             if status=="failed":
                 error=receipt["error"]
             else:
-                from .alpha_output_audit import audit_output
-                audit=audit_output(research,experiment)
-                _write_once(job/"alpha_audit.json",audit)
+                audit=_protocol(experiment)[3].audit_output(research,experiment)
+                if _protocol(experiment)[0] == "alpha_screen":
+                    _write_once(job/"alpha_audit.json",audit,strict_json=True)
+                else:
+                    _write_once(job/"alpha_audit.json",audit)
                 if not (job/"execution_stats.json").exists():
                     write_json(job/"execution_stats.json",dict(schema="alpha-worker-observation-v1",
                         experiment_id=experiment["id"],launch=launch,parent_observed_to_exit=False,
                         peak_sampled_rss_bytes=None,elapsed_seconds=None,
                         policy="recovered terminal worker; parent observation coverage unavailable"))
-                result=dict(kind="registered_alpha_feature_execution",**audit,
+                result=dict(kind=_protocol(experiment)[5],**audit,
                             audit_hash=digest(job/"alpha_audit.json"),receipt_hash=digest(job/"receipt.json"),
                             launch_hash=digest(job/"launch.json"),observation_hash=digest(job/"execution_stats.json"))
     except Exception as exc:
@@ -467,15 +486,20 @@ def _recover_locked(research, experiment, receipt=None):
 def verify_completed(research, experiment):
     if experiment["status"]!="completed" or not isinstance(experiment.get("result"),dict):
         raise ValueError("Completed alpha execution evidence required")
-    from .alpha_output_audit import audit_output
+    audit_output=_protocol(experiment)[3].audit_output
     job=research.root/"worker_jobs"/experiment["id"];launch=_launch(research,experiment)
     if launch is None or _alive(launch):
         raise ValueError("Completed worker launch not terminal")
     _receipt(research,experiment,_read_json(job/"receipt.json"))
     audit=audit_output(research,experiment);saved=_read_json(job/"alpha_audit.json");stored=experiment["result"]
-    if saved!=audit or any(stored.get(k)!=v for k,v in audit.items()):
+    if _protocol(experiment)[0] == "alpha_screen":
+        from .screen_experiments import same_json
+        changed = not same_json(saved, audit) or not same_json({k:stored.get(k) for k in audit}, audit)
+    else:
+        changed = saved!=audit or any(stored.get(k)!=v for k,v in audit.items())
+    if changed:
         raise ValueError("Stored alpha audit differs from current output identities")
-    if stored.get("kind")!="registered_alpha_feature_execution":
+    if stored.get("kind")!=_protocol(experiment)[5]:
         raise ValueError("Wrong completed result kind")
     for key,name in (("audit_hash","alpha_audit.json"),("receipt_hash","receipt.json"),
                      ("launch_hash","launch.json"),("observation_hash","execution_stats.json")):
