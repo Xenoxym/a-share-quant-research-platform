@@ -1,7 +1,7 @@
-"""First-class feature-batch registration and frozen identity verification (E11).
+"""First-class frozen feature-batch registration and bounded E12 dispatch.
 
-Execution/resource workers are introduced in E12. Registration is not execution,
-file identity is not vendor-history proof, and no account outcome is inferred.
+Registration, numerical execution, and output identity audits have separate
+scopes. Neither feature execution nor hashes prove vendor history/account returns.
 """
 from datetime import date
 import importlib.metadata
@@ -55,7 +55,7 @@ def verify_inputs(project,records,max_bytes):
     return roles
 
 
-def inspect_inputs(project,proposal):
+def inspect_inputs(project,proposal,*,include_evaluator=False):
     spec_raw=proposal['spec']
     if not isinstance(spec_raw,dict) or not isinstance(spec_raw.get('budget'),dict) or type(spec_raw['budget'].get('max_input_bytes')) is not int or spec_raw['budget']['max_input_bytes']<1:raise ValueError('Bounded input-byte budget required before reading')
     budget=spec_raw['budget'];roles=verify_inputs(project,proposal['inputs'],budget['max_input_bytes'])
@@ -88,13 +88,17 @@ def inspect_inputs(project,proposal):
     # Validate only referenced leaves, with source clocks/version gates, no formula fit.
     for key,binding in leaves.items():evaluator._leaf(key,binding.definition_id)
     if not any(r['development_start']<=d<=r['development_end'] for d in p.trade_date):raise ValueError('No development decision rows in the frozen input')
-    return spec,registry,{'execution_days':days,'execution_rows':len(p),'holdout_rows_executed':0,'source_files_by_reference':True,'historical_source_certified':False}
+    info={'execution_days':days,'execution_rows':len(p),'holdout_rows_executed':0,'source_files_by_reference':True,'historical_source_certified':False}
+    if include_evaluator:info['_evaluator']=evaluator
+    return spec,registry,info
 
 
 def register(research,session,proposal):
     required={'kind','hypothesis','expected_observation','falsification','spec','inputs'}
-    if not isinstance(proposal,dict) or not required<=set(proposal) or set(proposal)-required-{'timeout_seconds'} or proposal['kind']!='alpha_batch':raise ValueError('Strict alpha_batch registration fields required')
+    if not isinstance(proposal,dict) or not required<=set(proposal) or set(proposal)-required-{'timeout_seconds','resources'} or proposal['kind']!='alpha_batch':raise ValueError('Strict alpha_batch registration fields required')
     with research.store.connection() as db:research.store.owned(db,session)
+    from .resources import WorkerResources
+    resources=WorkerResources.from_dict(proposal.get('resources',WorkerResources().to_dict())).to_dict()
     spec,registry,inspection=inspect_inputs(research.project,proposal)
     timeout=proposal.get('timeout_seconds',1200)
     if type(timeout) is not int or not 30<=timeout<=7200:raise ValueError('Bounded batch execution timeout required')
@@ -106,9 +110,9 @@ def register(research,session,proposal):
             if parent==research.project:break
             if parent.is_symlink() or (hasattr(parent,'is_junction') and parent.is_junction()):raise ValueError('Linked source implementation refused')
     inventory={p.relative_to(research.project).as_posix():digest(p) for p in sources}
-    environment={'python':platform.python_version(),'packages':{n:importlib.metadata.version(n) for n in ('numpy','pandas','pyarrow','tzdata')}}
+    environment={'python':platform.python_version(),'packages':{n:importlib.metadata.version(n) for n in ('numpy','pandas','pyarrow','tzdata','psutil')}}
     p={k:text(proposal[k],k) for k in ('hypothesis','expected_observation','falsification')}
-    p.update(kind='alpha_batch',spec=spec.to_dict(),inputs=proposal['inputs'],timeout_seconds=timeout,registry_version=registry.version_id,engine_inventory=inventory,engine_hash=content_id(inventory),environment=environment,inspection=inspection,submitted_by=session['worker'],evaluation_scope='retrospective_time_split',candidate_count=len(spec.planned_attempts),planned_model_fits=0,planned_accounts=0)
+    p.update(kind='alpha_batch',spec=spec.to_dict(),inputs=proposal['inputs'],timeout_seconds=timeout,registry_version=registry.version_id,engine_inventory=inventory,engine_hash=content_id(inventory),environment=environment,inspection=inspection,submitted_by=session['worker'],evaluation_scope='retrospective_time_split',candidate_count=len(spec.planned_attempts),planned_model_fits=0,planned_accounts=0,resources=resources)
     canonical=json.loads(json.dumps(p));canonical['spec'].pop('name')
     for key in ('hypothesis','expected_observation','falsification','timeout_seconds','submitted_by'):canonical.pop(key)
     # File roles are sets by meaning; descriptive order must not consume another try.
@@ -154,6 +158,9 @@ def verify_registered(research,experiment):
     if actual_files!=set(inventory['artifacts']):raise ValueError('Frozen code file set contains missing or unregistered import files')
     verify_artifacts(code_root,inventory)
     verify_inputs(cfg['project'],p['inputs'],p['spec']['budget']['max_input_bytes'])
+    if 'resources' in p:
+        from .resources import WorkerResources
+        WorkerResources.from_dict(p['resources'])
     registry_record=next(x for x in p['inputs'] if x['role']=='registry');registry=FeatureRegistry.from_dict(json.loads(_path(cfg['project'],registry_record['path']).read_text(encoding='utf-8')))
     spec=AlphaBatchSpec.from_dict(p['spec'],registry);plan=json.loads((job/'candidate_manifest.json').read_text(encoding='utf-8'))
     if plan!={'schema':'planned-alpha-attempts-v1','attempts':spec.planned_attempts,'candidate_count':len(spec.planned_attempts),'fit_budget':0,'account_budget':0,'counting_rule':'All registered candidates count; identical formulas with distinct names are still counted; failed/cancelled batch budget is not refunded'} or p['candidate_count']!=len(spec.planned_attempts) or registry.version_id!=p['registry_version']:raise ValueError('Frozen candidate/registry plan changed')
@@ -161,18 +168,15 @@ def verify_registered(research,experiment):
 
 
 def execute(research,session,eid):
-    with research.store.connection() as db:research.store.owned(db,session)
-    ex=research.store.experiment(eid)
-    if ex['task_id']!=session['task_id']:raise ValueError('Batch belongs to another task')
-    verify_registered(research,ex)
-    raise NotImplementedError('Alpha batch numerical worker/resource execution is introduced in E12; this planned batch has not started')
+    from .alpha_execution import execute as execute_worker
+    return execute_worker(research,session,eid)
 
 
 def verify_completed(research,experiment):
-    verify_registered(research,experiment)
-    raise ValueError('E11 registration alone cannot verify a completed alpha batch; E12 execution audit is required')
+    from .alpha_execution import verify_completed as verify_worker
+    return verify_worker(research,experiment)
 
 
-def recover(research,experiment,receipt):
-    verify_registered(research,experiment)
-    raise ValueError('Completed alpha receipt requires the E12 numerical execution auditor')
+def recover(research,experiment,receipt=None):
+    from .alpha_execution import recover as recover_worker
+    return recover_worker(research,experiment,receipt)

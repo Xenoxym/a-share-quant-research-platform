@@ -111,7 +111,7 @@ def main():
     elif cmd == "recover":
         value = r.recover(args.experiment)
     elif cmd == "cancel":
-        value = r.store.cancel(read(args.session), args.experiment, args.reason)
+        value = r.cancel(read(args.session), args.experiment, args.reason)
     elif cmd == "reopen":
         value = r.store.reopen(args.task, args.actor, args.reason)
     elif cmd == "submit":

@@ -72,10 +72,11 @@ def test_counted_identical_formulas_and_cancelled_batch_do_not_refund_budget(tmp
     with pytest.raises(ValueError,match='预算'):ops.register(session,p)
 
 
-def test_execute_guard_preserves_planned_state_and_does_not_spawn_or_mark_completed(tmp_path):
+def test_execute_uses_new_registered_worker_without_rewriting_old_protocol(tmp_path):
     ops,session,p,_,_=setup(tmp_path);ex=ops.register(session,p)
-    with pytest.raises(NotImplementedError,match='E12'):ops.execute(session,ex['id'])
-    assert ops.store.experiment(ex['id'])['status']=='planned'
+    final=ops.execute(session,ex['id'])
+    assert final['status']=='completed' and final['result']['candidate_count']==1
+    assert final['result']['fits']==final['result']['accounts']==0
 
 
 @pytest.mark.parametrize('mutation',['overlap','future_lag','duplicate_name','unused_binding','budget_count','fit_budget','claim_success','missing_input','wrong_column','wrong_receipt','extra_input','outside_path','wrong_hash','byte_budget'])
@@ -158,7 +159,7 @@ def test_fake_completed_alpha_dispatch_rejected(tmp_path):
         db.execute("UPDATE experiments SET status='completed' WHERE id=?",(ex['id'],))
     report={'summary':'fake completion','findings':['must reject'],
             'limitations':['fixture only'],'next_steps':['real audit required']}
-    with pytest.raises(ValueError,match='E12'):ops.submit(session,report)
+    with pytest.raises(ValueError,match='execution evidence'):ops.submit(session,report)
 
 
 @pytest.mark.parametrize('addition',['shadow_python','bytecode'])

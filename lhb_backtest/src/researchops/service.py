@@ -381,8 +381,18 @@ class Research:
             proc.kill()
         proc.wait(timeout=15)
 
+    def cancel(self, session, eid, reason):
+        ex = self.store.experiment(eid)
+        if ex["proposal"].get("kind") == "alpha_batch" and ex["status"] == "running":
+            from .alpha_execution import request_cancel
+            return request_cancel(self, session, eid, reason)
+        return self.store.cancel(session, eid, reason)
+
     def recover(self, eid):
         ex = self.store.experiment(eid)
+        if ex["proposal"].get("kind") == "alpha_batch" and ex["status"] in {"running","completed","failed"}:
+            from .alpha_experiments import recover
+            return recover(self, ex)
         if ex["status"] != "running":
             return ex
         job = self.root / "worker_jobs" / eid
@@ -395,9 +405,6 @@ class Research:
         receipt = json.loads(p.read_text(encoding="utf-8"))
         if receipt["status"] == "failed":
             return self.store.finish(eid, "failed", error=receipt["error"])
-        if ex["proposal"].get("kind") == "alpha_batch":
-            from .alpha_experiments import recover
-            return recover(self, ex, receipt)
         if ex["proposal"].get("kind") == "ml":
             from .ml_experiments import recover
             return recover(self, ex, receipt)
