@@ -19,6 +19,9 @@ def _protocol(experiment):
     if kind == "alpha_screen":
         from . import screen_experiments as registration, screen_worker as worker, screen_output_audit as audit
         return kind, registration, worker, audit, "screen_result", "registered_alpha_screen_execution"
+    if kind == "alpha_learn":
+        from . import learn_experiments as registration, learn_worker as worker, learn_output_audit as audit
+        return kind, registration, worker, audit, "learn_result", "registered_alpha_learning_execution"
     raise ValueError("Unsupported typed alpha execution kind")
 
 
@@ -199,7 +202,7 @@ def request_cancel(research, session, eid, reason):
     reason=text(reason,"Cancellation reason")
     with research.store.connection(True) as db:
         task=research.store.owned(db,session);ex=research.store.experiment(eid)
-        if ex["task_id"]!=task["id"] or ex["status"]!="running" or ex["proposal"].get("kind") not in {"alpha_batch", "alpha_screen"}:
+        if ex["task_id"]!=task["id"] or ex["status"]!="running" or ex["proposal"].get("kind") not in {"alpha_batch", "alpha_screen", "alpha_learn"}:
             raise ValueError("Only an owned running alpha batch supports cancellation requests")
         job=research.root/"worker_jobs"/eid
         value=dict(schema="alpha-cancel-request-v1",experiment_id=eid,
@@ -458,7 +461,7 @@ def _recover_locked(research, experiment, receipt=None):
                 error=receipt["error"]
             else:
                 audit=_protocol(experiment)[3].audit_output(research,experiment)
-                if _protocol(experiment)[0] == "alpha_screen":
+                if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn"}:
                     _write_once(job/"alpha_audit.json",audit,strict_json=True)
                 else:
                     _write_once(job/"alpha_audit.json",audit)
@@ -492,7 +495,7 @@ def verify_completed(research, experiment):
         raise ValueError("Completed worker launch not terminal")
     _receipt(research,experiment,_read_json(job/"receipt.json"))
     audit=audit_output(research,experiment);saved=_read_json(job/"alpha_audit.json");stored=experiment["result"]
-    if _protocol(experiment)[0] == "alpha_screen":
+    if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn"}:
         from .screen_experiments import same_json
         changed = not same_json(saved, audit) or not same_json({k:stored.get(k) for k in audit}, audit)
     else:

@@ -20,7 +20,7 @@ from ..technical.artifacts import content_id, digest, verify_artifacts, write_js
 
 
 def verify_frozen_job(job, kind):
-    if kind not in {"alpha_batch", "alpha_screen"}:
+    if kind not in {"alpha_batch", "alpha_screen", "alpha_learn"}:
         raise ValueError("Unsupported frozen worker protocol")
     job = Path(job).resolve();code = job/"code"
     cfg = json.loads((job/"input.json").read_text(encoding="utf-8"))
@@ -164,7 +164,7 @@ def _watchdog_memory(current, accepted_helpers):
 
 def _watchdog(job, cfg, done):
     kind=cfg.get("kind", "alpha_batch")
-    if kind not in {"alpha_batch", "alpha_screen"}:
+    if kind not in {"alpha_batch", "alpha_screen", "alpha_learn"}:
         raise ValueError("Unsupported watchdog protocol")
     # Survives loss of the supervising parent. A sampled soft limit can overshoot;
     # this is not an OS memory sandbox. Startup imports precede this thread.

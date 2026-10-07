@@ -248,7 +248,7 @@ class Store:
             )
         return self.get(row["id"])
 
-    def register(self, session, proposal, fingerprint, *, channel_budget=None):
+    def register(self, session, proposal, fingerprint, *, channel_budget=None, fit_budget=None):
         if proposal.get("kind") == "alpha_screen":
             declared = proposal.get("spec", {}).get("budget", {}).get("max_task_channel_intents")
             if channel_budget is None:
@@ -256,6 +256,13 @@ class Store:
             if (type(declared) is not int or channel_budget != declared
                     or type(channel_budget) is not int or not 1 <= channel_budget <= 100000):
                 raise ValueError("Strict persisted screen intent budget required")
+        if proposal.get("kind") == "alpha_learn":
+            declared = proposal.get("spec", {}).get("budget", {}).get("max_task_fit_intents")
+            if fit_budget is None:
+                fit_budget = declared
+            if (type(declared) is not int or type(fit_budget) is not int
+                    or fit_budget != declared or not 1 <= fit_budget <= 1000):
+                raise ValueError("Strict persisted learning fit budget required")
         with self.connection(True) as db:
             row = self.owned(db, session)
             spec = json.loads(row["spec"])
@@ -283,6 +290,18 @@ class Store:
                     raise ValueError("Task screen intent budget already frozen; cannot reset it")
                 if sum(p["candidate_count"] for p in screens) + proposal["candidate_count"] > channel_budget:
                     raise ValueError("Persisted screen intent budget exhausted; failures are counted")
+            if fit_budget is not None:
+                if (proposal.get("kind") != "alpha_learn" or type(fit_budget) is not int
+                        or not 1 <= fit_budget <= 1000 or type(proposal.get("planned_model_fits")) is not int
+                        or proposal["planned_model_fits"] != 1):
+                    raise ValueError("Strict persisted learning fit budget required")
+                histories = [json.loads(r["proposal"]) for r in db.execute(
+                    "SELECT proposal FROM experiments WHERE task_id=?", (row["id"],))]
+                learns = [p for p in histories if p.get("kind") == "alpha_learn"]
+                if any(p["spec"]["budget"]["max_task_fit_intents"] != fit_budget for p in learns):
+                    raise ValueError("Task learning fit budget already frozen; cannot reset it")
+                if sum(p["planned_model_fits"] for p in learns) + proposal["planned_model_fits"] > fit_budget:
+                    raise ValueError("Persisted learning fit budget exhausted; failures are counted")
             eid = "exp-" + uuid.uuid4().hex[:12]
             now = time.time()
             db.execute(
