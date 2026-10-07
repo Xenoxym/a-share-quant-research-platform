@@ -35,7 +35,17 @@ class FeatureBlock:
             raise ValueError('Feature cannot be available before observation ends')
         for name, unit in self.units.items():
             unit = Unit(unit)
-            value = pd.to_numeric(self.values[name], errors='raise').to_numpy(dtype=float, na_value=np.nan)
+            series = self.values[name]
+            if unit != Unit.BINARY and (
+                pd.api.types.is_bool_dtype(series)
+                or (not pd.api.types.is_numeric_dtype(series)
+                    and any(isinstance(x, (bool, np.bool_)) for x in series))
+            ):
+                raise ValueError('Boolean cannot silently become a financial feature: ' + name)
+            numeric = pd.to_numeric(series, errors='raise')
+            if pd.api.types.is_complex_dtype(numeric):
+                raise ValueError('Complex values cannot become real financial features: ' + name)
+            value = numeric.to_numpy(dtype=float, na_value=np.nan)
             reasons = self.missing[name]
             if not reasons.isin([m.value for m in MissingReason]).all():
                 raise ValueError('Unknown missing reason: ' + name)
