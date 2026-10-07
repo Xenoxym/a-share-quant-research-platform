@@ -95,6 +95,26 @@ class FeatureRegistry:
         if len(candidates)!=1:raise ValueError('Unknown or ambiguous feature; select an explicit definition version')
         return candidates[0]
 
+    def resolve_bound_definitions(self, source_bindings, keys):
+        """Build one call-local lookup; never cache across registry changes.
+
+        Duplicate bindings to one ID remain unambiguous. Unregistered IDs in
+        unrelated source records are ignored as by the former selected-key scan;
+        every requested key still needs exactly one registered bound version.
+        Metadata is a declaration, not proof of the source calculation.
+        """
+        requested = set(keys)
+        by_id = {d.definition_id: d for d in self.definitions}
+        bound = {key: set() for key in requested}
+        for binding in source_bindings:
+            for definition_id in binding["definition_ids"]:
+                definition = by_id.get(definition_id) if isinstance(definition_id, str) else None
+                if definition is not None and definition.key in requested:
+                    bound[definition.key].add(definition_id)
+        if any(len(ids) != 1 for ids in bound.values()):
+            raise ValueError("Unknown or ambiguous bound feature definition; select an explicit version")
+        return {key: by_id[next(iter(ids))] for key, ids in bound.items()}
+
     @property
     def version_id(self):return content_id([x.to_dict() for x in self.definitions])
 

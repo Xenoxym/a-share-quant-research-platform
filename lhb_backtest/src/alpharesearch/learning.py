@@ -187,15 +187,10 @@ def _prepare(spec, model, decisions, assembly, labels):
         raise ValueError("Declared scoped feature join/matrix budget exceeded")
     if not set(names) <= set(block.units):
         raise ValueError("Selected feature was not supplied by assembly")
+    bound_definitions = assembly.registry.resolve_bound_definitions(assembly.source_bindings, names)
     definitions = {}
     for key in names:
-        ids = {definition_id for binding in assembly.source_bindings
-               for definition_id in binding["definition_ids"]
-               if any(d.definition_id == definition_id and d.key == key
-                      for d in assembly.registry.definitions)}
-        if len(ids) != 1:
-            raise ValueError("Select an unambiguous bound feature definition")
-        definition = assembly.registry.resolve(key, ids.pop())
+        definition = bound_definitions[key]
         if definition.unit != block.units[key]:
             raise ValueError("Registered feature unit differs from assembled value")
         definitions[key] = definition.definition_id

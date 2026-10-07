@@ -165,15 +165,12 @@ def _prepare(spec, decisions, assembly, labels):
             raise ValueError("Candidate or condition was not known at decision")
     if block.metadata["vintage"] not in (VintagePolicy.HISTORICAL.value, VintagePolicy.MARKET.value) and not cfg["allow_weak_vintage"]:
         raise ValueError("Weak vintage requires explicit screening opt-in")
+    bound_definitions = assembly.registry.resolve_bound_definitions(assembly.source_bindings, names)
     for name in names:
         if (not pd.api.types.is_numeric_dtype(scoped.values[name])
                 or pd.api.types.is_complex_dtype(scoped.values[name])):
             raise ValueError("Numeric noncomplex candidate/condition values required")
-        bound = {i for b in assembly.source_bindings for i in b["definition_ids"]
-                 if any(d.definition_id == i and d.key == name for d in assembly.registry.definitions)}
-        if len(bound) != 1:
-            raise ValueError("Unambiguous registered feature definition required")
-        definition = assembly.registry.resolve(name, bound.pop())
+        definition = bound_definitions[name]
         if definition.unit != block.units[name] or definition.domain not in ("stock_day", "market_day"):
             raise ValueError("Registered unit and causal stock/day or broadcast market/day domain required")
         if pd.api.types.is_bool_dtype(scoped.values[name]) and definition.unit != "binary":
