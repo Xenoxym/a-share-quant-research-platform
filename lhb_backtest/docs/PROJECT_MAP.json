@@ -1,0 +1,383 @@
+{
+  "schema": "human-project-map-v1",
+  "updated_at_utc": "2026-10-08T03:05:09.489005+00:00",
+  "current_package": "E19",
+  "task_id": "task-32a60b66115c",
+  "packages": [
+    {
+      "id": "R0",
+      "title": "保留旧项目和已有改动",
+      "status": "已完成首轮",
+      "detail": "旧脏Git与私人证据保留；发布用独立导出仓库。",
+      "dependencies": "无",
+      "guide": "LOCAL_STRUCTURE_REVIEW_20261006.md"
+    },
+    {
+      "id": "R1",
+      "title": "决定哪些文件能公开",
+      "status": "已完成首轮",
+      "detail": "精确清单及忽略规则，行情/数据库/私密会话留本机。",
+      "dependencies": "R0",
+      "guide": "PUBLIC_DELIVERY.md"
+    },
+    {
+      "id": "R2",
+      "title": "依赖、安装和打包",
+      "status": "部分完成",
+      "detail": "当前wheel已核查；高级模型依赖随对应工作包接入。",
+      "dependencies": "R0",
+      "guide": "PUBLIC_DELIVERY.md"
+    },
+    {
+      "id": "R3",
+      "title": "跨系统的软件检查",
+      "status": "已完成首轮",
+      "detail": "Windows/Ubuntu CI通过；不证明真实策略有效。",
+      "dependencies": "R1,R2",
+      "guide": "PUBLIC_DELIVERY.md"
+    },
+    {
+      "id": "R4",
+      "title": "新人说明与协作规则",
+      "status": "部分完成",
+      "detail": "入场与长期准则已保存；许可证尚未决定。",
+      "dependencies": "R1",
+      "guide": "WORKER_GUIDE.md"
+    },
+    {
+      "id": "R5",
+      "title": "发布到GitHub",
+      "status": "已完成首轮",
+      "detail": "公开仓库已建立并多次核查发布，后续持续维护。",
+      "dependencies": "R3,R4",
+      "guide": "PUBLIC_DELIVERY.md"
+    },
+    {
+      "id": "E00",
+      "title": "修复财务市场日历问题",
+      "status": "已完成工程验收",
+      "detail": "执行器与核查器日期范围、60日回看一致；0策略fit。",
+      "dependencies": "已有task-28ab0d6b9fe2",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "E01",
+      "title": "什么时候能知道什么",
+      "status": "已完成工程验收",
+      "detail": "明确决策、信息可用、成交、标签结束时间，拒绝未来信息。",
+      "dependencies": "E00,R0",
+      "guide": "ALPHA_CAUSAL_CONTRACTS.md"
+    },
+    {
+      "id": "E02",
+      "title": "龙虎榜原报告快照",
+      "status": "已完成工程验收",
+      "detail": "原报告、席位、重复及窗口可追溯；披露时间仍是保守代理。",
+      "dependencies": "E01",
+      "guide": "ALPHA_EVENT_SNAPSHOTS.md"
+    },
+    {
+      "id": "E03",
+      "title": "日期×股票的统一名单",
+      "status": "已完成工程验收",
+      "detail": "行情/事件对齐，缺数据≠没事件；原工程真实切片27日。",
+      "dependencies": "E01,E02",
+      "guide": "ALPHA_EVENT_PANEL.md"
+    },
+    {
+      "id": "E04",
+      "title": "连板与涨跌停形态",
+      "status": "已完成工程验收",
+      "detail": "29项定义；日线不能辨别天地板的盘中顺序。",
+      "dependencies": "E03",
+      "guide": "ALPHA_DAILY_BOARDS.md"
+    },
+    {
+      "id": "E05",
+      "title": "龙虎榜与集中度特征",
+      "status": "已完成工程验收",
+      "detail": "34项报告、150项决策投影；部分全缺失，数量不代表有效Alpha。",
+      "dependencies": "E03",
+      "guide": "ALPHA_LHB_FEATURES.md"
+    },
+    {
+      "id": "E06",
+      "title": "财务和市场环境",
+      "status": "已完成工程验收",
+      "detail": "14项财务、12项市场；保留财务修订及市场覆盖限制。",
+      "dependencies": "E01,E03",
+      "guide": "ALPHA_FINANCIAL_MARKET.md"
+    },
+    {
+      "id": "E07",
+      "title": "特征字典与组装",
+      "status": "已完成工程验收",
+      "detail": "255项登记定义，工程矩阵221列；包含缺失列，并非221个盈利信号。",
+      "dependencies": "E04,E05,E06",
+      "guide": "ALPHA_FEATURE_REGISTRY.md"
+    },
+    {
+      "id": "E08",
+      "title": "安全组合公式语法",
+      "status": "已完成工程验收",
+      "detail": "受限表达式组合基础信息，拒绝任意代码执行。",
+      "dependencies": "E01,E07",
+      "guide": "ALPHA_EXPRESSION_CONTRACTS.md"
+    },
+    {
+      "id": "E09",
+      "title": "组合公式的计算算子",
+      "status": "已完成工程验收",
+      "detail": "排序/滞后/差分/滚动按真实交易日历计算。",
+      "dependencies": "E08",
+      "guide": "ALPHA_NUMERICAL_OPERATORS.md"
+    },
+    {
+      "id": "E10",
+      "title": "共享表达式与缓存",
+      "status": "已完成工程验收",
+      "detail": "复用中间计算、识别损坏；原小批实测未证明缓存更快。",
+      "dependencies": "E09",
+      "guide": "ALPHA_SHARED_CACHE.md"
+    },
+    {
+      "id": "E11",
+      "title": "先登记再运行",
+      "status": "已完成工程验收",
+      "detail": "冻结候选、数据、代码、预算；失败和取消留档。",
+      "dependencies": "E07,R3",
+      "guide": "ALPHA_BATCH_REGISTRATION.md"
+    },
+    {
+      "id": "E12",
+      "title": "有限计算与中断恢复",
+      "status": "已完成工程验收",
+      "detail": "监督进程、有限资源、取消与恢复；采样软限制。",
+      "dependencies": "E10,E11",
+      "guide": "ALPHA_BATCH_EXECUTION.md"
+    },
+    {
+      "id": "E13",
+      "title": "快速筛掉差候选",
+      "status": "已完成工程验收",
+      "detail": "用预测/代理收益诊断筛选，尚不是资金账户回测。",
+      "dependencies": "E07,E11",
+      "guide": "ALPHA_SCREENING.md"
+    },
+    {
+      "id": "E14",
+      "title": "实测机器能跑多少",
+      "status": "已完成工程验收",
+      "detail": "160个公式意图只有8类工作形状；不是160个有效策略。",
+      "dependencies": "E12,E13",
+      "guide": "ALPHA_CAPACITY_RESULTS_20261007.md"
+    },
+    {
+      "id": "E15",
+      "title": "六类表格模型",
+      "status": "已完成工程验收",
+      "detail": "Ridge/ElasticNet/Huber/RF/ExtraTrees/HGB共同接口。",
+      "dependencies": "E07,R2",
+      "guide": "ALPHA_MODEL_INTERFACES.md"
+    },
+    {
+      "id": "E16",
+      "title": "训练、目标与预测协议",
+      "status": "已完成工程验收",
+      "detail": "时间划分/成熟标签/预测名单约束；保存预测与元数据。",
+      "dependencies": "E15,E11",
+      "guide": "ALPHA_CAUSAL_LEARNING.md"
+    },
+    {
+      "id": "E17",
+      "title": "分数变成持仓名单",
+      "status": "已完成工程验收",
+      "detail": "按当时资格/分数/持仓数/权重生成计划，不自动挖特征。",
+      "dependencies": "E16,E01",
+      "guide": "ALPHA_SCORE_TO_ACCOUNT.md"
+    },
+    {
+      "id": "E18",
+      "title": "独立检查名单与账本",
+      "status": "已完成工程验收",
+      "detail": "重建选择并复算现金/持仓/权益/收益，不重新训练。",
+      "dependencies": "E17,E02",
+      "guide": "ALPHA_ACCOUNT_AUDIT.md"
+    },
+    {
+      "id": "E19",
+      "title": "首次新流水线真实闭环",
+      "status": "进行中",
+      "detail": "模型输出接线已修复；正式工程3作业完成，真实收益对比未运行。",
+      "dependencies": "E14,E18",
+      "guide": "ALPHA_ACCOUNT_DURABLE.md"
+    },
+    {
+      "id": "E20",
+      "title": "序列与事件数据集",
+      "status": "未开始",
+      "detail": "把过去信息组织为序列/事件/缺失掩码。",
+      "dependencies": "E07,E16",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E21",
+      "title": "神经网络模型",
+      "status": "未开始",
+      "detail": "MLP→GRU/TCN→Transformer，逐步比较并实测成本。",
+      "dependencies": "E20,R2,E19",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E22",
+      "title": "席位关系图",
+      "status": "未开始",
+      "detail": "当时关系统计→图模型，隔离未来新增关系。",
+      "dependencies": "E02,E20,E19",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E23",
+      "title": "遗传与符号搜索公式",
+      "status": "未开始",
+      "detail": "在安全公式语法中生成/去重/筛选，记录搜索预算。",
+      "dependencies": "E09,E12,E19",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E24",
+      "title": "强化学习生成公式",
+      "status": "未开始",
+      "detail": "固定奖励和反馈范围，防止评价区间泄漏。",
+      "dependencies": "E23",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E25",
+      "title": "LLM提出受限公式",
+      "status": "未开始",
+      "detail": "提出假设与表达式，按调用/研究预算核查。",
+      "dependencies": "E23",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E26",
+      "title": "组合权重与风险研究",
+      "status": "部分完成",
+      "detail": "旧系统已有组合/风险实验，新统一流水线研究待E19。",
+      "dependencies": "E18,E19",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E27",
+      "title": "工作台展示研究过程",
+      "status": "部分完成",
+      "detail": "已有任务/账户/结果工作台；新候选前沿尚待接入。",
+      "dependencies": "E11,E19",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E28",
+      "title": "记录真正未来的预测",
+      "status": "未开始",
+      "detail": "未来结果到达再评估；已看历史不算未见验证。",
+      "dependencies": "E18,E19",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E29",
+      "title": "备份和灾后恢复",
+      "status": "部分完成",
+      "detail": "已有位置修复和运行恢复；整库备份与恢复演练待补齐。",
+      "dependencies": "R3,E12",
+      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E12P",
+      "title": "补充：Windows进程身份",
+      "status": "已完成工程验收",
+      "detail": "进程身份与启动恢复修复，保留失败迭代。",
+      "dependencies": "E12",
+      "guide": "ALPHA_WINDOWS_CI_REPAIR.md"
+    },
+    {
+      "id": "E13B1",
+      "title": "补充：复用特征绑定索引",
+      "status": "已完成工程验收",
+      "detail": "复用绑定解析；非同口径实测不宣称精确加速倍数。",
+      "dependencies": "E13",
+      "guide": "ALPHA_BINDING_INDEX.md"
+    },
+    {
+      "id": "E13D",
+      "title": "补充：持久初筛任务",
+      "status": "已完成工程验收",
+      "detail": "正式3作业：2完成、1预期输出上限失败；0fit/账户。",
+      "dependencies": "E12、E13",
+      "guide": "ALPHA_SCREEN_DURABLE.md"
+    },
+    {
+      "id": "E16D",
+      "title": "补充：持久训练任务",
+      "status": "已完成工程验收",
+      "detail": "合成拟合3次：2完成、1预期不收敛；0真实拟合/账户。",
+      "dependencies": "E12、E16",
+      "guide": "ALPHA_LEARNING_DURABLE.md"
+    }
+  ],
+  "phase_counts": {
+    "formal_jobs": 3,
+    "completed": 2,
+    "cancelled": 1,
+    "synthetic_account_intents": 6,
+    "synthetic_account_attempts": 4,
+    "real_fits": 0,
+    "real_accounts": 0,
+    "fit_limit": 12,
+    "real_account_limit": 32,
+    "paid_cost_usd": 0
+  },
+  "current_result": "新流水线的程序接线已通过；真实信息块和六模型的收益/回撤比较尚未运行。旧项目已有历史真实回测，本阶段0真实账户不代表整个项目从未回测。",
+  "near_term": [
+    "真实矩阵已在本机事前保存：12种模型/信息组合、4类对照；目前进入数据准备试点，尚无真实拟合或账户。训练2020—2022，预测和账户比较2023—2026；完整精确日期以事前计划为准。",
+    "单进程小批数据准备，测内存/耗时/磁盘；扩展板型、龙虎榜、财务/市场，不限于初始16项。",
+    "运行登记模型并读取保存分数，按同一周期开立双费用账户；失败不追加，恢复不重训。",
+    "对比收益/最大回撤/分期收益/仓位/换手/费用，无重要改善则接续下一有限方向。"
+  ],
+  "navigation": [
+    {
+      "title": "完整最大系统蓝图",
+      "html": "ML_SYSTEM_BLUEPRINT_20261005.html",
+      "md": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "title": "完整工作包及交付计划",
+      "html": "CODEX_PROJECT_DELIVERY_PLAN_20261005.html",
+      "md": "CODEX_PROJECT_DELIVERY_PLAN_20261005.md"
+    },
+    {
+      "title": "逐阶段详细建设记录",
+      "md": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "title": "长期目标与持续探索准则",
+      "html": "PROJECT_CHARTER.html",
+      "md": "PROJECT_CHARTER.md"
+    }
+  ],
+  "evidence": [
+    {
+      "label": "正式工程汇总",
+      "private_file": "E19_engineering_summary_01.json"
+    },
+    {
+      "label": "运行测量",
+      "private_file": "E19_formal_engineering_measure_01.json"
+    },
+    {
+      "label": "修复提交的CI",
+      "private_file": "E19_ci_01.json"
+    }
+  ],
+  "real_matrix_plan_saved": true
+}

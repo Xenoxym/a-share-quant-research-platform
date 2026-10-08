@@ -1,5 +1,7 @@
 # A-Share Quant Research Platform
 
+**项目当前入口：** [架构、全部工作包、现在进度和下一步](lhb_backtest/docs/PROJECT_MAP.md)（[本机网页](lhb_backtest/docs/PROJECT_MAP.html)）。
+
 面向 A 股的本机量化研究平台：数据快照、特征和模型研究、组合账户回测、证据核查，以及有预算的研究任务与接力。
 
 项目正在从早期龙虎榜事件回测扩展为完整研究系统。当前主要产品是 `lhb_backtest/src/technical` 工作台、`src/mlresearch` 机器学习层和 `src/researchops` 任务层。长期蓝图中的自动 Alpha 搜索、更多模型与数据治理能力仍需逐项建设。

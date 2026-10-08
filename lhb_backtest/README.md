@@ -1,5 +1,7 @@
 # A-Share Quant Research Platform
 
+**项目当前入口：** [架构、全部工作包、现在进度和下一步](docs/PROJECT_MAP.md)（[本机网页](docs/PROJECT_MAP.html)）。
+
 这个项目用来研究 A 股策略，并检查模型预测能否转化为可核查的账户收益和回撤。它包含本机浏览器工作台、命令行、数据快照、机器学习研究和有预算的研究任务管理。
 
 当前默认入口是技术与机器学习研究。旧龙虎榜事件模块、`main.py` 和 `samples/` 保留作历史接口，不能把旧“机构五日”案例当作默认策略。
@@ -18,7 +20,7 @@ cd lhb_backtest
 ..\.venv\Scripts\python.exe -X utf8 tools/technical_research.py template
 ```
 
-Linux/macOS 对应使用 `../.venv/bin/python`；上述系统尚需实际验证。`research` 包含 scikit-learn 和 hmmlearn；`dev` 包含测试和静态检查工具。数据服务 token 放在环境变量，配置模板内保持为空。
+Linux/macOS 对应使用 `../.venv/bin/python`；Ubuntu软件测试、wheel和template入口已在CI通过，macOS尚未验证。云端软件检查不等于本机真实行情回测。`research` 包含 scikit-learn 和 hmmlearn；`dev` 包含测试和静态检查工具。数据服务 token 放在环境变量，配置模板内保持为空。
 
 发行包名为 `a-share-quant-research-platform`，内部导入仍为 `src.*` / `compat.*`。wheel 含模块和工作台静态资源；下面命令需要源码工作区中的 `tools/`、配置和文档。
 
@@ -42,7 +44,7 @@ Linux/macOS 对应使用 `../.venv/bin/python`；上述系统尚需实际验证�
 | 有界总控 | 本机 Codex CLI 研究、两名新会话只读复核、综合裁决及有限接续 | 需要显式启动和登录；有次数/轮数/时限，不是无限自主系统 |
 | 旧事件层 | 龙虎榜数据清洗、事件因子和案例工具 | 历史研究入口，数据需自行合法取得 |
 
-类型安全 Alpha DSL、大规模自动发现、多模型表示接口、强制多重比较和真正封存的未见日期，属于后续建设目标。请从[长期纲领](docs/PROJECT_CHARTER.md)、[系统蓝图](docs/ML_SYSTEM_BLUEPRINT_20261005.md)与[研究雷达](docs/RESEARCH_RADAR.md)查看完整范围。
+当前新增 `src/alpharesearch` 已实现特征注册/组装、类型安全Alpha DSL与算子、有限公式初筛、六类表格模型、训练协议、分数到持仓及账户核查；有限正式执行由 `researchops` 管理，详见[当前总览](docs/PROJECT_MAP.md)。新流水线E19真实多信息块/模型收益比较仍在进行。序列/神经/图表示、大规模自动公式发现、强制多重比较和真正封存的未见日期仍待建设。请从[长期纲领](docs/PROJECT_CHARTER.md)、[系统蓝图](docs/ML_SYSTEM_BLUEPRINT_20261005.md)与[研究雷达](docs/RESEARCH_RADAR.md)查看完整范围。
 
 ## 数据与第一轮研究
 
