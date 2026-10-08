@@ -1,0 +1,104 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>实际模型到账户：接线错误与修复</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#202938;font:17px/1.85 system-ui,"Microsoft YaHei",sans-serif}header{background:#152f4a;color:white;padding:28px max(24px,calc((100vw - 1260px)/2));}header p{max-width:920px;margin:8px 0 0}.layout{max-width:1260px;margin:24px auto;display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;padding:0 24px}nav{position:sticky;top:20px;align-self:start;font-size:14px}nav a{display:block;margin:8px 0}article{min-width:0;background:white;border:1px solid #e1e6ef;border-radius:10px;padding:28px 36px}h1{font-size:30px;line-height:1.5}h2{font-size:23px;line-height:1.6;margin:36px 0 12px;scroll-margin-top:20px}p{margin:15px 0}a{color:#135f9b}code{background:#edf2f7;padding:2px 4px;overflow-wrap:anywhere;font-size:.87em}strong{color:#9c301e}.flow{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:0 0 25px;font-size:14px}.flow span{border:1px solid #bed0df;border-radius:6px;padding:10px 12px;background:#f0f6fa}.flow .repair{background:#fff0df;border-color:#dfa959}.table-scroll{overflow-x:auto;margin:18px 0}table{border-collapse:collapse;min-width:580px;width:100%;font-size:15px}th,td{border:1px solid #d9e1ea;padding:11px 14px;text-align:left;vertical-align:top}th{background:#edf4fa}li{margin:10px 0}button{padding:9px 12px;border:1px solid #aabccc;border-radius:6px;background:white;cursor:pointer}@media(max-width:800px){.layout{display:block;padding:0 12px;margin:12px auto}nav{position:static;border-bottom:1px solid #d9e1ea;padding:8px 12px 20px}article{padding:18px}h1{font-size:25px}body{font-size:16px}header{padding:20px}}@media print{nav,button{display:none}.layout{display:block;max-width:none;padding:0}article{border:0;padding:0}body{background:white}header{background:white;color:#202938}.table-scroll{overflow:visible}}
+</style></head><body><header><b>账户接线完整性通知</b><p>修复真实训练输出的接入错误，并更正此前合成验收的能力边界。本次没有新的策略盈利结论。</p></header><div class="layout"><nav><a href="#chapter-1">1. 用人话说，到底哪里断了</a><a href="#chapter-2">2. 哪些结论需要改，哪些仍未查出问题</a><a href="#chapter-3">3. 本轮同时建好了什么</a><a href="#chapter-4">4. 验证结果与失败记录</a><a href="#chapter-5">5. 现在还不能宣称什么</a><a href="#chapter-6">6. 修复交付后从哪里继续</a><a href="#chapter-7">7. 自上次汇报以来，简略研究路径</a><p><a href="ML_ACCOUNT_BRIDGE_INTEGRITY_20261007.md">Markdown原文</a></p><button onclick="window.print()">打印 / 保存PDF</button></nav><article><div class="flow" aria-label="真实拟合到回测的接线"><span>特征和成熟标签</span><b>→</b><span>实际训练、保存预测与收据</span><b>→</b><span class="repair">修复：读取真实收据格式</span><b>→</b><span>选股、资金回测、独立核查</span></div><h1>模型到账户的一次接线错误：修复与旧验收更正</h1>
+<p>2026-10-07（纽约日期）｜E19阶段性工程报告｜新多年策略比较尚未开始</p>
+<p><strong>发现了一个需要更正旧结论的错误：此前E17/E18用手写合成分数测试通过，却没有证明真实训练器保存的预测能直接接入账户。第一次把实际拟合输出完整接过去，程序就报错。</strong> 现已补上兼容读取和实际训练到回测的桥接测试。这是工程错误发现与修复，不是新的盈利策略成果。</p>
+<h2 id="chapter-1">1. 用人话说，到底哪里断了</h2>
+<p>假设我们训练了一个模型，周五让它给股票A、B、C评分。训练器保存每只股票的分数，以及模型参数、训练身份、特征与代码指纹等收据。回测先检查收据，再按分数选股、执行买卖、统计每天资产。</p>
+<p>这次分数本身没有出错，断在“读取收据”。训练器保存代码指纹时使用成对列表：<code>[["src/alpharesearch/models.py", "64位指纹"]]</code>。账户核查器却以为它一定是字典，调用了只有字典才有的<code>.get()</code>。于是还没有进入资金回测，就失败退出。</p>
+<p>为什么之前没发现？此前合成测试自己写了一份字典格式的收据。它验证了名单选择与账户算术，却绕过了真实训练器的输出格式。这是生产者与消费者之间缺少完整集成测试造成的盲点，两名旧阶段复核也没有补足这一点。</p>
+<h2 id="chapter-2">2. 哪些结论需要改，哪些仍未查出问题</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>原判断或范围</th>
+<th>现在的判断</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“实际模型输出可直接通过E17/E18接入账户”</td>
+<td>旧验收不足，必须更正；不能沿用合成stub测试作完整接线证明。</td>
+</tr>
+<tr>
+<td>E17组合规则、E18独立名单与账户算术的合成检查</td>
+<td>仍是这些局部模块的工程证据，不能扩大到真实训练生产者。</td>
+</tr>
+<tr>
+<td>已有旧研究报告中的收益数字</td>
+<td>此错误是入口报错；当前没有找到旧收益受它影响的证据，也没有重新核查所有历史收益。不能据此说旧收益全错或全部认证。</td>
+</tr>
+<tr>
+<td>E19新的真实收益/回撤改善</td>
+<td>尚不存在。本主任务正式登记作业0、真实fit0、真实账户0。软件fixture的训练/回测另列。</td>
+</tr>
+</tbody>
+</table></div>
+<p>修复读取字典、元组对和JSON列表对，并严格拒绝重复键、错误路径、错误类型和非法指纹。它只建立读取副本，保持原学习收据和预测内容。AST核对确认旧审计器除新增兼容函数和替换一个调用外，没有其他语义变化；原交易和会计公式没有改。旧冻结代码、收据和失败记录保留原字节，不自动获得新能力。</p>
+<h2 id="chapter-3">3. 本轮同时建好了什么</h2>
+<p>增加了可登记的<code>alpha_account</code>作业。它使用已经完成并核查过的<code>alpha_learn</code>原始预测，或明确标为工程用途的合成分数；原样绑定预测、学习收据、资格/价格参考和日历四份输入，冻结账户规则、行情快照、源码与运行位置，然后复用原账户引擎。</p>
+<p>同一个作业固定计算零费用和配置费用两个完整账户。账户核查重建名单、权重、逐日现金/股份/权益与收益回撤。恢复只读取原结果，不重新训练模型。原生<code>run_id</code>保存到任务库，可打开账户报告；工作台任务卡摘要中的部分旧字段尚未适配，可能显示空值，不能把页面空值当作没有账户档案。</p>
+<p>任务级预算按登记意图计数：登记两种费用就占两次，失败或取消不退回。已有普通对照账户也计入累计；换显示名称不能产生一份新预算。已留下原生目录的作业拒绝重跑。</p>
+<p>独立复核另外发现一个收取竞争问题：第一次核查结束到接受结果之间，原输入或快照可能变化。已补终态重新核对输入、快照、原生结果及作业结果；三个反例分别在审计返回后改预测、权益表或行情，要求作业失败，而不能第一次就被接受。</p>
+<h2 id="chapter-4">4. 验证结果与失败记录</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>核查</th>
+<th>保存的结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>首次实际拟合到账户桥接</td>
+<td>失败：真实收据的列表被当成字典；保留<code>E19_bridge_01</code>。</td>
+</tr>
+<tr>
+<td>修复后实际桥接及格式检查</td>
+<td>8通过，17.25秒；含一次实际软件fixture训练，后续账户/恢复禁止refit。</td>
+</tr>
+<tr>
+<td>收取竞争等账户专项</td>
+<td>23通过，99.03秒；当时版本不含后来新增的实际桥接。</td>
+</tr>
+<tr>
+<td>当前新增软件案例</td>
+<td>31：账户登记/执行24项，格式兼容/拒绝7项。</td>
+</tr>
+<tr>
+<td>完整软件测试</td>
+<td>1224通过、1跳过；pytest 530.04秒；采样峰值492.2 MiB。</td>
+</tr>
+<tr>
+<td>静态检查</td>
+<td>通过，限定错误/未用名称规则；不是全仓库格式验收。</td>
+</tr>
+<tr>
+<td>隔离wheel核对</td>
+<td>11个模块与当前源码逐字节相等；不含数据/研究目录。</td>
+</tr>
+<tr>
+<td>两个独立只读源码复核</td>
+<td>接受source04；核对17个文件指纹和旧审计AST，未独立重跑数值。</td>
+</tr>
+</tbody>
+</table></div>
+<p>完整测试绑定source04原字节。随后仅清理审计文件的重复回车换行，AST逐项相同、compile通过；交易/账户语义未变，最终wheel另核当前字节。</p>
+<p>原始重复定义失败、命令误填测试文件、未用变量检查失败均保留。第一轮完整测试因复核指出收取竞争缺口而主动中断，不计通过；停止时标准测量收据未完整生成，另留中断收据，不补造耗时/峰值。随后才运行修订后的完整测试。</p>
+<h2 id="chapter-5">5. 现在还不能宣称什么</h2>
+<p>本次没有得到新的年化收益或最大回撤改善。模型分数没有被第二套算法数学重现，供应商历史修订、资格声明及未知权益也没有因此被认证。父级同步审计仍不在worker槽位、RSS和timeout监督内；内存/输出限制是采样软停止。源码、软件测试通过不等于E19有限正式账户批次或多年真实研究完成。</p>
+<p>实际数据盘点还发现：当前多年主板快照有历史涨跌停字段，而更广A股快照缺少这些字段，且没有对应的完整原生权益/状态/日历档案。不能直接复制主板假设去声称全板块账户已经可用。更广学习、取消筛选和板块比较仍在总体计划里，需要明确数据和账户能力边界后单独验证。</p>
+<h2 id="chapter-6">6. 修复交付后从哪里继续</h2>
+<ol>
+<li>按保存的有限工程计划验收两个完成账户和一个启动前取消作业，验证预算与恢复；它们不作为市场收益证据。</li>
+<li>先固定真实多年日期、快照、历史资格、标签端点、信息块和模型矩阵，再开始一个单进程资源试点。首批上限12真实fit、32真实账户情景，失败也占预算，不能看结果后补试验。</li>
+<li>比较基础信息六模型，以及板型/连板、龙虎榜/集中度、财务/市场三个扩展块各两个模型；保留同池小市值、稳定随机seed11与必要风险匹配对照。seed11是随机种子，不是持有11只股票。</li>
+<li>用含费年化、累计收益、最大回撤、各年表现、仓位、换手和权益限制判断；IC/RankIC只用于解释。保留全A股范围、条件交互、序列/低秩/图表征、漂移和直接组合目标等后续方向，不能把首批矩阵当作最大蓝图。</li>
+</ol>
+<p>这次暂停通知的原因是旧账户接线能力验收需要更正，符合你要求的“影响旧结论的数据/账户错误”。不是因为工程阶段自然结束，也没有把预测指标变化称为盈利发现。E19保留未完成状态与下一步，不额外消费正式研究预算。</p>
+<h2 id="chapter-7">7. 自上次汇报以来，简略研究路径</h2>
+<p>E13B1先建立筛选/学习共享绑定索引，消除重复查询；E13D将有限筛选变成可冻结、执行和恢复的登记作业；E16D把六模型的训练和预测保存接入同一链，并完成三个正式合成拟合作业（两个完成、一个预期未收敛失败）。这些都不是市场盈利研究。</p>
+<p>随后E19盘点多年主板/广A股行情、财务和日历，保存有限多信息块/多模型计划；为运行真实账户补登记接口。复核先发现收取竞争缺口并修复，再用实际拟合输出取代手写stub桥接，暴露本次收据格式错误。修复后增加兼容反例和禁止refit的完整桥接。此前公开E16D提交<code>be5d9f45</code>的Linux/Windows CI已成功；本次公开版本状态另以发布/CI收据为准。</p>
+<p>紧急账户接线修复期间没有新增外部论文阅读。前期差异化排序、直接组合目标、低秩/谱复杂度及选择风险来源卡仍按实际阅读深度保留，并未验证为A股有效策略。</p>
+<p>可继续阅读：<a href="ALPHA_ACCOUNT_DURABLE.md">登记账户的人话说明</a>、<a href="ALPHA_SCORE_TO_ACCOUNT.md">评分到持仓</a>、<a href="ALPHA_ACCOUNT_AUDIT.md">独立账户核查</a>、<a href="ALPHA_LEARNING_RESULTS_20261007.md">持久学习结果</a>、<a href="PROJECT_CHARTER.md">总体纲领</a>。</p>
+</article></div></body></html>

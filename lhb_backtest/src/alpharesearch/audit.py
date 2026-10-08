@@ -19,6 +19,24 @@ def _require(condition, message):
         raise ValueError(message)
 
 
+def _model_code_hashes(value):
+    """Read native pair metadata and prior dictionary stubs without rewriting either."""
+    if isinstance(value, dict):
+        result = dict(value)
+    elif isinstance(value, (list, tuple)):
+        _require(all(isinstance(item, (list, tuple)) and len(item) == 2
+                     and type(item[0]) is str and type(item[1]) is str for item in value),
+                 "Model code hashes require string pairs")
+        result = dict(value)
+        _require(len(result) == len(value), "Duplicate model code hash keys")
+    else:
+        raise ValueError("Model code hashes require a dictionary or string pairs")
+    _require(set(result) == {"src/alpharesearch/models.py"}
+             and all(type(v) is str and len(v) == 64 and set(v) <= set("0123456789abcdef")
+                     for v in result.values()), "Invalid model code hash identity")
+    return result
+
+
 def _equal_frame(actual, expected, keys):
     try:
         pd.testing.assert_frame_equal(
@@ -68,7 +86,7 @@ def audit_score_portfolio(result, references, calendar, portfolio):
              and fit["training_missing"]["rows"]==source["mature_training_rows"]
              and fitted.get("fit_attempts")==1 and fitted.get("account_results") is False
              and fitted.get("environment")==fit.get("environment")
-             and fitted.get("implementation_hashes", {}).get("src/alpharesearch/models.py")
+             and _model_code_hashes(fitted.get("implementation_hashes")).get("src/alpharesearch/models.py")
                 ==fit["implementation_hashes"].get("src/alpharesearch/models.py")
              and isinstance(excluded, list) and len(set(excluded))==len(excluded)
              and all(key in fit["settings"]["features"] for key in excluded),

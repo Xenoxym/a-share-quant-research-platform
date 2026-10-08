@@ -24,6 +24,7 @@ class WorkerResources:
     max_process_rss_bytes: int = 2_147_483_648
     min_available_memory_bytes: int = 1_073_741_824
     max_output_bytes: int = 1_073_741_824
+    output_scope: str = "development_only"
 
     def to_dict(self):
         return dict(schema="alpha-worker-resources-v1", slots_per_research_root=2,
@@ -31,23 +32,25 @@ class WorkerResources:
                     max_process_rss_bytes=self.max_process_rss_bytes,
                     min_available_memory_bytes=self.min_available_memory_bytes,
                     max_output_bytes=self.max_output_bytes, memory_policy="sampled_soft_stop",
-                    output_scope="development_only")
+                    output_scope=self.output_scope)
 
     @classmethod
     def from_dict(cls, value):
         expected = cls().to_dict()
         if not isinstance(value, dict) or set(value)!=set(expected):
             raise ValueError("Strict worker resource fields required")
-        for key in ("schema", "slots_per_research_root", "memory_policy", "output_scope"):
+        for key in ("schema", "slots_per_research_root", "memory_policy"):
             if type(value[key]) is not type(expected[key]) or value[key]!=expected[key]:
                 raise ValueError("Unsupported worker resource policy")
+        if type(value["output_scope"]) is not str or value["output_scope"] not in {"development_only", "scored_account_result"}:
+            raise ValueError("Unsupported worker output scope")
         bounds = {"library_threads":(1, 2), "max_process_rss_bytes":(134_217_728, 17_179_869_184),
                   "min_available_memory_bytes":(268_435_456, 17_179_869_184),
                   "max_output_bytes":(1_048_576, 107_374_182_400)}
         for key,(low,high) in bounds.items():
             if type(value[key]) is not int or not low<=value[key]<=high:
                 raise ValueError("Worker resource limit is not a bounded integer: "+key)
-        return cls(**{key:value[key] for key in bounds})
+        return cls(output_scope=value["output_scope"], **{key:value[key] for key in bounds})
 
 
 def process_alive(pid, created):

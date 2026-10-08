@@ -8,6 +8,7 @@ import importlib.metadata
 import json
 from pathlib import Path
 import platform
+import re
 import shutil
 import time
 import uuid
@@ -43,7 +44,7 @@ def verify(folder):
 
 def run(project, spec=None, *, root=None, replay=None, progress=lambda m: None,
         prepared=None, scenarios=None, research_context=None, publish=True,
-        frozen_snapshot=None, lock_root=None):
+        frozen_snapshot=None, lock_root=None, registered_run_id=None):
     project = Path(project).resolve()
     root = Path(root or project / "data/technical").resolve()
     spec = spec or ResearchSpec()
@@ -53,7 +54,11 @@ def run(project, spec=None, *, root=None, replay=None, progress=lambda m: None,
         raise ValueError("独立执行锁仅用于显式冻结快照")
     with (nullcontext() if prepared is not None else exclusive_run(Path(lock_root or root))):
         start_clock = time.perf_counter()
-        run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
+        if registered_run_id is not None:
+            if (prepared is None or frozen_snapshot is None or lock_root is None or publish
+                    or not isinstance(registered_run_id, str) or not re.fullmatch(r"\d{8}T\d{6}-[a-f0-9]{8}", registered_run_id)):
+                raise ValueError("Registered run identity requires explicit private prepared account")
+        run_id = registered_run_id or (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8])
         folder = root / "runs" / run_id
         folder.mkdir(parents=True)
         write_json(folder / "status.json", {"status": "running", "run_id": run_id})

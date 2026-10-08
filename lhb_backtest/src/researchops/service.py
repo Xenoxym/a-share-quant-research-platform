@@ -171,6 +171,9 @@ class Research:
         )
 
     def register(self, session, proposal):
+        if isinstance(proposal, dict) and proposal.get("kind") == "alpha_account":
+            from .account_experiments import register
+            return register(self, session, proposal)
         if isinstance(proposal, dict) and proposal.get("kind") == "alpha_learn":
             from .learn_experiments import register
             return register(self, session, proposal)
@@ -315,7 +318,7 @@ class Research:
 
     def execute(self, session, eid):
         ex = self.store.experiment(eid)
-        if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn"}:
+        if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn", "alpha_account"}:
             from .alpha_experiments import execute
             return execute(self, session, eid)
         job = self.root / "worker_jobs" / eid
@@ -389,14 +392,14 @@ class Research:
 
     def cancel(self, session, eid, reason):
         ex = self.store.experiment(eid)
-        if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn"} and ex["status"] == "running":
+        if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn", "alpha_account"} and ex["status"] == "running":
             from .alpha_execution import request_cancel
             return request_cancel(self, session, eid, reason)
         return self.store.cancel(session, eid, reason)
 
     def recover(self, eid):
         ex = self.store.experiment(eid)
-        if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn"} and ex["status"] in {"running","completed","failed"}:
+        if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn", "alpha_account"} and ex["status"] in {"running","completed","failed"}:
             from .alpha_experiments import recover
             return recover(self, ex)
         if ex["status"] != "running":
@@ -527,7 +530,7 @@ class Research:
         task = self.store.get(session["task_id"])
         for ex in task["experiments"]:
             if ex["status"] == "completed":
-                if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn"}:
+                if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn", "alpha_account"}:
                     from .alpha_experiments import verify_completed
                     verify_completed(self, ex)
                     continue
@@ -545,7 +548,7 @@ class Research:
         self.verify_evidence(task)
         for ex in self.store.get(task)["experiments"]:
             if ex["status"] == "completed":
-                if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn"}:
+                if ex["proposal"].get("kind") in {"alpha_batch", "alpha_screen", "alpha_learn", "alpha_account"}:
                     from .alpha_experiments import verify_completed
                     verify_completed(self, ex)
                     continue

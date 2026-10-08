@@ -22,6 +22,9 @@ def _protocol(experiment):
     if kind == "alpha_learn":
         from . import learn_experiments as registration, learn_worker as worker, learn_output_audit as audit
         return kind, registration, worker, audit, "learn_result", "registered_alpha_learning_execution"
+    if kind == "alpha_account":
+        from . import account_experiments as registration, account_worker as worker, account_output_audit as audit
+        return kind, registration, worker, audit, "account_result", "registered_alpha_account_execution"
     raise ValueError("Unsupported typed alpha execution kind")
 
 
@@ -202,7 +205,7 @@ def request_cancel(research, session, eid, reason):
     reason=text(reason,"Cancellation reason")
     with research.store.connection(True) as db:
         task=research.store.owned(db,session);ex=research.store.experiment(eid)
-        if ex["task_id"]!=task["id"] or ex["status"]!="running" or ex["proposal"].get("kind") not in {"alpha_batch", "alpha_screen", "alpha_learn"}:
+        if ex["task_id"]!=task["id"] or ex["status"]!="running" or ex["proposal"].get("kind") not in {"alpha_batch", "alpha_screen", "alpha_learn", "alpha_account"}:
             raise ValueError("Only an owned running alpha batch supports cancellation requests")
         job=research.root/"worker_jobs"/eid
         value=dict(schema="alpha-cancel-request-v1",experiment_id=eid,
@@ -276,7 +279,9 @@ def execute(research, session, eid):
         raise ValueError("Old registration has no frozen E12 worker/resources; register a new version without rewriting history")
     if any((job/name).exists() for name in ("launch.json","receipt.json",result_folder,"execution_stats.json","cancel_request.json","supervision_failure.json","worker_started.json","worker_started.tmp")):
         raise ValueError("Unexpected existing execution artifacts; preserve and inspect")
-    worker.verify_job(job)
+    cfg = worker.verify_job(job)
+    if kind == "alpha_account" and registration.native_folder(cfg).exists():
+        raise ValueError("Native account artifacts already exist; never repeat execution")
     resources=WorkerResources.from_dict(experiment["proposal"]["resources"])
     # Resource denial occurs before Store.start, so no running job is stranded.
     with reserve(research.root,eid,resources) as reservation:
@@ -461,7 +466,7 @@ def _recover_locked(research, experiment, receipt=None):
                 error=receipt["error"]
             else:
                 audit=_protocol(experiment)[3].audit_output(research,experiment)
-                if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn"}:
+                if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn", "alpha_account"}:
                     _write_once(job/"alpha_audit.json",audit,strict_json=True)
                 else:
                     _write_once(job/"alpha_audit.json",audit)
@@ -480,7 +485,10 @@ def _recover_locked(research, experiment, receipt=None):
         _commit_outcome(research,experiment["id"],"failed",error=original["error"])
         release_terminal_reservation(research.root,experiment["id"],launch)
         raise
-    final=_commit_outcome(research,experiment["id"],status,result=result,error=error)
+    fields=dict(result=result,error=error)
+    if status=="completed" and _protocol(experiment)[0]=="alpha_account":
+        fields["run_id"]=result["run_id"]
+    final=_commit_outcome(research,experiment["id"],status,**fields)
     release_terminal_reservation(research.root,experiment["id"],launch)
     return final
 
@@ -495,13 +503,15 @@ def verify_completed(research, experiment):
         raise ValueError("Completed worker launch not terminal")
     _receipt(research,experiment,_read_json(job/"receipt.json"))
     audit=audit_output(research,experiment);saved=_read_json(job/"alpha_audit.json");stored=experiment["result"]
-    if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn"}:
+    if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn", "alpha_account"}:
         from .screen_experiments import same_json
         changed = not same_json(saved, audit) or not same_json({k:stored.get(k) for k in audit}, audit)
     else:
         changed = saved!=audit or any(stored.get(k)!=v for k,v in audit.items())
     if changed:
         raise ValueError("Stored alpha audit differs from current output identities")
+    if _protocol(experiment)[0]=="alpha_account" and experiment.get("run_id")!=audit["run_id"]:
+        raise ValueError("Registered native run identity differs")
     if stored.get("kind")!=_protocol(experiment)[5]:
         raise ValueError("Wrong completed result kind")
     for key,name in (("audit_hash","alpha_audit.json"),("receipt_hash","receipt.json"),

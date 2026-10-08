@@ -277,6 +277,10 @@ class Store:
             ).fetchone()[0]
             if count >= spec["max_experiments"]:
                 raise ValueError("已达到任务实验预算，失败尝试也计入预算")
+            from .account_intents import enforce_account_budget
+            histories = [json.loads(r["proposal"]) for r in db.execute(
+                "SELECT proposal FROM experiments WHERE task_id=?", (row["id"],))]
+            enforce_account_budget(proposal, histories)
             if channel_budget is not None:
                 if (proposal.get("kind") != "alpha_screen" or type(channel_budget) is not int
                         or not 1 <= channel_budget <= 100000
