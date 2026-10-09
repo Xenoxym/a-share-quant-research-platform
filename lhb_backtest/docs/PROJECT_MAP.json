@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-08T11:25:32.818401+00:00",
-  "current_package": "E19",
-  "task_id": "task-32a60b66115c",
+  "updated_at_utc": "2026-10-09T04:50:51.327032+00:00",
+  "current_package": "E19 / E19A",
+  "task_id": "task-b2a5a6ee17c6",
   "packages": [
     {
       "id": "R0",
@@ -207,10 +207,10 @@
     {
       "id": "E19",
       "title": "首次新流水线真实闭环",
-      "status": "真实研究进行中",
-      "detail": "四组全量933284周样本；原12学习登记、3已核查完成，真实账户待运行。",
+      "status": "账户计算已完成，核查修复中",
+      "detail": "12真实fit已完成；32账户情景已计算，4对照通过/12模型旧核查失败。预算已消耗，不追加训练。",
       "dependencies": "E14,E18",
-      "guide": "ALPHA_ACCOUNT_DURABLE.md"
+      "guide": "ML_E19_ACCOUNT_RECHECK_20261009.md"
     },
     {
       "id": "E20",
@@ -323,16 +323,24 @@
       "detail": "合成拟合3次：2完成、1预期不收敛；0真实拟合/账户。",
       "dependencies": "E12、E16",
       "guide": "ALPHA_LEARNING_DURABLE.md"
+    },
+    {
+      "id": "E19A",
+      "title": "补充：金额舍入与原账户重检",
+      "status": "修正核查器接受首项，余11项重检中",
+      "detail": "原岭回归双费用完整通过；54专项与双复核接受。原failed不改；0新fit/模拟，收益比较待全部核查。",
+      "dependencies": "E19",
+      "guide": "ML_E19_ACCOUNT_RECHECK_20261009.md"
     }
   ],
   "phase_counts": {
-    "formal_jobs": 15,
-    "completed": 2,
+    "formal_jobs": 31,
+    "completed": 18,
     "cancelled": 1,
     "synthetic_account_intents": 6,
     "synthetic_account_attempts": 4,
-    "real_fits": 3,
-    "real_accounts": 0,
+    "real_fits": 12,
+    "real_accounts": 32,
     "fit_limit": 12,
     "real_account_limit": 32,
     "paid_cost_usd": 0,
@@ -342,22 +350,26 @@
     "prediction_decisions": 550711,
     "completed_input_groups": 4,
     "registered_fit_intents": 12,
-    "planned": 8,
-    "running": 1,
+    "planned": 0,
+    "running": 0,
     "engineering_jobs": 3,
     "engineering_completed": 2,
     "engineering_cancelled": 1,
-    "audited_learning_completed": 3,
-    "failed": 0,
-    "real_model_fits": 3,
-    "registered_learning_jobs": 12
+    "audited_learning_completed": 12,
+    "failed": 12,
+    "real_model_fits": 12,
+    "registered_learning_jobs": 12,
+    "real_account_scenarios_calculated": 32,
+    "original_audited_control_scenarios": 8,
+    "corrected_auditor_model_scenarios": 2,
+    "qualified_account_scenarios": 10
   },
-  "current_result": "四组完整数据已准备：共933284条周度股票记录，379842条训练、550711条预测；原12个模型已全部登记，其中3项完成并经核查，其余按原方案顺序运行。真实账户尚未开始，不能给出策略收益结论。",
+  "current_result": "12项真实训练、32账户情景均已计算；4对照原核查通过，12模型旧failed保留。修正核查器完整接受原岭回归双费用账户，其余11项有限顺序检查中。0新增真实训练或交易模拟。",
   "near_term": [
-    "完成原12项模型训练及结果核查；失败保留，不追加参数或重训。",
-    "沿用原模型分数，固定每周最多100只；与小市值、固定随机顺序、60日低波动、半仓小市值同时比较。",
-    "核查零交易费用与配置费用账户，以收益、最大回撤、分期表现、仓位和换手作结论。",
-    "整理全部路径和失败，双复核及选择性发布；再选择序列表示或有限自动公式/组合研究。"
+    "先完整重检原岭回归两费用账户；任何失败就分类停止，不重训或交易重跑。",
+    "首项通过后顺序检查另外11个，旧failed与新核查证据分开保存。",
+    "以真实收益、最大回撤、分期、仓位和交易规模比较模型与四个对照，公开全部路径与限制。",
+    "核查后选择性发布代码和报告，接续序列、受控公式或组合风险的有限研究。"
   ],
   "navigation": [
     {
@@ -383,6 +395,11 @@
       "title": "本批实验的人话说明",
       "html": "ML_E19_REAL_MATRIX_20261008.html",
       "md": "ML_E19_REAL_MATRIX_20261008.md"
+    },
+    {
+      "title": "这次账户核查与研究路径",
+      "html": "ML_E19_ACCOUNT_RECHECK_20261009.html",
+      "md": "ML_E19_ACCOUNT_RECHECK_20261009.md"
     }
   ],
   "evidence": [
@@ -405,8 +422,32 @@
     {
       "label": "终态输入验收",
       "private_file": "E19_terminal_input_gate_result_02.json"
+    },
+    {
+      "label": "原作业终态与历史保留",
+      "private_file": "E19_terminal_execution_snapshot_01.json"
+    },
+    {
+      "label": "金额窄诊断与专项检查",
+      "private_file": "E19A_software_checks_02.json"
+    },
+    {
+      "label": "完整原账户重检源码复核",
+      "private_file": "E19A_full_reaudit_source_reviews_03.json"
+    },
+    {
+      "label": "当前缓存修复源码复核",
+      "private_file": "E19A_selection_fullread_reviews_01.json"
+    },
+    {
+      "label": "原岭回归完整重检",
+      "private_file": "E19A_full_reaudit_05_01.json"
+    },
+    {
+      "label": "首项资源与停止确认",
+      "private_file": "E19A_reaudit_supervision_05_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "本轮由共同名单和两次周调仓开盘之间的收益目标，比较16项、板型、龙虎榜、财务市场四组输入。登记时发生的内存失败已保留，通过相同缺失理由的字典存储修复。实际训练不追加调参；随后沿用这些原分数与四个固定对照运行账户。合成接线3项（2完成1取消）不计为真实市场结果。"
+  "phase_summary": "四输入组、六类模型已计算，32原情景预算消耗完毕。金额、报价查找表及名单缓存修复54专项与双复核通过；两次已停止读取留存，05首项两费用完整通过。下一步先核查剩余11个，再比较真实收益和回撤。"
 }

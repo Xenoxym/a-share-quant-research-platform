@@ -68,7 +68,7 @@ def render(app):
     (docs/"PROJECT_ARCHITECTURE_SIMPLE.svg").write_text(simple+"\n",encoding="utf-8")
     (docs/"PROJECT_ARCHITECTURE_DETAIL.svg").write_text(detail+"\n",encoding="utf-8")
     c=data["phase_counts"]
-    intro="我们建设的是：把已有市场信息变成可检验的投资方法，再用真实资金账户的收益和回撤判断它是否值得继续。当前软件模块已具备新闭环的基本接线；E19的真实多模型比较还没有跑完。"
+    intro="我们建设的是：把已有市场信息变成可检验的投资方法，再用真实资金账户的收益和回撤判断它是否值得继续。当前软件模块已具备研究闭环的基本接线；真实账户计算与独立接受的进度分别见下文。"
     boundary="图中只画已经实现的有用功能。工程验收表示程序与约束经过检查，不表示有市场优势；模块可用也不表示所有大规模数据路径都已认证。神经网络、图模型、遗传/RL/LLM自动公式搜索仍在后面的计划表。"
     recent=data.get("phase_summary") or "本轮完成E19正式工程3作业：2完成、1按计划启动前取消。共登记6个合成账户情景，实际执行4个；模型拟合0次。两个完成作业从原结果恢复，没有重训。合成分数仅用于接线检查，不能视为策略收益。此前实际拟合输出到旧账户桥接的兼容缺陷已修复，旧验收表述也已更正；没有据此认定旧真实收益数字错误。"
     nav_md="\n".join(f'- [{x["title"]}]({x["md"]})'+(f'（[网页]({x["html"]})）' if "html" in x else "") for x in data["navigation"])
@@ -84,7 +84,7 @@ def render(app):
             tds.append(f'<td data-label="{label}">{text}</td>')
         cards.append(f'<tr id="package-{esc(row["id"])}">{"".join(tds)}</tr>')
     footer="进度依据：本机任务库、CHECKPOINT及阶段收据。本页是当前摘要，不覆盖历史冻结结果。旧报告的‘下一步’指写作当时，当前下一步以本页和任务库为准。更新方式：修改PROJECT_MAP.json后运行python tools/render_project_map.py；阶段报告仍须关联原始证据。"
-    counters=f'本E19阶段：工程{c.get("engineering_jobs",3)}作业（{c.get("engineering_completed",2)}完成/{c.get("engineering_cancelled",1)}取消）；模型登记{c.get("registered_fit_intents",0)}项，有收据确认拟合{c["real_fits"]}次、模型核查完成{c.get("audited_learning_completed",0)}项；真实账户{c["real_accounts"]}情景。上限{c["fit_limit"]}次真实拟合/{c["real_account_limit"]}个真实账户情景，外部费用${c["paid_cost_usd"]}。'
+    counters=f'本E19阶段：工程{c.get("engineering_jobs",3)}作业（{c.get("engineering_completed",2)}完成/{c.get("engineering_cancelled",1)}取消）；模型登记{c.get("registered_fit_intents",0)}项，有收据确认拟合{c["real_fits"]}次、模型核查完成{c.get("audited_learning_completed",0)}项；真实账户已计算{c["real_accounts"]}情景，其中当前核查接受{c.get("qualified_account_scenarios",0)}情景。上限{c["fit_limit"]}次真实拟合/{c["real_account_limit"]}个真实账户情景，外部费用${c["paid_cost_usd"]}。'
     md=f'# 项目总览：当前架构、全计划和进度\n\n更新（UTC）：{data["updated_at_utc"]} · 当前工作包：{data["current_package"]}\n\n{intro}\n\n## 从这里看整个计划\n\n{nav_md}\n\n## 现在进行到哪里\n\n{counters}\n\n{data["current_result"]}\n\n{recent}\n\n## 最简架构：六步就能理解\n\n![当前最简功能架构](PROJECT_ARCHITECTURE_SIMPLE.svg)\n\n## 略详细架构：每一步里有什么\n\n![当前有用模块](PROJECT_ARCHITECTURE_DETAIL.svg)\n\n{boundary}\n\n## 一周例子\n\n示例：周五收盘后，以当时可知的信息给每只合格股票打分；按预先固定的规则选股和分配资金；下一个交易日开盘尝试调仓，此后逐日计算账户。新学习协议默认预测两次计划调仓开盘之间的收益，不是某天的绝对价格，也不是直接训练最大回撤。固定随机对照中的11是种子，不是11只股票。E19已固定共同主板名单、周调仓、100只目标持仓及四个对照；具体实验说明见本批报告。\n\n## 接下来四步\n\n'+"\n".join(f'{i}. {x}' for i,x in enumerate(data['near_term'],1))+f'\n\n## 全部工作包：原计划与补充包\n\n原编号表示设计和依赖，不是按编号顺序执行；E15—E18先补接线，E12—E14后补有限执行能力，详见建设记录。没有用完成包数给项目虚构完成百分比。\n\n'+"\n".join(table)+f'\n\n## 报告接续规则\n\n以后每份阶段结果和最终回复都附本总览、完整蓝图、完整工作包计划、详细建设记录；重要策略成果仍以经核查的收益/回撤改善为准，不能仅以RankIC或工程通过作为停止理由。\n\n{footer}\n'
     (docs/"PROJECT_MAP.md").write_text(md,encoding="utf-8")
     nav="".join(f'<a href="{esc(x.get("html",x["md"]))}">{esc(x["title"])}</a>' for x in data["navigation"])

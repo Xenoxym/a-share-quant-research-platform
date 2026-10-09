@@ -304,3 +304,91 @@ def test_wrong_fee_component_cannot_hide_under_correct_total():
     args[0]["metrics"]["cost_components"]["commission"] = 999999.
     with pytest.raises(ValueError, match="cost component"):
         check(*args, **kwargs)
+
+
+# Financial rounding counterexample without model fits or account simulation.
+def target_rounding_example():
+    return pd.DataFrame([
+        dict(signal_date="2024-01-05", execution_date="2024-01-08",
+             stock_code=code, equity_used=1_000_000.123456789,
+             reference_close=13.27, target_weight=.0098,
+             target_shares=700., rank=float(i))
+        for i, code in enumerate(["600000.SH", "600001.SH"], 1)
+    ])
+
+
+def test_target_capital_allows_float64_accumulation_drift_only():
+    import numpy as np
+    from src.alpharesearch.audit import _audit_target_table, _equal_frame
+    expected = target_rounding_example()
+    actual = expected.iloc[::-1].copy()
+    actual["equity_used"] = np.nextafter(actual.equity_used, np.inf)
+    with pytest.raises(ValueError, match="Independent expected table"):
+        _equal_frame(actual, expected, ["execution_date", "stock_code"])
+    error = _audit_target_table(actual, expected)
+    assert error > 1e-12 and error < 1e-8
+
+
+@pytest.mark.parametrize("column", ["reference_close", "target_weight", "target_shares", "rank"])
+def test_target_nonmoney_fields_reject_even_one_ulp_mutation(column):
+    import numpy as np
+    from src.alpharesearch.audit import _audit_target_table
+    expected = target_rounding_example()
+    actual = expected.copy()
+    actual.loc[0, column] = np.nextafter(actual.loc[0, column], np.inf)
+    with pytest.raises(ValueError, match="Exact target field"):
+        _audit_target_table(actual, expected)
+
+
+@pytest.mark.parametrize("change", ["one_fen", "nan", "infinity", "missing", "stock", "date", "row"])
+def test_target_money_tolerance_cannot_hide_financial_or_key_changes(change):
+    import numpy as np
+    from src.alpharesearch.audit import _audit_target_table
+    expected = target_rounding_example()
+    actual = expected.copy()
+    if change == "one_fen":
+        actual.loc[0, "equity_used"] += .01
+    elif change in ("nan", "infinity"):
+        actual.loc[0, "equity_used"] = np.nan if change == "nan" else np.inf
+    elif change == "missing":
+        actual = actual.drop(columns="equity_used")
+    elif change == "stock":
+        actual.loc[0, "stock_code"] = "600999.SH"
+    elif change == "date":
+        actual.loc[0, "execution_date"] = "2024-01-09"
+    else:
+        actual = actual.iloc[:1]
+    with pytest.raises(ValueError):
+        _audit_target_table(actual, expected)
+
+
+def test_chronological_quote_scope_preserves_values_and_absent_marks():
+    from src.alpharesearch.audit import _audit_quote_map
+    full = bars(["2024-01-08", "2024-01-09"], ["600000.SH", "600001.SH"])
+    full.loc[full.trade_date.eq("2024-01-09") & full.stock_code.eq("600000.SH"), "close"] = float("nan")
+    quotes = full.set_index(["stock_code", "trade_date"])
+    fills = pd.DataFrame([dict(stock_code="600000.SH", date="2024-01-08")])
+    positions = pd.DataFrame([dict(stock_code="600000.SH", date="2024-01-09"),
+                              dict(stock_code="600999.SH", date="2024-01-09")])
+    lookup = _audit_quote_map(quotes, fills, positions)
+    assert set(lookup) == {("600000.SH", "2024-01-08"), ("600000.SH", "2024-01-09")}
+    assert lookup.get(("600999.SH", "2024-01-09")) is None
+    observed = pd.DataFrame([x._asdict() for x in lookup.values()]).sort_values(["stock_code", "trade_date"]).reset_index(drop=True)
+    expected = full.loc[full.stock_code.eq("600000.SH")].sort_values(["stock_code", "trade_date"]).reset_index(drop=True)
+    pd.testing.assert_frame_equal(observed, expected, check_dtype=False)
+
+
+def test_quote_scope_does_not_hide_unrelated_snapshot_duplicates():
+    from src.alpharesearch.audit import _audit_quote_map
+    full = bars(["2024-01-08"], ["600000.SH", "600001.SH"])
+    full = pd.concat([full, full.loc[full.stock_code.eq("600001.SH")]], ignore_index=True)
+    keys = pd.DataFrame([dict(stock_code="600000.SH", date="2024-01-08")])
+    with pytest.raises(ValueError, match="duplicate audit quote"):
+        _audit_quote_map(full.set_index(["stock_code", "trade_date"]), keys, keys)
+
+
+def test_quote_scope_empty_account_needs_no_materialized_quotes():
+    from src.alpharesearch.audit import _audit_quote_map
+    quotes = bars(["2024-01-08"], ["600000.SH"]).set_index(["stock_code", "trade_date"])
+    empty = pd.DataFrame(columns=["stock_code", "date"])
+    assert _audit_quote_map(quotes, empty, empty) == {}

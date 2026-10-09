@@ -185,9 +185,48 @@ def _close(actual, expected, message, tolerance=1e-8):
     return float(np.max(np.abs(a-e))) if a.size else 0.
 
 
-def _audit_daily_state(eq, fills, positions, targets, bars, actions, status, metadata, spec, sessions):
+def _audit_target_table(actual, expected):
+    """Compare sizing capital as money; preserve exact non-money targets.
+
+    Independent group sums and the engine's sequential additions can differ by
+    float64 rounding. Reuse the existing daily account tolerance of0.001 CNY
+    for equity_used only; it must not loosen quantities or nonlinear lot sizing.
+    """
+    keys = ["execution_date", "stock_code"]
+    _require("equity_used" in actual and "equity_used" in expected,
+             "Target sizing capital missing")
+    _equal_frame(actual.drop(columns="equity_used"),
+                 expected.drop(columns="equity_used"), keys)
+    a = actual.sort_values(keys).reset_index(drop=True)
+    e = expected.sort_values(keys).reset_index(drop=True)
+    for column in ("reference_close", "target_weight", "target_shares", "rank"):
+        _require(np.array_equal(a[column].to_numpy(), e[column].to_numpy()),
+                 "Exact target field differs: "+column)
+    return _close(a.equity_used, e.equity_used,
+                  "Independent target sizing capital differs", .001)
+
+
+def _audit_quote_map(quotes, fills, positions):
+    """Materialize only quotes actually looked up by the chronological audit.
+
+    The full snapshot and its duplicate keys are still verified. Missing scoped
+    quotes remain absent; no price/status values are synthesized or changed.
+    A missing/extra archived position fails holdings membership before marking.
+    """
+    _require(isinstance(quotes.index, pd.MultiIndex)
+             and quotes.index.names == ["stock_code", "trade_date"]
+             and quotes.index.is_unique, "Invalid or duplicate audit quote index")
+    needed = pd.concat([fills[["stock_code", "date"]],
+                        positions[["stock_code", "date"]]], ignore_index=True).drop_duplicates()
+    keys = pd.MultiIndex.from_arrays([needed.stock_code, needed.date],
+                                    names=["stock_code", "trade_date"])
+    scoped = quotes.loc[quotes.index.intersection(keys)].reset_index()
+    return {(r.stock_code, r.trade_date):r for r in scoped.itertuples(index=False)}
+
+
+def _audit_daily_state(eq, fills, positions, targets, quotes, actions, status, metadata, spec, sessions):
     """Independent chronological targets, quantities, basis and snapshot marks."""
-    quote_map = {(r.stock_code, r.trade_date):r for r in bars.itertuples(index=False)}
+    quote_map = _audit_quote_map(quotes, fills, positions)
     _require(not actions.duplicated(["stock_code", "trade_date"]).any(), "Duplicate company actions")
     action_map = {(r.stock_code, r.trade_date):r for r in actions.itertuples(index=False)}
     halts = {r.trade_date:{str(c).replace(".SS", ".SH") for c in r.symbols}
@@ -366,16 +405,21 @@ def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, s
                                 target_shares=np.floor(equity_before*row.target_weight/row.close/100)*100, rank=row.rank))
     expected_targets = pd.DataFrame(planned, columns=["signal_date", "execution_date", "stock_code",
                                    "equity_used", "reference_close", "target_weight", "target_shares", "rank"])
+    target_equity_error = 0.
     if len(expected_targets):
-        _equal_frame(targets, expected_targets, ["execution_date", "stock_code"])
+        target_equity_error = _audit_target_table(targets, expected_targets)
     else:
         _require(targets.empty, "Unplanned targets")
+    # Reuse the same declared decision-date membership instead of rescanning
+    # every scored stock for each buy. Empty scheduled groups still reject buys.
+    selected_by_day = {day:set(group.stock_code) for day, group in decisions.loc[
+        decisions.trade_date.isin(schedule) & decisions.selected].groupby("trade_date")}
     for row in fills.loc[buys].itertuples():
         active = [day for day, entry in schedule.items() if entry <= row.date]
-        _require(active and row.stock_code in set(decisions.loc[
-            decisions.trade_date.eq(max(active)) & decisions.selected, "stock_code"]), "Buy outside latest scored targets")
+        _require(active and row.stock_code in selected_by_day.get(max(active), set()),
+                 "Buy outside latest scored targets")
     eq.attrs["scheduled_entries"] = set(schedule.values())
-    state = _audit_daily_state(eq, fills, positions, expected_targets, bars, actions, status, metadata, spec, sessions)
+    state = _audit_daily_state(eq, fills, positions, expected_targets, quotes, actions, status, metadata, spec, sessions)
     _close(eq.market_value, state.market_value, "Independent snapshot mark total differs", .001)
     _close(eq.cumulative_realized_pnl, state.realized, "Reported cumulative realized PnL differs", .001)
     _close(eq.unrealized_pnl, state.market_value-state.basis, "Reported unrealized PnL differs", .001)
@@ -419,6 +463,7 @@ def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, s
     return dict(schema="independent-account-table-audit-v1", scenario=scenario,
                 sessions=len(sessions), fills=len(fills), daily_errors=errors,
                 recalculated_metrics=expected_metrics, annualized_return=annual,
+                target_equity_error=target_equity_error, target_equity_absolute_tolerance=.001,
                 limits="Independent target/quantity, snapshot-relative closing/carrying marks and PnL arithmetic; vendor truth, queue fills and economic realism of declared policies are not authenticated.")
 
 
