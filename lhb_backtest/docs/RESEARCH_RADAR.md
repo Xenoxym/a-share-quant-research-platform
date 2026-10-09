@@ -395,3 +395,14 @@
 E19D(task-c0523d042fbf)检查全部12原分数，原账户收益失败结论不变；整体排序与头部选股分开验证，不以RankIC晋级。E20B(task-5d2005ce68dd)新增日历序列模块，32软件反例通过，尚无真实试点或神经模型。新来源阅读Qlib官方学习标签处理及DoubleAdapt v2方法/实验设置；两者只启发独立的目标/更新试验，不复制论文盈利声明。下一步保留模型权重、头部目标/持仓范围、有限真实序列、公式集合协同与广泛候选路线。
 
 [诊断](ML_E19_SCORE_DIAGNOSIS_20261009.md) · [序列说明](ALPHA_SEQUENCE_WINDOWS.md) · [总览](PROJECT_MAP.md) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.md) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.md) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+
+## 2026-10-09：成熟目标、存档接口与广泛公式接续
+
+E21T/E21A完成私有38条件（原35加补3，六fit不重训），E21B正式31迁入通过，本机0fit；注册worker接入和真实目标比较尚未做。蓝图E21神经网络和E22关系图仍未开始，补充任务不能冒充它们完成。
+
+已登记E23 task-399bbf18fec9：256个机制公式，覆盖价量/风险、板型、龙虎榜席位/买卖结构、估值风险、市场状态及高阶交互；先训练段筛选并保留探索和负结果，再少量账户。元数据编译和真实计算尚未执行，有限手工集合不是遗传搜索已经实现。
+
+追加阅读：[Qlib策略文档](https://raw.githubusercontent.com/microsoft/qlib/main/docs/component/strategy.rst)及TopkDropout选择代码节选，说明信号单位和留仓选择可分开；[AutoAlpha v2](https://arxiv.org/abs/2002.08245v2)只读摘要，启发家族多样性；[DoubleEnsemble v3](https://arxiv.org/abs/2010.01265v3)只读摘要和官方实现概览，留下训练轨迹加权/特征消融竞争路线，不声称复现论文。原零费10/12仍负，换手不能独自解释失败。
+
+[人话说明](ML_TARGETS_AND_SAVED_MODELS_20261009.md) · [总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
