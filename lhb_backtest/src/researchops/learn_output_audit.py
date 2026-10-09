@@ -1,4 +1,4 @@
-"""Frozen input/output/transform audit without any model refit or score reproduction."""
+"""Frozen input/output/transform audit; v2 reproduces saved scores with zero refits."""
 import importlib
 import json
 from pathlib import Path
@@ -12,7 +12,8 @@ import pandas as pd
 from .alpha_worker import verify_frozen_job
 from .alpha_experiments import verify_inputs
 from .learn_experiments import inspect_inputs, planned_attempts, verify_registered, same_json
-from .learn_worker import FILES
+from .learn_worker import output_files
+from ..alpharesearch.learning_artifacts import audit_learning_artifacts
 from .resources import WorkerResources
 from .screen_output_audit import _FrozenFinder
 from ..alpharesearch.learning import _fingerprint, _environment
@@ -68,18 +69,20 @@ def audit_frozen(cfg, job):
     if any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in paths):
         raise ValueError("Linked learning output refused")
     manifest_hash = digest(folder / "manifest.json"); manifest = _read(folder / "manifest.json")
-    header = dict(schema="registered-alpha-learn-manifest-v1", experiment_id=job.name,
+    v2 = cfg["spec"]["schema"] == "registered-alpha-learn-v2"
+    files = output_files(cfg)
+    header = dict(schema="registered-alpha-learn-manifest-v2" if v2 else "registered-alpha-learn-manifest-v1", experiment_id=job.name,
         task_id=cfg["task_id"], input_hash=digest(job / "input.json"), engine_hash=cfg["engine_hash"],
         candidate_manifest_hash=digest(job / "candidate_manifest.json"))
     if (set(manifest) != set(header)|{"artifacts"} or not same_json({k:manifest.get(k) for k in header},header)
-            or set(manifest["artifacts"]) != FILES
-            or {p.relative_to(folder).as_posix() for p in paths[1:] if p.is_file()} != FILES|{"manifest.json"}):
+            or set(manifest["artifacts"]) != files
+            or {p.relative_to(folder).as_posix() for p in paths[1:] if p.is_file()} != files|{"manifest.json"}):
         raise ValueError("Strict learning output file set/manifest differs")
     verify_artifacts(folder, manifest)
     if sum(p.stat().st_size for p in paths if p.is_file()) > WorkerResources.from_dict(cfg["resources"]).max_output_bytes:
         raise ValueError("Learning output exceeds byte budget")
     spec, model, _, info = inspect_inputs(cfg["project"], cfg, include_data=True)
-    info.pop("data"); X, _, weights, _, decision_rows, base = info.pop("prepared")
+    info.pop("data"); X, y, weights, P, decision_rows, base = info.pop("prepared")
     if not same_json(info, cfg["inspection"]):
         raise ValueError("Frozen learning input scope differs")
     predictions = pd.read_parquet(folder / "predictions.parquet")
@@ -107,6 +110,11 @@ def audit_frozen(cfg, job):
         ledger=[dict(call=1,state="succeeded",fit_attempts=1,fit_id=base["fit_id"],new_fit_intent=1)])
     if not same_json(_read(folder / "attempts.json"), expected_attempts):
         raise ValueError("Learning attempt ledger differs")
+    persisted = None
+    if v2:
+        persisted = audit_learning_artifacts(folder, X, y, weights, P, predictions, receipt,
+            max_checkpoint_bytes=cfg["spec"]["budget"]["max_checkpoint_bytes"],
+            trusted_local=True)
     verify_inputs(cfg["project"], cfg["inputs"], cfg["spec"]["budget"]["max_input_bytes"])
     if not same_json(verify_frozen_job(job,"alpha_learn"), cfg) or digest(folder/"manifest.json") != manifest_hash:
         raise ValueError("Learning identities changed during audit")
@@ -118,6 +126,10 @@ def audit_frozen(cfg, job):
         fit_id=base["fit_id"], prediction_id=base["prediction_id"], prediction_rows=base["prediction_rows"],
         replay_scope="frozen causal preparation, keys/clocks/finite scores, transform metadata and hashes only; no model refit",
         model_scores_independently_reproduced=False, vendor_history_certified=False, account_results=False)
+    if persisted is not None:
+        value.update(persisted)
+        value["schema"] = "registered-alpha-learn-audit-v2"
+        value["replay_scope"] = "frozen causal preparation and actual local pipeline reload reproduces train/forecast scores; no refit"
     return dict(value, audit_id=content_id(value))
 
 

@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-09T19:02:01.365514+00:00",
-  "current_package": "E21C",
-  "task_id": "task-63e44c19436b",
+  "updated_at_utc": "2026-10-09T19:57:14.216801+00:00",
+  "current_package": "E23H0",
+  "task_id": "task-de1d9e602aae",
   "packages": [
     {
       "id": "R0",
@@ -280,7 +280,7 @@
       "id": "E28",
       "title": "记录真正未来的预测",
       "status": "未开始",
-      "detail": "需先持久保存可载入的模型权重并接未来推断；目前保存历史预测及元数据。已看历史不算未见验证。",
+      "detail": "可载入实际拟合模型和训练trace的存档基础已由E21C接入；真正未来数据推断与前瞻预测封存仍未开始。旧E19没有保存拟合对象，不可补造；已看历史不算未见验证。",
       "dependencies": "E18,E19",
       "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
     },
@@ -368,7 +368,7 @@
       "id": "E21B",
       "title": "补充：正式目标与模型存档模块",
       "status": "已完成并公开",
-      "detail": "正式API迁入，本地31通过0fit；精确12文件发布，Windows1310/Ubuntu1307+3skip CI成功。注册worker集成仍待。",
+      "detail": "正式独立API迁入，当时本地31通过0fit；精确12文件发布，Windows1310/Ubuntu1307+3skip CI成功。实际模型/训练trace存档由E21C接入；目标变换仍是独立接口，正式worker集成待做。",
       "dependencies": "E21T,E21A",
       "guide": "ML_TARGETS_AND_SAVED_MODELS_20261009.md"
     },
@@ -415,10 +415,10 @@
     {
       "id": "E21C",
       "title": "补充：真实训练作业存档与零重训重现",
-      "status": "真实任务已创建；正式SOURCE与执行待做",
-      "detail": "候选06/39条件8合成拟合；实际SOURCE冻结和双审之后才迁入生产。代码/试验尚未执行，0新真实fit/account；守护草稿04增加完整历史目录保护。",
+      "status": "已完成实际工程归档；公开发布待核查",
+      "detail": "39项合成条件实际通过，原失败5fit保留；独立短目录恢复5库级+3隔离=8新fit，本机共13合成fit；其中存档容量失败仍计数。实际模型/X/Y/权重/train分数保存与0refit重载接入；145→146源。0新真实模型/账户。",
       "dependencies": "E21B,E23G",
-      "guide": "ML_TARGETS_AND_SAVED_MODELS_20261009.md"
+      "guide": "ML_ACTUAL_TRAINING_ARTIFACTS_20261009.md"
     },
     {
       "id": "E23GR",
@@ -431,8 +431,8 @@
     {
       "id": "E23H0",
       "title": "补充：原生后续期公式执行协议",
-      "status": "私有候选静态双审接受；未执行",
-      "detail": "候选03/51条件/4隔离批8合成公式仅静态初审；区分预热实际计算与零训练期输出。待E21C真实归档后新SOURCE双审，原生forecast协议尚未迁入。",
+      "status": "实际后续任务已创建；正式SOURCE与执行待做",
+      "detail": "候选03/51条件4隔离批8合成公式仅静态预审；完整执行/结果/关闭草稿就绪。生产forecast协议仍未迁入，0真实公式/模型/账户。",
       "dependencies": "E21C",
       "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
     },
@@ -492,12 +492,12 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "八类训练筛选已完成真实归档；20个候选尚未证明账户收益。原12市场模型/32账户结论不变。下一实际任务E21C已创建，39条件8合成拟合尚未执行。",
+  "current_result": "真实训练存档已接入，39条件实际验收，本机原5+恢复8共13合成拟合；没有新市场模型或账户收益。后续任务E23H0已创建，尚未执行。",
   "near_term": [
-    "核查并公开G精确报告文件，读取新提交真实CI；阶段结束后继续",
-    "E21C实际SOURCE→39条件/8合成fit→实际RESULT→归档，不重训旧模型",
-    "E23H0实际协议51条件/8合成公式→E23H固定20候选后续X→E19E有限7fit/14账户",
-    "继续龙虎榜披露/分母、随机傅里叶/组合学习、自动公式搜索、隔夜/日内分解、关系图，以及R22规模分组/异常换手；序列和未试原始特征保留"
+    "核查并公开E21C精确源码、测试、报告和导航；读取新提交真实双平台CI",
+    "E23H0正式SOURCE→51条件8合成公式→RESULT→归档；先明确原生后续区间",
+    "E23H固定20公式真实后续X→E19E共同16/28/36输入的有限真实模型和含费/零费账户",
+    "序列表示与AlphaNet、随机表示、风险分解、生成搜索、隔夜/日内和关系信息继续保留，避免只做IC筛选"
   ],
   "navigation": [
     {
@@ -714,8 +714,12 @@
     {
       "label": "R22规模分组与异常换手来源设计",
       "private_file": "R22_SIZE_STYLE_SOURCE_CARD_20261009.md"
+    },
+    {
+      "label": "E21C真实工程归档39条件，本机13合成fit",
+      "private_file": "E21C_closure_acceptance_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "G14/14与完整汇总已接受，原提交完成14次核查；独立恢复完成14次核查。原中断裁决次数未知，原7200秒案例仍为超时失败；0新增真实fit/account。C公开457a90f双平台CI成功，G发布待做。145生产源码仍未变；E21C39/8和E23H0 51/8只是下一阶段准备。下方31正式作业/12fit/32账户计数属于原E19批次，不是G累计作业数。"
+  "phase_summary": "原E19的12市场模型/32账户结论保持；G256表达式训练筛选及独立恢复已归档。E21C实际39条件/本机13合成fit是工程，不是新市场fit。生产146源，后续H0与20公式市场X未执行；新公开CI仍待核查。下方31/12/32属于原E19，不是所有阶段合计。"
 }

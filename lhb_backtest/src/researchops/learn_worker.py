@@ -15,9 +15,14 @@ from .alpha_experiments import verify_inputs
 from .learn_experiments import inspect_inputs, planned_attempts, same_json
 from .resources import WorkerResources
 from ..alpharesearch.learning import LearningRunner
+from ..alpharesearch.learning_artifacts import FILES as ARTIFACT_FILES, save_learning_artifacts
 from ..technical.artifacts import digest, jsonable, write_json
 
 FILES = {"predictions.parquet", "learning_receipt.json", "model_metadata.json", "attempts.json"}
+
+
+def output_files(cfg):
+    return FILES | ARTIFACT_FILES if cfg["spec"]["schema"] == "registered-alpha-learn-v2" else FILES
 
 
 def verify_job(job):
@@ -50,33 +55,50 @@ def compute(job):
     write_json(folder / "attempts.json", attempts)
     runner = LearningRunner(max_calls=1, max_fit_intents=1)
     try:
-        result = runner.run(spec, model, *data)
+        capture = cfg["spec"]["schema"] == "registered-alpha-learn-v2"
+        result = runner.run(spec, model, *data, capture_fit=capture)
     except Exception as exc:
         attempts.update(attempts=[dict(plan["attempts"][0], status="failed")],
             ledger=jsonable(runner.ledger), error=str(exc))
         write_json(folder / "attempts.json", attempts)
         raise
-    estimate = int(result.predictions.memory_usage(index=False, deep=True).sum())
-    if _used(folder) + estimate > resources.max_output_bytes:
-        raise ValueError("Learning output byte budget exceeded before prediction write")
-    result.predictions.to_parquet(folder / "predictions.parquet", index=False)
-    for name, value in (("learning_receipt", result.receipt), ("model_metadata", result.receipt["fitted_model"])):
-        projected = len(json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")) * 2
-        if _used(folder) + projected > resources.max_output_bytes:
-            raise ValueError("Learning output byte budget exceeded before JSON write")
-        write_json(folder / (name + ".json"), value)
-    attempts.update(attempts=[dict(plan["attempts"][0], status="succeeded")], ledger=jsonable(runner.ledger))
-    write_json(folder / "attempts.json", attempts)
-    verify_job(job)
-    verify_inputs(cfg["project"], cfg["inputs"], cfg["spec"]["budget"]["max_input_bytes"])
-    manifest = dict(schema="registered-alpha-learn-manifest-v1", experiment_id=job.name,
-        task_id=cfg["task_id"], input_hash=digest(job / "input.json"), engine_hash=cfg["engine_hash"],
-        candidate_manifest_hash=digest(job / "candidate_manifest.json"),
-        artifacts={p.name: digest(p) for p in folder.iterdir() if p.is_file()})
-    write_json(folder / "manifest.json", manifest)
-    if _used(folder) > resources.max_output_bytes:
-        raise ValueError("Actual learning output byte budget exceeded; retain artifacts")
-    return folder
+    try:
+        estimate = int(result.predictions.memory_usage(index=False, deep=True).sum())
+        if _used(folder) + estimate > resources.max_output_bytes:
+            raise ValueError("Learning output byte budget exceeded before prediction write")
+        result.predictions.to_parquet(folder / "predictions.parquet", index=False)
+        for name, value in (("learning_receipt", result.receipt), ("model_metadata", result.receipt["fitted_model"])):
+            projected = len(json.dumps(value, ensure_ascii=False, allow_nan=False).encode("utf-8")) * 2
+            if _used(folder) + projected > resources.max_output_bytes:
+                raise ValueError("Learning output byte budget exceeded before JSON write")
+            write_json(folder / (name + ".json"), value)
+        if capture:
+            artifact = result.fit_artifacts
+            estimate = int(artifact["X"].memory_usage(index=True, deep=True).sum()) * 2 + 48 * len(artifact["X"])
+            if _used(folder) + estimate + cfg["spec"]["budget"]["max_checkpoint_bytes"] > resources.max_output_bytes:
+                raise ValueError("Conservative training artifact byte estimate exceeds remaining output budget")
+            save_learning_artifacts(result, folder,
+                max_checkpoint_bytes=cfg["spec"]["budget"]["max_checkpoint_bytes"])
+            if _used(folder) > resources.max_output_bytes:
+                raise ValueError("Actual training artifacts exceed output byte budget; preserve partial output")
+        attempts.update(attempts=[dict(plan["attempts"][0], status="succeeded")], ledger=jsonable(runner.ledger))
+        write_json(folder / "attempts.json", attempts)
+        verify_job(job)
+        verify_inputs(cfg["project"], cfg["inputs"], cfg["spec"]["budget"]["max_input_bytes"])
+        manifest = dict(schema="registered-alpha-learn-manifest-v2" if capture else "registered-alpha-learn-manifest-v1", experiment_id=job.name,
+            task_id=cfg["task_id"], input_hash=digest(job / "input.json"), engine_hash=cfg["engine_hash"],
+            candidate_manifest_hash=digest(job / "candidate_manifest.json"),
+            artifacts={p.relative_to(folder).as_posix(): digest(p) for p in folder.rglob("*") if p.is_file()})
+        write_json(folder / "manifest.json", manifest)
+        if _used(folder) > resources.max_output_bytes:
+            raise ValueError("Actual learning output byte budget exceeded; retain artifacts")
+        return folder
+    except BaseException as exc:
+        attempts.update(attempts=[dict(plan["attempts"][0], status="failed")],
+            ledger=jsonable(runner.ledger), error=str(exc) or type(exc).__name__,
+            failure_phase="post_fit_output")
+        write_json(folder/"attempts.json", attempts)
+        raise
 
 
 def main():

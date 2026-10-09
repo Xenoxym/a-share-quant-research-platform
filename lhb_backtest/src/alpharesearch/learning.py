@@ -348,6 +348,7 @@ def _prepare(spec, model, decisions, assembly, labels):
 class LearningResult:
     predictions: pd.DataFrame
     receipt: dict
+    fit_artifacts: dict | None = None
 
 
 class LearningRunner:
@@ -366,13 +367,15 @@ class LearningRunner:
         self.ledger = []
         self._fits = {}
 
-    def run(self, spec, model, decisions, assembly, labels):
+    def run(self, spec, model, decisions, assembly, labels, *, capture_fit=False):
         if self.calls >= self.max_calls:
             raise ValueError("Learning call budget exhausted")
         self.calls += 1
         event = {"call": self.calls, "state": "preparing", "fit_attempts": 0}
         self.ledger.append(event)
         try:
+            if type(capture_fit) is not bool:
+                raise ValueError("capture_fit must be explicit boolean")
             if not isinstance(spec, LearningSpec) or not isinstance(model, ModelSpec):
                 raise ValueError("Validated LearningSpec and ModelSpec required")
             spec = LearningSpec.from_dict(spec.to_dict())
@@ -414,7 +417,14 @@ class LearningRunner:
             )
             event["state"] = "succeeded"
             json.dumps(receipt, allow_nan=False)
-            return LearningResult(output, receipt)
+            artifacts = None
+            if capture_fit:
+                # These are the actual matured values supplied to the fitted regressor.
+                # No forecast labels enter X/y/weights and no additional fit occurs.
+                artifacts = dict(fit_id=fit_id, adapter=cached["adapter"],
+                                 X=X.copy(), y=y.copy(),
+                                 weights=None if weights is None else weights.copy())
+            return LearningResult(output, receipt, artifacts)
         except Exception as exc:
             event["state"] = "failed"
             event["error"] = f"{type(exc).__name__}: {exc}"
