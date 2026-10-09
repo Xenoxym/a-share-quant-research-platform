@@ -9,6 +9,7 @@ import pandas as pd
 from .alpha_experiments import verify_inputs, verify_registered
 from .resources import WorkerResources
 from ..alpharesearch.features.base import FeatureBlock
+from ..alpharesearch.feature_storage import read_shared_index, read_compact_candidate, INDEX_FILES, CANDIDATE_FILES
 from ..technical.artifacts import content_id, digest, verify_artifacts
 
 
@@ -59,6 +60,7 @@ def _expected_definitions(proposal,roles,job):
 
 def audit_output(research,experiment):
     verify_registered(research,experiment)
+    compact=experiment["proposal"]["spec"].get("storage_layout")=="shared_index_v1"
     proposal=experiment["proposal"];job=research.root/"worker_jobs"/experiment["id"];folder=job/"alpha_result"
     cfg=json.loads((job/"input.json").read_text(encoding="utf-8"))
     if folder.is_symlink() or (hasattr(folder,"is_junction") and folder.is_junction()):
@@ -67,7 +69,7 @@ def audit_output(research,experiment):
     if any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in paths):
         raise ValueError("Linked output artifact paths refused")
     manifest=json.loads((folder/"manifest.json").read_text(encoding="utf-8"))
-    expected=dict(schema="registered-alpha-feature-manifest-v1",experiment_id=experiment["id"],
+    expected=dict(schema="registered-alpha-feature-manifest-v2" if compact else "registered-alpha-feature-manifest-v1",experiment_id=experiment["id"],
         task_id=experiment["task_id"],input_hash=digest(job/"input.json"),
         engine_hash=proposal["engine_hash"],candidate_manifest_hash=digest(job/"candidate_manifest.json"))
     if any(manifest.get(k)!=v for k,v in expected.items()) or set(manifest)!=set(expected)|{"artifacts"}:
@@ -88,11 +90,12 @@ def audit_output(research,experiment):
         expected_value=experiment["task_id"] if key=="task_id" else experiment["id"] if key=="experiment_id" else proposal[key]
         if result.get(key)!=expected_value:
             raise ValueError("Numerical result definition/ownership differs: "+key)
-    if (result.get("schema")!="registered-alpha-feature-result-v1" or result.get("model_fits")!=0
+    if (result.get("schema")!=("registered-alpha-feature-result-v2" if compact else "registered-alpha-feature-result-v1") or result.get("model_fits")!=0
             or result.get("accounts")!=0 or result.get("holdout_rows_executed")!=0
             or result.get("selection_rule")!="all_candidates_no_selection"
             or result.get("evaluation_scope")!="retrospective_time_split"):
         raise ValueError("Feature-only execution must not claim fits/accounts/holdout selection")
+    if compact and result.get("storage_layout")!="shared_index_v1":raise ValueError("Compact result layout differs")
     threads=resources.library_threads
     expected_runtime={"environment_threads":{name:str(threads) for name in (
         "OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS",
@@ -119,12 +122,19 @@ def audit_output(research,experiment):
         raise ValueError("Successful feature batch requires every registered candidate completed")
     completed=0
     allowed={"result.json","attempts.json"}
+    index=read_shared_index(folder,max_bytes=resources.max_output_bytes) if compact else None
+    if compact:
+        allowed|=INDEX_FILES
+        try:
+            pd.testing.assert_frame_equal(index.keys,membership[keys].reset_index(drop=True),check_dtype=False)
+        except AssertionError as exc:
+            raise ValueError("Shared index row order differs from frozen membership") from exc
     for attempt,candidate in zip(attempts,candidates):
         cid=candidate["candidate_id"]
         if (attempt["candidate_id"]!=cid or attempt["expression_id"]!=candidate["expression"]["expression_id"]
                 or attempt["family"]!=candidate["family"] or attempt["status"] not in {"completed","failed"}):
             raise ValueError("Numerical attempt identity/order/terminal status differs")
-        allowed|={cid+"/"+name for name in ("values.parquet","missing.parquet","definition.json")}
+        allowed|={cid+"/"+name for name in (CANDIDATE_FILES if compact else ("values.parquet","missing.parquet","definition.json"))}
         if attempt["status"]=="failed":
             allowed|={cid+"/"+name+".partial" for name in ("values.parquet","missing.parquet")}
             if not isinstance(attempt.get("error"),str) or not attempt["error"]:
@@ -134,8 +144,9 @@ def audit_output(research,experiment):
         if attempt.get("output_folder")!=cid:
             raise ValueError("Completed candidate output folder differs")
         metadata=json.loads((folder/cid/"definition.json").read_text(encoding="utf-8"));units=metadata.pop("units")
-        block=FeatureBlock(pd.read_parquet(folder/cid/"values.parquet"),
-                           pd.read_parquet(folder/cid/"missing.parquet"),units,metadata).validate()
+        block=(read_compact_candidate(index,cid,max_bytes=resources.max_output_bytes) if compact else
+               FeatureBlock(pd.read_parquet(folder/cid/"values.parquet"),
+                            pd.read_parquet(folder/cid/"missing.parquet"),units,metadata).validate())
         try:
             pd.testing.assert_frame_equal(block.values[keys].sort_values(keys).reset_index(drop=True),
                                           sorted_keys,check_dtype=False)

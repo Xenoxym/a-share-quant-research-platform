@@ -16,6 +16,7 @@ import pyarrow as pa
 from .resources import WorkerResources, hidden_console_record
 from ..alpharesearch.dsl import verify_compiled
 from ..alpharesearch.features.base import FeatureBlock
+from ..alpharesearch.feature_storage import write_shared_index, write_compact_candidate
 from ..technical.artifacts import content_id, digest, verify_artifacts, write_json
 
 
@@ -78,6 +79,8 @@ def compute(job):
     attempts=[dict(item) for item in spec.planned_attempts]
     write_json(folder/"attempts.json",attempts)
     began=time.monotonic()
+    shared_index=None
+    compact=doc.get("storage_layout")=="shared_index_v1"
     from .alpha_execution import cancel_reason
     for index,candidate in enumerate(doc["candidates"]):
         reason=cancel_reason(job)
@@ -94,18 +97,23 @@ def compute(job):
                 source_file_authentication="registered role files verified by SHA; vendor history not authenticated",
                 independent_reproduction=False,holdout_rows_executed=0)
             block=FeatureBlock(values,missing,block.units,meta).validate()
-            used=sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
-            # A conservative frame estimate prevents beginning an output that
-            # plainly exceeds the finite disk budget. Actual bytes checked too.
-            projected=int(values.memory_usage(deep=True).sum()+missing.memory_usage(deep=True).sum()+20000)
-            if used+projected>resources.max_output_bytes:
-                raise ValueError("Projected batch output byte budget exceeded")
-            target=folder/candidate["candidate_id"];target.mkdir(exist_ok=False)
-            for name,frame in (("values.parquet",values),("missing.parquet",missing)):
-                temporary=target/(name+".partial")
-                frame.to_parquet(temporary,index=False)
-                os.replace(temporary,target/name)
-            write_json(target/"definition.json",dict(meta,units=block.units))
+            if compact:
+                if shared_index is None:
+                    shared_index=write_shared_index(folder,values[["sample_id","trade_date","stock_code"]],max_bytes=resources.max_output_bytes)
+                write_compact_candidate(block,shared_index,candidate["candidate_id"],max_bytes=resources.max_output_bytes)
+            else:
+                used=sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
+                # A conservative frame estimate prevents beginning an output that
+                # plainly exceeds the finite disk budget. Actual bytes checked too.
+                projected=int(values.memory_usage(deep=True).sum()+missing.memory_usage(deep=True).sum()+20000)
+                if used+projected>resources.max_output_bytes:
+                    raise ValueError("Projected batch output byte budget exceeded")
+                target=folder/candidate["candidate_id"];target.mkdir(exist_ok=False)
+                for name,frame in (("values.parquet",values),("missing.parquet",missing)):
+                    temporary=target/(name+".partial")
+                    frame.to_parquet(temporary,index=False)
+                    os.replace(temporary,target/name)
+                write_json(target/"definition.json",dict(meta,units=block.units))
             actual_bytes=sum(p.stat().st_size for p in folder.rglob("*") if p.is_file())
             if actual_bytes>resources.max_output_bytes:
                 raise ValueError("Actual batch output byte budget exceeded")
@@ -121,7 +129,7 @@ def compute(job):
     from .alpha_experiments import verify_inputs
     verify_inputs(cfg["project"],cfg["inputs"],doc["budget"]["max_input_bytes"])
     completed=sum(a["status"]=="completed" for a in attempts)
-    result=dict(schema="registered-alpha-feature-result-v1",task_id=cfg["task_id"],
+    result=dict(schema="registered-alpha-feature-result-v2" if compact else "registered-alpha-feature-result-v1",task_id=cfg["task_id"],
         experiment_id=cfg["experiment_id"],spec=doc,engine_hash=cfg["engine_hash"],
         environment=cfg["environment"],resources=cfg["resources"],runtime_threads=runtime,registry_version=registry.version_id,
         candidate_count=len(attempts),completed_candidates=completed,
@@ -129,8 +137,9 @@ def compute(job):
         holdout_rows_executed=0,selection_rule="all_candidates_no_selection",
         elapsed_seconds=time.monotonic()-began,evaluation_scope="retrospective_time_split",
         verification_scope="frozen numerical execution/output identity; not independent full numerical reproduction or account evidence")
+    if compact:result["storage_layout"]="shared_index_v1"
     write_json(folder/"result.json",result)
-    manifest=dict(schema="registered-alpha-feature-manifest-v1",experiment_id=cfg["experiment_id"],
+    manifest=dict(schema="registered-alpha-feature-manifest-v2" if compact else "registered-alpha-feature-manifest-v1",experiment_id=cfg["experiment_id"],
         task_id=cfg["task_id"],input_hash=digest(job/"input.json"),engine_hash=cfg["engine_hash"],
         candidate_manifest_hash=digest(job/"candidate_manifest.json"),
         artifacts={p.relative_to(folder).as_posix():digest(p) for p in folder.rglob("*") if p.is_file()})

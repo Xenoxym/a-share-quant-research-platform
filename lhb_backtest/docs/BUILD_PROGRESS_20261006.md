@@ -344,3 +344,47 @@ E21B task-b7e7d4e7ee22两正式模块和正常导入测试已迁入，原141源�
 下步不局限目标：E23 task-399bbf18fec9已登记256个机制组合/8家族/训练段筛选方案，当前0候选计算和0新市场fit/account。再按依赖接持久worker、目标账户对照、真实序列；公式真实信号不能伪称synthetic_stub。来源深度和未验证边界保留，暂无账户收益改善。
 
 [本阶段人话说明](ML_TARGETS_AND_SAVED_MODELS_20261009.html) · [当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+## 32. 2026-10-09：E21B正式交付闭合，E23候选与训练源准备
+
+E21B task-b7e7d4e7ee22已完成；evidence-792237beef94，公开提交0eaece1，Windows1310/Ubuntu1307通过3跳过。注册学习worker尚未接入，不是目标收益试验完成。E23 task-399bbf18fec9仍active：元数据03单批256signed/128template/8families，两独立实际结果接受；四组线性依赖明列，不能按128独立信息宣传。训练源01单批379842行/153决策日/723市场日/3027股票，32原料（价量11、板型4、龙虎榜9、财务4、市场4），30.234秒、采样峰值约908MiB、225.7MB产物；原143源码/12旧failed和673源文件保全。实际数据结果复核接续，0公式分数、0筛选、0fit、0新账户。拟按8×(公式计算+筛选)最多16持久作业推进；代理路径不是审计账户，不以RankIC宣布成果。
+
+[总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [全部工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+## 33. E23资源入场失败保留与有限预算接续（2026-10-09）
+
+首公式登记exp-26a98cb3a7ef因8GiB预留加4GiB空闲超过机器约10GiB可用，原生worker未启动，0公式分数/fit/account；取消且仍计登记1。04私有修订等待双审，native4GiB/全树5GiB/free4，保留原16登记上限：旧1加新15；256不同公式计算、224筛选，higher_order筛选后延。所有未执行修订、旧失败和冻结记录保留；未绕过账户规则、未修改143生产源码。
+
+[人话说明](ML_FORMULA_RESEARCH_20261009.html) · [总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+## 34. E23首批实际失败与共享索引工程接续（2026-10-09）
+
+E23原任务双复核后以execution_failure_only完成。旧取消1加真实failed1=2登记；32实际候选尝试13partial/19输出失败；约702MB产物、每公式样本编号两次约49.89MB。0有效完整batch/screen/fit/account，旧失败不退款，13局部不晋级。另立E23S task-8fb7995da12b：显式v2共享索引，3改1新生产候选、20新+21旧=41软件条件、4toy公式预算，0真实公式/MLfit/account。fresh双审中，未迁入未测试。
+
+[容量说明](ML_FORMULA_CAPACITY_20261009.html) · [总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+## 35. E23S共享索引迁入与实际软件失败保留（2026-10-09）
+
+03fresh双审接受。3改1新生产模块迁入共144；新增sharedindex原行序与冻结名单绑定，42条件首次实际29pass/13fail。失败均合成toy构造source_missing非法枚举，非市场数据错；v1/v2两注册toybatch共4公式已成功，0MLfit/真实公式/账户。首批39.547秒/约350MiB峰值/10.7MB产物，140source/14旧实验/702MBpartial保全。另明示13失败nodes补验预算120秒/1GiB/free4/30MB，0新增公式，等待同阶段双审。原42失败及已算4toy不重跑；未宣称完整软件或真实容量通过。
+
+[容量报告](ML_FORMULA_CAPACITY_20261009.html) · [总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+## 36. E23S共享名单软件合并验收，转入真实容量试跑
+
+E23S任务task-8fb7995da12b完成，证据evidence-6516a968074b：原42项29pass/13合成输入标记错误fail；只修正构造输入并补验原13项，全pass。合并42条件，未重新执行原29项或旧4个合成公式。144生产Python文件（140原字节不变、3明确修改并备份、1新增），1914原文件与14旧实验行保全；两名新独立复核接受实际结果。仅软件验收，0真实公式/MLfit/account。
+
+下一子任务task-3a79a17656dc（E23P）：单批32个原量价公式用共享索引格式实测容量，0screen/fit/account，检查全32完成和旧13完整数值/时间/缺失逐行等价。执行前双复核，原2正式登记、32失败尝试与partial档案不退额、不重写。
+
+继续阅读AAAI2025 AlphaForge原文的生成/互补/动态组合及实验设置，记录不同股票池、VWAP目标和成熟标签门槛；不将论文数值移植为本项目收益预测。
+
+
+## 37. E23P真实容量验收完成，准备八家族广泛筛选
+
+任务task-3a79a17656dc完成，正式exp-f0d3575dfb7c，全32候选/379842训练行通过。输入PV块11列，实际依赖7列，全source库32列；文案复核纠正数字并保留原版。结果212759323字节，共同名单13197689，每候选约6.2MB；旧13完整键/分数/缺失/时间逐一check_exact一致，旧32attempt失败不改。受控试跑473.375秒/峰值1432797184字节/最低可用9301450752，全部PID停止与旧档保全。公式求值59.906秒，另有完整协议核查与归档复核成本，尚未做成本剖析优化。
+
+两位新独立复核接受修正scope02；证据evidence-99660c2c9659。0筛选/模型训练/账户；原12模型32账户结论不变。下一任务task-d878a2473869（E23F）单独15注册预算，复用P32，新增7家族224公式计算并筛选全部256通道。单worker2线程，全执行阶段5400秒上限，失败不自动重试；执行前双复核。筛选代理不是账户成果，后续真实账户另预算。

@@ -406,3 +406,14 @@ E21T/E21A完成私有38条件（原35加补3，六fit不重训），E21B正式31
 追加阅读：[Qlib策略文档](https://raw.githubusercontent.com/microsoft/qlib/main/docs/component/strategy.rst)及TopkDropout选择代码节选，说明信号单位和留仓选择可分开；[AutoAlpha v2](https://arxiv.org/abs/2002.08245v2)只读摘要，启发家族多样性；[DoubleEnsemble v3](https://arxiv.org/abs/2010.01265v3)只读摘要和官方实现概览，留下训练轨迹加权/特征消融竞争路线，不声称复现论文。原零费10/12仍负，换手不能独自解释失败。
 
 [人话说明](ML_TARGETS_AND_SAVED_MODELS_20261009.md) · [总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+
+### 2026-10-09：批量公式容量及广泛家族路线
+
+E23旧32公式输出预算失败；E23S共享名单软件原29加补13验收；E23P真实32全完成/约213MB/旧13精确语义一致，任务task-3a79a17656dc，证据evidence-99660c2c9659。均为工程证据，0新账户；E23F task-d878a2473869准备8家族256训练筛选通道（224新公式），不是只扩原16特征或重复树参数。
+
+新阅读[AlphaForge作者AAAI2025论文](https://ojs.aaai.org/index.php/AAAI/article/download/33365/35520)的算法1/2、互补性与动态组合、实验设置段落，未读完整补充材料、未复现。启发后续固定因子库与已成熟标签的动态组合对照。其CSI300/500、20交易日VWAP目标、逐年训练与本项目主板周度开盘目标不同，不移植收益/RankIC数字。竞争解释包括搜索噪声、风格暴露和漂移；最小否证试验是相同账户下固定组合对照只用成熟历史Y的动态组合，按净收益/回撤判断。源卡E23P_factor_pool_source_card_01.json。
+
+[回测过拟合作者论文](https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf)仅阅读选定介绍、同步试验矩阵与CSCV方法段，未复制全部实验。候选的正负号、线性关联及重复容量试验不能当成独立alpha；保留整个尝试账。统计诊断不替代时点数据和账户核查。源卡E23_selection_uncertainty_source_card_01.json。
+
+接续保留模型/目标持久化worker、序列、其他模型、行业及跨股结构、因子互补/市场风险配置与股票池/调仓口径的独立对照；容量解决不意味着这些方向已实现。

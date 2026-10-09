@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-09T07:58:50.528102+00:00",
-  "current_package": "正式目标/模型存档接口与31项零拟合迁入通过，交付复核中；准备256机制公式训练段筛选",
-  "task_id": "task-b7e7d4e7ee22",
+  "updated_at_utc": "2026-10-09T10:42:38.902343+00:00",
+  "current_package": "共享名单真实容量验收完成；八家族筛选准备",
+  "task_id": "task-d878a2473869",
   "packages": [
     {
       "id": "R0",
@@ -239,10 +239,10 @@
     {
       "id": "E23",
       "title": "遗传与符号搜索公式",
-      "status": "有限机制集合方案已登记，尚未执行",
-      "detail": "task-399bbf18fec9：256候选、8家族、训练段筛选；先手工机制集合基线，遗传/自动符号搜索仍未做。",
+      "status": "真实32容量已验收；广泛筛选准备",
+      "detail": "256有符号候选与全库32原料已准备；旧失败保留；P完整32真实计算/213MB通过。八家族筛选尚未执行；无新账户结论。",
       "dependencies": "E09,E12,E19",
-      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+      "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
     },
     {
       "id": "E24",
@@ -367,10 +367,34 @@
     {
       "id": "E21B",
       "title": "补充：正式目标与模型存档模块",
-      "status": "本地31迁入通过，公开复核中",
-      "detail": "两新模块；25无fit目标检查+6旧模型存档分数迁入，共12predict0fit。worker集成未做。",
+      "status": "已完成并公开",
+      "detail": "正式API迁入，本地31通过0fit；精确12文件发布，Windows1310/Ubuntu1307+3skip CI成功。注册worker集成仍待。",
       "dependencies": "E21T,E21A",
       "guide": "ML_TARGETS_AND_SAVED_MODELS_20261009.md"
+    },
+    {
+      "id": "E23S",
+      "title": "补充：共享名单存储与独立核查",
+      "status": "已完成本机软件验收",
+      "detail": "144生产文件；原29加补13验收42条件，v1/v2各2合成公式共4，0真实公式/fit/account。首次失败保留。",
+      "dependencies": "E23,E12",
+      "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
+    },
+    {
+      "id": "E23P",
+      "title": "补充：真实32公式容量试跑",
+      "status": "已完成真实容量验收",
+      "detail": "1正式批次32全完成；7实际依赖/11PV输入列/32原料库。213MB，旧13完整语义一致；473s/1.43GB；0screen/fit/account。",
+      "dependencies": "E23S",
+      "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
+    },
+    {
+      "id": "E23F",
+      "title": "补充：八家族训练筛选",
+      "status": "执行前准备",
+      "detail": "独立15job/224新公式/256筛选通道；复用已核查P32，不重算。尚未执行，0fit/account。",
+      "dependencies": "E23P,E12",
+      "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
     }
   ],
   "phase_counts": {
@@ -404,12 +428,12 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "原12市场模型账户仍均亏损；目标/存档私有原35加补3覆盖38条件，正式31迁入通过且本机0新fit。序列32检查和上一提交两平台CI通过；没有真实序列或新目标账户收益证据。",
+  "current_result": "原12模型/32账户结论不变。E23S原29加补13条件软件验收完成，P真实32公式全部完成，约213MB；旧13分数/缺失/时间逐行一致，旧失败保留。E23F独立15job预算，复用P32并新增224公式，训练筛选共256通道；未执行，0新fit/account。",
   "near_term": [
-    "复核并公开目标/存档正式模块、31项迁入和完整人话说明，检查首轮两平台CI。",
-    "256机制公式：价量/板型/龙虎榜/财务/市场/高阶交互，冻结生成规则、训练期筛选与全部失败记录；不是无限参数扫。",
-    "持久学习worker保存模型、训练预测与逐行权重，接明确训练目标，随后同名单目标账户对照。",
-    "有限真实日历序列试点/展平对照，再神经模型；保留关系、风险留仓、全A与真正前瞻路线。"
+    "发布核查后的存储源码和人话报告，完成两平台CI。",
+    "双独立源复核后，八家族15有限注册案例：224新公式和256训练筛选通道。",
+    "筛选完整结果复核后少量候选进入账户净年化/最大回撤对照。",
+    "基于实测剖析重复核查成本；接入模型/目标持久化，持续序列/其他模型/互补组合/风险研究。"
   ],
   "navigation": [
     {
@@ -460,6 +484,21 @@
       "title": "训练目标与模型存档：人话说明",
       "html": "ML_TARGETS_AND_SAVED_MODELS_20261009.html",
       "md": "ML_TARGETS_AND_SAVED_MODELS_20261009.md"
+    },
+    {
+      "title": "公式组合研究的人话说明",
+      "html": "ML_FORMULA_RESEARCH_20261009.html",
+      "md": "ML_FORMULA_RESEARCH_20261009.md"
+    },
+    {
+      "title": "首次真实批次为何失败",
+      "html": "ML_FORMULA_CAPACITY_20261009.html",
+      "md": "ML_FORMULA_CAPACITY_20261009.md"
+    },
+    {
+      "title": "共享名单存储改造",
+      "html": "ML_FORMULA_SHARED_STORAGE_20261009.html",
+      "md": "ML_FORMULA_SHARED_STORAGE_20261009.md"
     }
   ],
   "evidence": [
@@ -534,5 +573,5 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "12真实模型、32账户情景已计算；修正核查器接受24模型情景，8对照原通过。16方法历史股票日期名单完全一致；原12个模型账户failed仍保留。全部ML扣费年化为负（-26.97%至-9.34%），小市值+28.38%/最大回撤幅度41.88%；未产生值得暂停的收益改善。0新fit/账户模拟。"
+  "phase_summary": "原12模型/32账户结论不变。E23S原29加补13条件软件验收完成，P真实32公式全部完成，约213MB；旧13分数/缺失/时间逐行一致，旧失败保留。E23F独立15job预算，复用P32并新增224公式，训练筛选共256通道；未执行，0新fit/account。"
 }

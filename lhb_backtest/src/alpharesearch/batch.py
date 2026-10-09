@@ -21,7 +21,11 @@ class AlphaBatchSpec:
     @classmethod
     def from_dict(cls,value,registry: FeatureRegistry):
         keys={'schema','name','dataset_id','universe_id','ranges','candidates','blocks','bindings','budget','allow_weak_vintage','evaluation_scope','selection_rule','primary_objectives'}
-        if not isinstance(value,dict) or set(value)!=keys or value['schema']!='alpha-feature-batch-v1':raise ValueError('Strict alpha feature batch schema required')
+        if not isinstance(value,dict):raise ValueError('Strict alpha feature batch schema required')
+        if value.get('schema')=='alpha-feature-batch-v2':
+            keys=keys|{'storage_layout'}
+            if value.get('storage_layout')!='shared_index_v1':raise ValueError('Explicit supported feature storage layout required')
+        if set(value)!=keys or value.get('schema') not in ('alpha-feature-batch-v1','alpha-feature-batch-v2'):raise ValueError('Strict alpha feature batch schema required')
         doc=json.loads(_json(value))
         for name in ('name','dataset_id','universe_id'):required_id(doc[name],name)
         if doc['evaluation_scope']!='retrospective_time_split' or doc['selection_rule']!='all_candidates_no_selection' or doc['primary_objectives']!=['account_return','max_drawdown']:raise ValueError('Feature batches cannot claim selection or final strategy success')
