@@ -1,6 +1,5 @@
 """Bounded development screening; endpoint gross proxies are never account results."""
 from dataclasses import dataclass
-from itertools import combinations, islice
 import json
 
 import numpy as np
@@ -11,12 +10,13 @@ from .contracts import VintagePolicy, required_id, timestamp, timestamps
 from .features.base import FeatureBlock
 from .learning import KEYS, CLOCKS, LABELS, _day, _integer, _keys, _fingerprint, _environment
 from .registry import implementation_hashes
+from .redundancy import redundancy_pairs
 from ..technical.artifacts import content_id
 
 CODE = ["src/alpharesearch/screening.py", "src/alpharesearch/learning.py",
         "src/alpharesearch/assembly.py", "src/alpharesearch/contracts.py",
         "src/alpharesearch/features/base.py", "src/alpharesearch/registry.py",
-        "src/technical/artifacts.py"]
+        "src/technical/artifacts.py", "src/alpharesearch/redundancy.py"]
 
 
 def _number(value, name):
@@ -352,10 +352,8 @@ def screen(spec, decisions, assembly, labels):
                                      else "family_quota_or_proxy_dominance")
     names = sorted({c["feature_key"] for c in cfg["channels"]})
     pair_count = len(names)*(len(names)-1)//2
-    redundancy = []
-    for left, right in islice(combinations(names, 2), cfg["max_redundancy_pairs"]):
-        r, n, why = _rank_ic(scoped.values[left], scoped.values[right], cfg["min_pairs"])
-        redundancy.append(dict(left=left, right=right, common_rows=n, pooled_rank_correlation=r, reason=why))
+    redundancy = redundancy_pairs(scoped.values, names, cfg["min_pairs"],
+                                  cfg["max_redundancy_pairs"])
     consumption = p.copy()
     consumption["target_used"] = target
     consumption["target_state"] = label_reason

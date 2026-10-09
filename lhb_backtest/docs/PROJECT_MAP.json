@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-09T10:42:38.902343+00:00",
-  "current_package": "共享名单真实容量验收完成；八家族筛选准备",
-  "task_id": "task-d878a2473869",
+  "updated_at_utc": "2026-10-09T12:36:02.355591+00:00",
+  "current_package": "E23G",
+  "task_id": "task-6728ec915b39",
   "packages": [
     {
       "id": "R0",
@@ -239,8 +239,8 @@
     {
       "id": "E23",
       "title": "遗传与符号搜索公式",
-      "status": "真实32容量已验收；广泛筛选准备",
-      "detail": "256有符号候选与全库32原料已准备；旧失败保留；P完整32真实计算/213MB通过。八家族筛选尚未执行；无新账户结论。",
+      "status": "首32价量筛选完成；七类继续运行",
+      "detail": "256有符号候选与全库32原料已准备；旧失败保留；P完整32真实计算/213MB通过，F首32价量筛选通过。G已完成首32风险公式，第2例筛选运行中；全八家族尚未完成，无新账户结论。",
       "dependencies": "E09,E12,E19",
       "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
     },
@@ -375,15 +375,15 @@
     {
       "id": "E23S",
       "title": "补充：共享名单存储与独立核查",
-      "status": "已完成本机软件验收",
-      "detail": "144生产文件；原29加补13验收42条件，v1/v2各2合成公式共4，0真实公式/fit/account。首次失败保留。",
+      "status": "已完成并公开",
+      "detail": "144生产文件；原29加补13验收42条件，v1/v2各2合成公式共4，0真实公式/fit/account。首次失败保留。 公开提交a21ecc7；Windows1331/Ubuntu1328+3skip CI成功。",
       "dependencies": "E23,E12",
       "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
     },
     {
       "id": "E23P",
       "title": "补充：真实32公式容量试跑",
-      "status": "已完成真实容量验收",
+      "status": "已完成并公开",
       "detail": "1正式批次32全完成；7实际依赖/11PV输入列/32原料库。213MB，旧13完整语义一致；473s/1.43GB；0screen/fit/account。",
       "dependencies": "E23S",
       "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
@@ -391,10 +391,26 @@
     {
       "id": "E23F",
       "title": "补充：八家族训练筛选",
-      "status": "执行前准备",
-      "detail": "独立15job/224新公式/256筛选通道；复用已核查P32，不重算。尚未执行，0fit/account。",
+      "status": "部分阶段已归档：1/15例",
+      "detail": "复用P32完成32通道，native443s/outer1171.5s接近20min单例上限；全8家族尚未完成，余14案例未启动；先改造重复排序。 归档789.625s、两次原冻结核查；task-d878a2473869完成的是吞吐里程碑，整批仍待接续。",
       "dependencies": "E23P,E12",
-      "guide": "ML_FORMULA_SHARED_STORAGE_20261009.md"
+      "guide": "ML_FORMULA_SCREEN_THROUGHPUT_20261009.md"
+    },
+    {
+      "id": "E23C",
+      "title": "补充：精确共同名单排序复用",
+      "status": "已完成本机验收",
+      "detail": "75软件通过；1次真实379842×32/496对全部与原算法/原表精确相同，rank992→32、pair124.25→7.891s；145源码，0fit/account。两名结果接受并归档，未宣称whole-screen提速。",
+      "dependencies": "E23F,E23S",
+      "guide": "ML_EXACT_RANK_REUSE_20261009.md"
+    },
+    {
+      "id": "E23G",
+      "title": "补充：接续七类224公式与筛选",
+      "status": "运行中：1/14例完成",
+      "detail": "14新正式作业预算、224新formula+224screen；首批price_risk32通过，outer471.891s，已启动第2例筛选。复用旧price_liquidity32，不计新试验。21600s包含核查归档，1worker2threads，0fit/account。",
+      "dependencies": "E23C,E23F",
+      "guide": "ML_EXACT_RANK_REUSE_20261009.md"
     }
   ],
   "phase_counts": {
@@ -428,12 +444,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "原12模型/32账户结论不变。E23S原29加补13条件软件验收完成，P真实32公式全部完成，约213MB；旧13分数/缺失/时间逐行一致，旧失败保留。E23F独立15job预算，复用P32并新增224公式，训练筛选共256通道；未执行，0新fit/account。",
+  "current_result": "七类新公式继续运行：第一类32个风险公式计算与核查通过，正在筛选；0新模型、0新账户。精确排序复用已完成，账户收益结论尚未改变。",
   "near_term": [
-    "发布核查后的存储源码和人话报告，完成两平台CI。",
-    "双独立源复核后，八家族15有限注册案例：224新公式和256训练筛选通道。",
-    "筛选完整结果复核后少量候选进入账户净年化/最大回撤对照。",
-    "基于实测剖析重复核查成本；接入模型/目标持久化，持续序列/其他模型/互补组合/风险研究。"
+    "接续其余七类公式计算和训练段筛选，保留全部失败和预算记录",
+    "依据筛选结果确定少量组合候选，接入原生账户后比较含费收益与回撤",
+    "完善真实训练模型保存与重载，再开展新特征、序列、关系及风险目标的对照"
   ],
   "navigation": [
     {
@@ -570,8 +585,48 @@
     {
       "label": "256公式有限方案",
       "private_file": "E23_task_spec_01.json"
+    },
+    {
+      "label": "真实32公式容量结果双复核",
+      "private_file": "E23P_result_reviews_02.json"
+    },
+    {
+      "label": "八家族筛选新版执行方案双复核",
+      "private_file": "E23F_source_reviews_02.json"
+    },
+    {
+      "label": "共享名单代码实际公开提交",
+      "private_file": "E23S_publication_01.json"
+    },
+    {
+      "label": "首32筛选吞吐里程碑（八家族未完成）",
+      "private_file": "E23F_throughput_milestone_01.json"
+    },
+    {
+      "label": "E23F有限归档与真实子任务",
+      "private_file": "E23F_closure_acceptance_02.json"
+    },
+    {
+      "label": "E23C源码新阶段范围，未执行",
+      "private_file": "E23C_source_scope_01.json"
+    },
+    {
+      "label": "C软件与真实配对结果",
+      "private_file": "E23C_result_scope_01.json"
+    },
+    {
+      "label": "C归档与真实G子任务",
+      "private_file": "E23C_closure_acceptance_01.json"
+    },
+    {
+      "label": "G有限七家族方案",
+      "private_file": "E23G_source_scope_01.json"
+    },
+    {
+      "label": "E23G首批32风险公式完成，下一例筛选已启动",
+      "private_file": "research/autonomous_delivery_20261006/E23G_acceptance_02_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "原12模型/32账户结论不变。E23S原29加补13条件软件验收完成，P真实32公式全部完成，约213MB；旧13分数/缺失/时间逐行一致，旧失败保留。E23F独立15job预算，复用P32并新增224公式，训练筛选共256通道；未执行，0新fit/account。"
+  "phase_summary": "E23C已完成：75软件通过，真实496对与旧结果精确相同；相关性部分124.25→7.891秒，整套筛选提速尚未测量。F首32价量筛选已完成。E23G接续14作业/224新公式+224筛选，已完成第一例32风险公式，第二例筛选运行中；0新模型或账户。"
 }
