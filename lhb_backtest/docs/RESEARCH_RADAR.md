@@ -1,3 +1,5 @@
+> 顶部日期及“初始化”描述保留2026-10-05的建档历史；当前进度见[项目总览](PROJECT_MAP.md)和末尾按日期追加记录。
+
 # 研究雷达：主动发现与未回答的问题
 
 更新：2026-10-05 · 来源任务：`task-f162cedea988` · [项目纲领](PROJECT_CHARTER.md)
@@ -386,3 +388,10 @@
 更新R01/R02/R03/R04/R08/R12/R14实际证据覆盖，保留序列/神经网络、公式集合、关系、风险/留仓与未来观察。Qlib、SimStock、AlphaGen/AlphaForge选读与竞争解释已保存；源阅读和软件通过不算盈利实验。下步根据已核查账户查学习分数/漂移，并建设通用输入与可加载模型，不继续只换初始树参数。
 
 [当前总览](PROJECT_MAP.html) · [完整蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [全部工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [详细记录](BUILD_PROGRESS_20261006.md)
+
+
+## 2026-10-09：分数诊断与正式日历窗口
+
+E19D(task-c0523d042fbf)检查全部12原分数，原账户收益失败结论不变；整体排序与头部选股分开验证，不以RankIC晋级。E20B(task-5d2005ce68dd)新增日历序列模块，32软件反例通过，尚无真实试点或神经模型。新来源阅读Qlib官方学习标签处理及DoubleAdapt v2方法/实验设置；两者只启发独立的目标/更新试验，不复制论文盈利声明。下一步保留模型权重、头部目标/持仓范围、有限真实序列、公式集合协同与广泛候选路线。
+
+[诊断](ML_E19_SCORE_DIAGNOSIS_20261009.md) · [序列说明](ALPHA_SEQUENCE_WINDOWS.md) · [总览](PROJECT_MAP.md) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.md) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.md) · [建设记录](BUILD_PROGRESS_20261006.md)

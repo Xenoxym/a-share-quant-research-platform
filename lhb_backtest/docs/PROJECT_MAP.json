@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-09T06:03:50.800190+00:00",
-  "current_package": "E19整批账户对照已核查；E20私有窗口接口30测试通过，继续诊断与接入",
-  "task_id": "task-b2a5a6ee17c6",
+  "updated_at_utc": "2026-10-09T06:47:40.517118+00:00",
+  "current_package": "整批模型失效诊断已完成；序列接口正式接入、32项检查通过，继续目标与组合研究",
+  "task_id": "task-5d2005ce68dd",
   "packages": [
     {
       "id": "R0",
@@ -207,18 +207,18 @@
     {
       "id": "E19",
       "title": "首次新流水线真实闭环",
-      "status": "整批账户对照已核查，交付复核中",
-      "detail": "12fit/32账户已计算；24模型修正核查＋8对照原核查接受。全部ML净年化为负，原12failed保留，不追加重训。",
+      "status": "整批已核查并发布，模型未达收益目标",
+      "detail": "12fit/32账户全部结果已报告；原12failed保持。保存分数诊断另记E19D，不重训或补跑。",
       "dependencies": "E14,E18",
       "guide": "ML_E19_ACCOUNT_COMPARISON_20261009.md"
     },
     {
       "id": "E20",
       "title": "序列与事件数据集",
-      "status": "私有窗口接口30反例通过，接入待做",
-      "detail": "日历窗口/可知时间/缺失掩码、有界批；源与入口双复核。未迁入生产，真实试点/事件序列/模型仍待做。",
+      "status": "日历窗口已正式接入，事件序列/真实试点待做",
+      "detail": "E20私有30检查，E20B正式32检查；明确每日特征、可知时间/缺失掩码和有限批。没有序列模型。",
       "dependencies": "E07,E16",
-      "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+      "guide": "ALPHA_SEQUENCE_WINDOWS.md"
     },
     {
       "id": "E21",
@@ -327,10 +327,26 @@
     {
       "id": "E19A",
       "title": "补充：金额舍入与原账户重检",
-      "status": "原12模型完整重检与16方法汇总通过",
-      "detail": "同名单16方法；140原源码/16原实验行保全。0新fit/模拟；指标与账本修正后事后核查，不是模型权重独立重现。",
+      "status": "工程任务已完成，原档案保留",
+      "detail": "24模型场景修正核查+8原对照通过；16同名单比较发布；0新fit/模拟。",
       "dependencies": "E19",
       "guide": "ML_E19_ACCOUNT_COMPARISON_20261009.md"
+    },
+    {
+      "id": "E19D",
+      "title": "保存分数的失效诊断",
+      "status": "单批完成，结果交付复核中",
+      "detail": "12模型、188完整标签区间/189全预测双口径；分位/头部/年度/规模/稳定性。0fit/账户，不能测未保存训练分数差距。",
+      "dependencies": "E19,E19A",
+      "guide": "ML_E19_SCORE_DIAGNOSIS_20261009.md"
+    },
+    {
+      "id": "E20B",
+      "title": "正式序列接口与日线接入",
+      "status": "本地32检查通过，发布与CI待做",
+      "detail": "新增sequence模块/直接导入测试；旧140代码不变，真实行情试点/神经模型/账户均未运行。",
+      "dependencies": "E20,E19A",
+      "guide": "ALPHA_SEQUENCE_WINDOWS.md"
     }
   ],
   "phase_counts": {
@@ -364,12 +380,12 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "完整净收益、回撤、分年、双费用、仓位、换手及权益对照已生成，正在独立交付复核；30个序列窗口手工反例通过，但尚无生产迁移、真实试点或序列模型。",
+  "current_result": "全部12模型平均排序相关为正，但9个前100标签超额为负；账户12模型仍全部亏损。新增日历序列模块、32手算与反例通过；没有真实序列试点、训练或账户。",
   "near_term": [
-    "发布核查后的完整账户结果、全部候选与简略研究路径，继续推进而不因阶段结束停止。",
-    "检查分数排序、训练/预测差异和时间漂移；零费10/12模型仍亏损，费用不是唯一解释。",
-    "将已测试序列窗口接入生产并单独登记真实数据试点、预处理与可加载模型工程。",
-    "保留公式集合增量、滚动成熟标签组合、神经网络/关系表示、风险/留仓、全A及未来观察路线；每批有限预算。"
+    "独立复核并公开诊断及序列正式接入内容；确认本次代码两平台CI。",
+    "未来模型保存权重和训练/预测分数；在相同名单/标签/账户下比较头部选股、相对收益目标及持仓范围。",
+    "有限真实序列分区、预处理、展平与序列模型对比；每条单独冻结预算。",
+    "保留数百公式生成与train-only筛选、集合协同/滚动组合、神经关系/风险留仓/全A/前瞻记录路线，不能只围绕12旧模型调参。"
   ],
   "navigation": [
     {
@@ -405,6 +421,16 @@
       "title": "本批全部账户结果",
       "md": "ML_E19_ACCOUNT_COMPARISON_20261009.md",
       "html": "ML_E19_ACCOUNT_COMPARISON_20261009.html"
+    },
+    {
+      "title": "模型保存分数学到了什么",
+      "md": "ML_E19_SCORE_DIAGNOSIS_20261009.md",
+      "html": "ML_E19_SCORE_DIAGNOSIS_20261009.html"
+    },
+    {
+      "title": "序列接口的人话说明",
+      "md": "ALPHA_SEQUENCE_WINDOWS.md",
+      "html": "ALPHA_SEQUENCE_WINDOWS.html"
     }
   ],
   "evidence": [
@@ -452,7 +478,19 @@
       "label": "首项资源与停止确认",
       "private_file": "E19A_reaudit_supervision_05_01.json"
     },
-    "2026-10-09：E19A全12原档案完整修正核查，16方法同名单资金比较；原failed保留。E20私有30手工反例通过；完整结果待公开交付复核。"
+    "2026-10-09：E19A全12原档案完整修正核查，16方法同名单资金比较；原failed保留。E20私有30手工反例通过；完整结果待公开交付复核。",
+    {
+      "label": "保存分数单批诊断",
+      "private_file": "E19D_diagnostic_acceptance_02.json"
+    },
+    {
+      "label": "正式序列32检查",
+      "private_file": "E20B_software_acceptance_02.json"
+    },
+    {
+      "label": "完整账户报告两平台CI",
+      "private_file": "E19_ci_06.json"
+    }
   ],
   "real_matrix_plan_saved": true,
   "phase_summary": "12真实模型、32账户情景已计算；修正核查器接受24模型情景，8对照原通过。16方法历史股票日期名单完全一致；原12个模型账户failed仍保留。全部ML扣费年化为负（-26.97%至-9.34%），小市值+28.38%/最大回撤幅度41.88%；未产生值得暂停的收益改善。0新fit/账户模拟。"
