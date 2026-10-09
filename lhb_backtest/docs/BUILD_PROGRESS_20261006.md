@@ -457,3 +457,15 @@ E23G task-6728ec915b39原14作业全部completed并通过外层核查，最后ex
 - 300秒关闭沿原5400秒阶段起点，0关闭fit/native verification；准确建立E23H0子任务，51条件8合成公式尚未执行。继续后续X与真实账户，不因工程归档或CI结束停止。
 
 固定导航：[总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [详细建设记录](BUILD_PROGRESS_20261006.md)。
+
+
+E21C实际发布接续：提交`0bb954cefb46e52041fcda70f6e2981017c25593`，精确15清单/实际14改动；新CI `37984198389` Windows1392通过404.42秒，Ubuntu1389通过3跳过269.80秒，wheel/template通过。复核修正目标变换尚未接worker及未来推断未开始；PUBLIC01修订与PUBLIC02双接受永久保留。CI合成拟合不算在本机原5+恢复8的13内。自动接续H0，0市场fit/account。
+
+
+## 44. 2026-10-09：原生后续特征协议接入
+
+- 实际SOURCE与RESULT双复核，51条件全部通过。4隔离批各2合成公式，实际8次；没有真实市场公式、训练或账户。旧v1/v2兼容；v3固定训练名单、后续区间、预热、键与信息时钟，未来Y不得作为X。
+- 修改4项生产模块并新增batch_partition，146→147；修改前源码、旧模型/账户/隔离案例/数据库均保全。300秒关闭不追加公式/fit/account/native verification，沿5400秒阶段起点。
+- [人话报告](ML_FORECAST_FEATURE_PROTOCOL_20261009.html)。后续20项真实公式X的E23H任务已创建，但未执行。后续同名单16/28/36输入、有限模型与含费/零费账户仍待研究；工程通过不是收益提升。
+
+固定导航：[总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)。

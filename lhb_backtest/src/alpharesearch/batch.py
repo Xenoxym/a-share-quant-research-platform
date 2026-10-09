@@ -22,10 +22,13 @@ class AlphaBatchSpec:
     def from_dict(cls,value,registry: FeatureRegistry):
         keys={'schema','name','dataset_id','universe_id','ranges','candidates','blocks','bindings','budget','allow_weak_vintage','evaluation_scope','selection_rule','primary_objectives'}
         if not isinstance(value,dict):raise ValueError('Strict alpha feature batch schema required')
-        if value.get('schema')=='alpha-feature-batch-v2':
+        if value.get('schema') in ('alpha-feature-batch-v2','alpha-feature-batch-v3'):
             keys=keys|{'storage_layout'}
             if value.get('storage_layout')!='shared_index_v1':raise ValueError('Explicit supported feature storage layout required')
-        if set(value)!=keys or value.get('schema') not in ('alpha-feature-batch-v1','alpha-feature-batch-v2'):raise ValueError('Strict alpha feature batch schema required')
+        if value.get('schema')=='alpha-feature-batch-v3':
+            keys=keys|{'execution_partition','forecast_warmup_start','training_selection'}
+            if value.get('execution_partition')!='forecast_features':raise ValueError('Explicit forecast-feature partition required')
+        if set(value)!=keys or value.get('schema') not in ('alpha-feature-batch-v1','alpha-feature-batch-v2','alpha-feature-batch-v3'):raise ValueError('Strict alpha feature batch schema required')
         doc=json.loads(_json(value))
         for name in ('name','dataset_id','universe_id'):required_id(doc[name],name)
         if doc['evaluation_scope']!='retrospective_time_split' or doc['selection_rule']!='all_candidates_no_selection' or doc['primary_objectives']!=['account_return','max_drawdown']:raise ValueError('Feature batches cannot claim selection or final strategy success')
@@ -35,6 +38,15 @@ class AlphaBatchSpec:
         for d in ranges.values():
             if not isinstance(d,str) or date.fromisoformat(d).isoformat()!=d:raise ValueError('Canonical frozen date required')
         if not ranges['warmup_start']<=ranges['development_start']<=ranges['development_end']<ranges['holdout_start']<=ranges['holdout_end']:raise ValueError('Development and holdout ranges overlap or are reversed')
+        selection_roles=set()
+        if doc['schema']=='alpha-feature-batch-v3':
+            warmup=doc['forecast_warmup_start']
+            if not isinstance(warmup,str) or date.fromisoformat(warmup).isoformat()!=warmup or warmup>ranges['holdout_start']:raise ValueError('Canonical forecast warmup before forecast start required')
+            selection=doc['training_selection']
+            expected={'receipt_role','summary_role','library_role','source_receipt_role'}
+            if not isinstance(selection,dict) or set(selection)!=expected or any(not isinstance(v,str) or not NAME.fullmatch(v) for v in selection.values()):raise ValueError('Strict frozen training selection roles required')
+            selection_roles=set(selection.values())
+            if len(selection_roles)!=4 or selection_roles & {'registry','membership','calendar','decision_clocks'}:raise ValueError('Distinct training selection input roles required')
         budget=doc['budget'];budget_keys={'max_candidates','max_input_bytes','max_grid_cells','max_buffer_bytes','max_model_fits','max_accounts'}
         if not isinstance(budget,dict) or set(budget)!=budget_keys or any(type(budget[k]) is not int or budget[k]<1 for k in budget_keys-{'max_model_fits','max_accounts'}):raise ValueError('Finite positive execution/input budgets required')
         if budget['max_model_fits']!=0 or type(budget['max_model_fits']) is not int or budget['max_accounts']!=0 or type(budget['max_accounts']) is not int:raise ValueError('Feature-only batches have zero fit/account budgets')
@@ -56,7 +68,7 @@ class AlphaBatchSpec:
             for role in block.values():
                 if not isinstance(role,str) or not NAME.fullmatch(role):raise ValueError('Explicit input role required')
                 roles.add(role)
-        if len(roles)!=len(blocks)*4 or roles & {'registry','membership','calendar','decision_clocks'}:raise ValueError('Input block roles must be distinct')
+        if len(roles)!=len(blocks)*4 or roles & ({'registry','membership','calendar','decision_clocks'}|selection_roles):raise ValueError('Input block roles must be distinct')
         for key,binding in bindings.items():
             if not isinstance(binding,dict) or set(binding)!={'block','column','definition_id','materialization_id'} or binding['block'] not in blocks:raise ValueError('Named leaf binding fields required')
             if not isinstance(binding['column'],str) or not binding['column'].strip() or any(not isinstance(binding[k],str) or not SHA.fullmatch(binding[k]) for k in ('definition_id','materialization_id')):raise ValueError('Bound definition/materialization identities required')
@@ -74,7 +86,7 @@ class AlphaBatchSpec:
 
     @property
     def input_roles(self):
-        doc=self.to_dict();return {'registry','membership','calendar','decision_clocks'}|{r for b in doc['blocks'].values() for r in b.values()}
+        doc=self.to_dict();return {'registry','membership','calendar','decision_clocks'}|{r for b in doc['blocks'].values() for r in b.values()}|set(doc.get('training_selection',{}).values())
 
     @property
     def planned_attempts(self):

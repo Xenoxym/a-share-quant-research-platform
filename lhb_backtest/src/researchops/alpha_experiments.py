@@ -16,6 +16,7 @@ import pandas as pd
 
 from .store import text
 from ..alpharesearch.batch import AlphaBatchSpec
+from ..alpharesearch.batch_partition import execution_partition, validate_forecast_selection
 from ..alpharesearch.features.base import FeatureBlock
 from ..alpharesearch.registry import FeatureRegistry,definitions_for_block,verify_materialization,SHA
 from ..alpharesearch.operators import ExpressionEvaluator,LeafBinding
@@ -61,7 +62,11 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     budget=spec_raw['budget'];roles=verify_inputs(project,proposal['inputs'],budget['max_input_bytes'])
     registry=FeatureRegistry.from_dict(json.loads(roles['registry'].read_text(encoding='utf-8')));spec=AlphaBatchSpec.from_dict(spec_raw,registry)
     if set(roles)!=spec.input_roles:raise ValueError('Input roles must exactly cover the frozen protocol')
-    doc=spec.to_dict();blocks={}
+    doc=spec.to_dict();blocks={};selection_info=None
+    if doc['schema']=='alpha-feature-batch-v3':
+        selected=doc['training_selection']
+        read_role=lambda field:json.loads(roles[selected[field]].read_text(encoding='utf8'))
+        selection_info=validate_forecast_selection(doc,read_role('receipt_role'),read_role('summary_role'),read_role('library_role'),read_role('source_receipt_role'),input_hashes={k:digest(roles[selected[v]]) for k,v in [('summary_sha256','summary_role'),('library_sha256','library_role'),('source_receipt_sha256','source_receipt_role')]})
     for name,record in doc['blocks'].items():
         meta=json.loads(roles[record['definition']].read_text(encoding='utf-8'));units=meta.pop('units')
         block=FeatureBlock(pd.read_parquet(roles[record['values']]),pd.read_parquet(roles[record['missing']]),units,meta).validate();blocks[name]=block
@@ -78,17 +83,19 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     if not isinstance(calendar,dict) or set(calendar)!={'trade_dates'}:raise ValueError('Explicit full calendar document required')
     full_days=calendar['trade_dates']
     if not isinstance(full_days,list) or not full_days or any(not isinstance(d,str) or date.fromisoformat(d).isoformat()!=d for d in full_days) or full_days!=sorted(set(full_days)):raise ValueError('Canonical unique sorted full calendar required')
-    r=doc['ranges'];days=[d for d in full_days if r['warmup_start']<=d<=r['development_end']]
-    p=pd.read_parquet(roles['membership']);p=p.loc[p.trade_date.between(r['warmup_start'],r['development_end'])].copy()
-    clocks=pd.read_parquet(roles['decision_clocks']);clocks=clocks.loc[clocks.trade_date.between(r['warmup_start'],r['development_end'])].copy()
+    r=doc['ranges'];part=execution_partition(doc);days=[d for d in full_days if part['warmup_start']<=d<=part['end']]
+    p=pd.read_parquet(roles['membership']);p=p.loc[p.trade_date.between(part['warmup_start'],part['end'])].copy()
+    clocks=pd.read_parquet(roles['decision_clocks']);clocks=clocks.loc[clocks.trade_date.between(part['warmup_start'],part['end'])].copy()
     if not p.trade_date.isin(days).all() or not clocks.trade_date.isin(days).all():raise ValueError('Development membership/clock date missing from frozen calendar')
     evaluator=ExpressionEvaluator(registry,leaves,calendar=days,membership=p,decision_clocks=clocks,universe_id=doc['universe_id'],allow_weak_vintage=doc['allow_weak_vintage'],max_grid_cells=budget['max_grid_cells'],max_estimated_buffer_bytes=budget['max_buffer_bytes'])
     leaf_bytes=sum(len(evaluator.days)*(len(evaluator.stocks) if registry.resolve(key,leaves[key].definition_id).domain=='stock_day' else 1)*9 for key in leaves)
     if leaf_bytes>budget['max_buffer_bytes']:raise ValueError('Referenced numerical leaf buffer budget exceeded before preparation')
     # Validate only referenced leaves, with source clocks/version gates, no formula fit.
     for key,binding in leaves.items():evaluator._leaf(key,binding.definition_id)
-    if not any(r['development_start']<=d<=r['development_end'] for d in p.trade_date):raise ValueError('No development decision rows in the frozen input')
+    if not any(part['start']<=d<=part['end'] for d in p.trade_date):raise ValueError('No declared execution-partition decision rows in the frozen input')
     info={'execution_days':days,'execution_rows':len(p),'holdout_rows_executed':0,'source_files_by_reference':True,'historical_source_certified':False}
+    if selection_info is not None:
+        info.update(execution_partition=part['name'],forecast_rows_planned=int(p.trade_date.between(part['start'],part['end']).sum()),forecast_rows_executed=0,training_rows_executed=0,training_rows_output=0,training_rows_planned=int(p.trade_date.between(r['development_start'],r['development_end']).sum()),training_selection=selection_info)
     if include_evaluator:info['_evaluator']=evaluator
     return spec,registry,info
 

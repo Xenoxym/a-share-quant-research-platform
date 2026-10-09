@@ -8,6 +8,7 @@ import pandas as pd
 
 from .alpha_experiments import verify_inputs, verify_registered
 from .resources import WorkerResources
+from ..alpharesearch.batch_partition import execution_partition, validate_forecast_selection
 from ..alpharesearch.features.base import FeatureBlock
 from ..alpharesearch.feature_storage import read_shared_index, read_compact_candidate, INDEX_FILES, CANDIDATE_FILES
 from ..technical.artifacts import content_id, digest, verify_artifacts
@@ -19,11 +20,11 @@ def _expected_definitions(proposal,roles,job):
     from ..alpharesearch.dsl import verify_compiled
     from ..alpharesearch.contracts import timestamps
     registry=FeatureRegistry.from_dict(json.loads(roles["registry"].read_text(encoding="utf-8")))
-    spec=proposal["spec"];r=spec["ranges"];keys=["sample_id","trade_date","stock_code"]
+    spec=proposal["spec"];r=spec["ranges"];part=execution_partition(spec);forecast=spec["schema"]=="alpha-feature-batch-v3";keys=["sample_id","trade_date","stock_code"]
     days=[d for d in json.loads(roles["calendar"].read_text(encoding="utf-8"))["trade_dates"]
-          if r["warmup_start"]<=d<=r["development_end"]]
+          if part["warmup_start"]<=d<=part["end"]]
     members=pd.read_parquet(roles["membership"])
-    members=members.loc[members.trade_date.between(r["warmup_start"],r["development_end"])].reset_index(drop=True)
+    members=members.loc[members.trade_date.between(part["warmup_start"],part["end"])].reset_index(drop=True)
     clocks=pd.read_parquet(roles["decision_clocks"])
     clocks=clocks.loc[clocks.trade_date.isin(days)].copy();clocks["decision_at"]=timestamps(clocks.decision_at)
     clocks=clocks.set_index("trade_date").reindex(days).decision_at
@@ -55,6 +56,9 @@ def _expected_definitions(proposal,roles,job):
             estimated_buffer_bytes=int(cells*9*(compiled.nodes+len(compiled.dependencies)+4)),
             registered_numerical_execution=True,historical_execution_certified=False,
             independent_reproduction=False,holdout_rows_executed=0)
+        if forecast:
+            n=int(members.trade_date.between(part["start"],part["end"]).sum())
+            expected[candidate["candidate_id"]].update(execution_partition="forecast_features",holdout_rows_executed=n,forecast_rows_executed=n,training_rows_executed=int(members.trade_date.between(r["development_start"],r["development_end"]).sum()),training_rows_output=0,training_selection_sha256=digest(roles[spec["training_selection"]["receipt_role"]]),unseen_holdout_claim=False)
     return expected
 
 
@@ -63,13 +67,23 @@ def audit_output(research,experiment):
     compact=experiment["proposal"]["spec"].get("storage_layout")=="shared_index_v1"
     proposal=experiment["proposal"];job=research.root/"worker_jobs"/experiment["id"];folder=job/"alpha_result"
     cfg=json.loads((job/"input.json").read_text(encoding="utf-8"))
+    forecast=proposal["spec"]["schema"]=="alpha-feature-batch-v3";part=execution_partition(proposal["spec"]);forecast_rows=0
+    if forecast:
+        roles=verify_inputs(cfg["project"],proposal["inputs"],proposal["spec"]["budget"]["max_input_bytes"])
+        selection=proposal["spec"]["training_selection"]
+        read_role=lambda field:json.loads(roles[selection[field]].read_text(encoding="utf8"))
+        validate_forecast_selection(proposal["spec"],read_role("receipt_role"),read_role("summary_role"),read_role("library_role"),read_role("source_receipt_role"),input_hashes={k:digest(roles[selection[v]]) for k,v in [("summary_sha256","summary_role"),("library_sha256","library_role"),("source_receipt_sha256","source_receipt_role")]})
+        members=pd.read_parquet(roles["membership"])
+        forecast_rows=int(members.trade_date.between(part["start"],part["end"]).sum())
+        training_rows=int(members.trade_date.between(max(part["warmup_start"],proposal["spec"]["ranges"]["development_start"]), min(part["end"],proposal["spec"]["ranges"]["development_end"])).sum())
+        if forecast_rows<1:raise ValueError("Forecast output requires actual forecast decision rows")
     if folder.is_symlink() or (hasattr(folder,"is_junction") and folder.is_junction()):
         raise ValueError("Linked result folder refused")
     paths=list(folder.rglob("*"))
     if any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in paths):
         raise ValueError("Linked output artifact paths refused")
     manifest=json.loads((folder/"manifest.json").read_text(encoding="utf-8"))
-    expected=dict(schema="registered-alpha-feature-manifest-v2" if compact else "registered-alpha-feature-manifest-v1",experiment_id=experiment["id"],
+    expected=dict(schema="registered-alpha-feature-manifest-v3" if forecast else "registered-alpha-feature-manifest-v2" if compact else "registered-alpha-feature-manifest-v1",experiment_id=experiment["id"],
         task_id=experiment["task_id"],input_hash=digest(job/"input.json"),
         engine_hash=proposal["engine_hash"],candidate_manifest_hash=digest(job/"candidate_manifest.json"))
     if any(manifest.get(k)!=v for k,v in expected.items()) or set(manifest)!=set(expected)|{"artifacts"}:
@@ -90,11 +104,13 @@ def audit_output(research,experiment):
         expected_value=experiment["task_id"] if key=="task_id" else experiment["id"] if key=="experiment_id" else proposal[key]
         if result.get(key)!=expected_value:
             raise ValueError("Numerical result definition/ownership differs: "+key)
-    if (result.get("schema")!=("registered-alpha-feature-result-v2" if compact else "registered-alpha-feature-result-v1") or result.get("model_fits")!=0
-            or result.get("accounts")!=0 or result.get("holdout_rows_executed")!=0
+    if (result.get("schema")!=("registered-alpha-feature-result-v3" if forecast else "registered-alpha-feature-result-v2" if compact else "registered-alpha-feature-result-v1") or result.get("model_fits")!=0
+            or result.get("accounts")!=0 or result.get("holdout_rows_executed")!=forecast_rows
             or result.get("selection_rule")!="all_candidates_no_selection"
             or result.get("evaluation_scope")!="retrospective_time_split"):
         raise ValueError("Feature-only execution must not claim fits/accounts/holdout selection")
+    if forecast:
+        if result.get("execution_partition")!="forecast_features" or result.get("forecast_rows_executed")!=forecast_rows or type(result.get("forecast_rows_executed")) is not int or type(result.get("training_rows_executed")) is not int or result["training_rows_executed"]!=training_rows or type(result.get("training_rows_output")) is not int or result["training_rows_output"]!=0 or result.get("unseen_holdout_claim") is not False or result.get("training_selection_sha256")!=digest(roles[proposal["spec"]["training_selection"]["receipt_role"]]):raise ValueError("Forecast output partition/count/selection identity differs")
     if compact and result.get("storage_layout")!="shared_index_v1":raise ValueError("Compact result layout differs")
     threads=resources.library_threads
     expected_runtime={"environment_threads":{name:str(threads) for name in (
@@ -114,7 +130,7 @@ def audit_output(research,experiment):
     expected_definitions=_expected_definitions(proposal,roles,job)
     membership=pd.read_parquet(roles["membership"])
     r=proposal["spec"]["ranges"]
-    membership=membership.loc[membership.trade_date.between(r["development_start"],r["development_end"])].copy()
+    membership=membership.loc[membership.trade_date.between(part["start"],part["end"])].copy()
     keys=["sample_id","trade_date","stock_code"]
     sorted_keys=membership[keys].sort_values(keys).reset_index(drop=True)
     # No hidden failed candidate may be promoted as a successful complete batch.
@@ -158,7 +174,7 @@ def audit_output(research,experiment):
         if (metadata["expression_id"]!=attempt["expression_id"] or metadata["experiment_id"]!=experiment["id"]
                 or metadata["task_id"]!=experiment["task_id"] or metadata["universe_id"]!=proposal["spec"]["universe_id"]
                 or metadata.get("registered_numerical_execution") is not True
-                or metadata.get("holdout_rows_executed")!=0 or units!={"score":"ratio"}
+                or metadata.get("holdout_rows_executed")!=forecast_rows or units!={"score":"ratio"}
                 or type(attempt.get("rows")) is not int or type(attempt.get("present")) is not int
                 or attempt["rows"]!=len(block.values) or attempt["present"]!=int(block.values.score.notna().sum())):
             raise ValueError("Numerical feature definition/summary differs")
@@ -171,6 +187,6 @@ def audit_output(research,experiment):
     return dict(schema="alpha-frozen-output-audit-v1",verified=True,experiment_id=experiment["id"],
         candidate_count=len(candidates),completed_candidates=completed,
         failed_candidates=len(candidates)-completed,rows_per_completed_candidate=len(membership),
-        fits=0,accounts=0,holdout_rows_executed=0,numeric_output_reproduction=False,
+        fits=0,accounts=0,holdout_rows_executed=forecast_rows,numeric_output_reproduction=False,
         manifest_hash=digest(folder/"manifest.json"),
         verification_scope="registered source/output file identities, full development keys, clocks and value/missing consistency; not vendor authentication, formula math reexecution or strategy performance")
