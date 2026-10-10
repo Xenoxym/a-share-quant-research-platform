@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-09T22:12:12.270886+00:00",
-  "current_package": "E23H",
-  "task_id": "task-1e5f7be6bde6",
+  "updated_at_utc": "2026-10-10T06:50:09.449511+00:00",
+  "current_package": "E19E",
+  "task_id": "task-16a24b8a61a9",
   "packages": [
     {
       "id": "R0",
@@ -439,17 +439,17 @@
     {
       "id": "E23H",
       "title": "补充：固定20候选的真实后续特征",
-      "status": "部分完成：4/20，系统资源阻断",
-      "detail": "源投影550711行/23字段完成；2原生作业完成4公式，第三组WinError1455失败。旧数据/结果和失败保存。需有限接续补齐16输出，0新fit/account。",
+      "status": "原部分阶段已关闭；20项目标由接续补齐",
+      "detail": "旧4项复用、原失败与7声明永久保留；接续E23HR新增16项，共20完整输出。旧7200时钟未重置。",
       "dependencies": "E23G,E23H0",
       "guide": "ML_FORMULA_CAPACITY_BLOCK_20261009.html"
     },
     {
       "id": "E19E",
       "title": "补充：组合特征的真实模型与账户对照",
-      "status": "7拟合/14真实账户设计，未创建或执行",
-      "detail": "Ridge/HGB×16/28/36加置乱Y。7学习+7双场景账户job=14原生job/14实际模拟，旧21job草稿保留；完整X/资源SOURCE待验，9微型对齐检查通过。",
-      "dependencies": "E21C,E23H",
+      "status": "16/28列输入已验收；36列组装运行中",
+      "detail": "保留缺目录和28列315.407秒超时两次失败；修复经15项等价/前视反例检查及两名独立增量SOURCE接受，28列组装实际成功。累计组装上限5次、7训练/14真实账户和原25200秒时钟保持不变；0本批收益结论。",
+      "dependencies": "E21C,E23HR",
       "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
     },
     {
@@ -459,6 +459,14 @@
       "detail": "不伪装成已训练模型；明确零分、平分、资格和现金规则，另登记真实账户。",
       "dependencies": "E23H,E18",
       "guide": "ML_SYSTEM_BLUEPRINT_20261005.md"
+    },
+    {
+      "id": "E23HR",
+      "title": "补充：资源恢复后补齐固定特征",
+      "status": "20特征齐备并正式归档",
+      "detail": "6新任务补齐16项、复用4项；累计9登记/8成功/1旧失败/23声明。两名独立RESULT接受，0新模型/账户。关闭耗时下界1211秒超过600预算，原时钟保留。",
+      "dependencies": "E23H,E23H0",
+      "guide": "ML_FEATURE_COMPLETION_20261010.html"
     }
   ],
   "phase_counts": {
@@ -492,12 +500,12 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "E23H部分完成：4/20真实后续公式，每项550711行；2原生完成、1Windows提交内存失败。0新模型/账户。计算停止，整理阻断及有限接续。",
+  "current_result": "20个组合特征已完成；16列与28列输入已验收，36列组装运行中。性能修复获两名独立增量复核接受；本批尚无训练或账户结论。",
   "near_term": [
-    "满足物理及Windows提交内存门槛后，登记和双审有限接续补齐16个输出；引用已有4个，保留原失败",
-    "20输出齐备后，16/28/36列共7模型拟合、7双场景账户作业/14真实模拟；实际synthetic为0",
-    "以净收益/每日回撤、同族基准与小市值等对照评价，历史只称回溯评估",
-    "按账户证据选择直接组合、序列、随机表示、关系、联合搜索与风险路线"
+    "完成正在运行的36列输入组装，核查16/28/36列三个输入组",
+    "一次一个重任务完成7次真实训练，保存模型、训练输入和后续预测",
+    "完成14次真实账户模拟，对比含费年化收益、每日回撤、逐年收益及小市值等对照",
+    "独立核查账户结论并发布；依据结果继续最大蓝图中的其他模型、特征和组合方向"
   ],
   "navigation": [
     {
@@ -726,8 +734,20 @@
     {
       "label": "H部分完成4公式及系统阻断，未成功归档",
       "private_file": "E23H_partial_result_summary_01.json"
+    },
+    {
+      "label": "E23HR实际接续：原部分阶段正式关闭，六作业启动",
+      "private_file": "E23HR_parent_partial_adjudication_01.json"
+    },
+    {
+      "label": "HR实际完整20输出与正式接续裁决",
+      "private_file": "research/autonomous_delivery_20261006/E23HR_complete_adjudication_01.json"
+    },
+    {
+      "label": "E19E实际SOURCE01冻结候选：非执行许可",
+      "private_file": "research/autonomous_delivery_20261006/E19E_source_scope_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "原E19的12市场模型/32账户保持。G256训练表达式固定20名单；E21C存档39条件/本机13合成fit，H0协议51条件/8合成公式已归档及公开CI成功。生产147源。H实际4个后续公式完成、1批系统内存失败，训练与新账户未开始；下方31/12/32属于原E19。"
+  "phase_summary": "原E19历史统计保持；20固定组合特征已完整归档。E19E实际SOURCE接受后启动3组装、7训练、14真实账户，另行核查收益和每日回撤。下方31/12/32仍是原E19历史统计。"
 }
