@@ -43,20 +43,40 @@ def compute(job):
         raise ValueError("Learning numerical thread policy differs")
     if cancel_reason(job) is not None:
         raise RuntimeError("Cancellation requested: " + cancel_reason(job))
-    spec, model, _, info = inspect_inputs(cfg["project"], cfg, include_data=True)
-    data = info.pop("data"); info.pop("prepared")
-    if not same_json(info, cfg["inspection"]):
-        raise ValueError("Frozen learning input scope changed")
-    plan = planned_attempts(spec, model)
-    if not same_json(json.loads((job / "candidate_manifest.json").read_text(encoding="utf-8")), plan):
-        raise ValueError("Frozen learning fit intent changed")
-    folder = job / "learn_result"; folder.mkdir(exist_ok=False)
+    runner = LearningRunner(max_calls=1, max_fit_intents=1)
+    capture = cfg["spec"]["schema"] == "registered-alpha-learn-v2"
+    folder = job / "learn_result"
+    try:
+        spec, model, _, info = inspect_inputs(cfg["project"], cfg, include_data=True,
+                                             _runner=runner, _capture_fit=capture)
+        prepared = info.pop("prepared")
+        data = info.pop("data")
+        del data  # Retain scoped prepared matrices, release full raw frames.
+        if not same_json(info, cfg["inspection"]):
+            raise ValueError("Frozen learning input scope changed")
+        plan = planned_attempts(spec, model)
+        if not same_json(json.loads((job / "candidate_manifest.json").read_text(encoding="utf-8")), plan):
+            raise ValueError("Frozen learning fit intent changed")
+    except Exception as exc:
+        # A preparation/inspection rejection is known to precede estimator fit.
+        # Preserve this distinction even when no validated manifest is available.
+        for token in list(runner._prepared):
+            runner._reject_prepared(token, exc)
+        folder.mkdir(exist_ok=False)
+        failure = dict(schema="alpha-learning-preparation-failure-v1",
+            failure_phase="pre_fit_preparation", actual_fit_calls=0,
+            preparation_calls=runner.calls, fit_intents_used=runner.fit_intents,
+            ledger=jsonable(runner.ledger), error=str(exc) or type(exc).__name__)
+        projected = len(json.dumps(failure, ensure_ascii=False, allow_nan=False).encode("utf-8")) * 2
+        if projected > resources.max_output_bytes:
+            raise ValueError("Preparation failure metadata exceeds output budget") from exc
+        write_json(folder / "preparation_failure.json", failure)
+        raise
+    folder.mkdir(exist_ok=False)
     attempts = dict(plan, attempts=[dict(plan["attempts"][0], status="running")], ledger=[])
     write_json(folder / "attempts.json", attempts)
-    runner = LearningRunner(max_calls=1, max_fit_intents=1)
     try:
-        capture = cfg["spec"]["schema"] == "registered-alpha-learn-v2"
-        result = runner.run(spec, model, *data, capture_fit=capture)
+        result = runner._consume_prepared(prepared)
     except Exception as exc:
         attempts.update(attempts=[dict(plan["attempts"][0], status="failed")],
             ledger=jsonable(runner.ledger), error=str(exc))

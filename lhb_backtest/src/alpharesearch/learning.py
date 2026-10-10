@@ -351,11 +351,29 @@ class LearningResult:
     fit_artifacts: dict | None = None
 
 
-class LearningRunner:
-    """Finite calls and new fit intents; failed intents are retained without retry.
+class _PreparedLearning:
+    """Opaque in-process token; no serialized prepared-input protocol."""
+    __slots__ = ()
 
-    This ledger lives in one process. Registered jobs must persist it and artifacts;
-    it is not a cross-process quota or crash-recovery mechanism.
+
+def _prepared_seal(spec, model, prepared, capture_fit):
+    X, y, weights, P, decision_rows, receipt = prepared
+    def frame(value):
+        return dict(values=_fingerprint(value),
+                    index=_fingerprint(value.index.to_frame(index=False)),
+                    index_names=list(value.index.names))
+    return content_id(dict(spec=spec.to_dict(), model=model.to_dict(),
+        capture_fit=capture_fit, X=frame(X), y=frame(y.to_frame("__value__")),
+        weights=None if weights is None else frame(weights.to_frame("__value__")),
+        prediction_X=frame(P), decision_rows=frame(decision_rows), receipt=receipt))
+
+
+class LearningRunner:
+    """Finite one-process learner with privately owned validated preparations.
+
+    Public run still validates inputs. Native workers may consume a preparation
+    once after their frozen inspection matches, without retaining raw frames.
+    Registration and independent output audit continue their own validation.
     """
 
     def __init__(self, *, max_calls, max_fit_intents):
@@ -366,8 +384,9 @@ class LearningRunner:
         self.fit_intents = 0
         self.ledger = []
         self._fits = {}
+        self._prepared = {}
 
-    def run(self, spec, model, decisions, assembly, labels, *, capture_fit=False):
+    def _prepare_once(self, spec, model, decisions, assembly, labels, *, capture_fit=False):
         if self.calls >= self.max_calls:
             raise ValueError("Learning call budget exhausted")
         self.calls += 1
@@ -380,52 +399,96 @@ class LearningRunner:
                 raise ValueError("Validated LearningSpec and ModelSpec required")
             spec = LearningSpec.from_dict(spec.to_dict())
             model = ModelSpec.from_dict(model.to_dict())
-            X, y, weights, P, decision_rows, receipt = _prepare(
-                spec, model, decisions, assembly, labels)
-            fit_id = receipt["fit_id"]
-            event["fit_id"] = fit_id
-            cached = self._fits.get(fit_id)
-            if cached is not None and cached["state"] == "failed":
-                raise ValueError("Previous fit intent failed; implicit retry is forbidden")
-            reused = cached is not None
-            if cached is None:
-                if self.fit_intents >= self.max_fit_intents:
-                    raise ValueError("New fit intent budget exhausted")
-                self.fit_intents += 1
-                cached = {"state": "fitting", "adapter": None}
-                self._fits[fit_id] = cached
-                event["new_fit_intent"] = self.fit_intents
-                try:
-                    cached["adapter"] = TabularRegressor(model)
-                    cached["adapter"].fit(X, y, sample_weight=weights)
-                except Exception:
-                    cached["state"] = "failed"
-                    event["fit_attempts"] = 0 if cached["adapter"] is None else cached["adapter"].fit_attempts
-                    raise
-                cached["state"] = "fitted"
-                event["fit_attempts"] = cached["adapter"].fit_attempts
-            score = cached["adapter"].predict(P)
-            output = decision_rows.copy()
-            output["score"] = score.to_numpy()
-            output["fit_id"] = fit_id
-            output["prediction_id"] = receipt["prediction_id"]
-            receipt.update(
-                fit_reused=reused, call=self.calls, fit_intents_used=self.fit_intents,
-                actual_fit_attempts_this_call=event["fit_attempts"],
-                prediction_outputs=_fingerprint(output),
-                fitted_model=cached["adapter"].metadata(),
-            )
-            event["state"] = "succeeded"
-            json.dumps(receipt, allow_nan=False)
-            artifacts = None
-            if capture_fit:
-                # These are the actual matured values supplied to the fitted regressor.
-                # No forecast labels enter X/y/weights and no additional fit occurs.
-                artifacts = dict(fit_id=fit_id, adapter=cached["adapter"],
-                                 X=X.copy(), y=y.copy(),
-                                 weights=None if weights is None else weights.copy())
-            return LearningResult(output, receipt, artifacts)
+            prepared = _prepare(spec, model, decisions, assembly, labels)
+            token = _PreparedLearning()
+            self._prepared[token] = dict(spec=spec, model=model, prepared=prepared,
+                capture_fit=capture_fit, event=event,
+                seal=_prepared_seal(spec, model, prepared, capture_fit))
+            return token
         except Exception as exc:
             event["state"] = "failed"
             event["error"] = f"{type(exc).__name__}: {exc}"
             raise
+
+    def _prepared_receipt(self, token):
+        if type(token) is not _PreparedLearning or token not in self._prepared:
+            raise ValueError("Preparation belongs to another runner or was consumed")
+        return json.loads(json.dumps(self._prepared[token]["prepared"][-1], allow_nan=False))
+
+    def _reject_prepared(self, token, reason):
+        """Discard this owner's unconsumed preparation without any fit intent."""
+        if type(token) is not _PreparedLearning or token not in self._prepared:
+            raise ValueError("Preparation belongs to another runner or was consumed")
+        state = self._prepared.pop(token)
+        event = state["event"]
+        if event["fit_attempts"] != 0 or event["state"] != "preparing":
+            raise ValueError("Only unconsumed preparations may be rejected")
+        event["state"] = "failed"
+        event["error"] = f"{type(reason).__name__}: {reason}"
+
+    def _consume_prepared(self, token):
+        if type(token) is not _PreparedLearning or token not in self._prepared:
+            raise ValueError("Preparation belongs to another runner or was consumed")
+        state = self._prepared.pop(token)
+        event = state["event"]
+        try:
+            if state["seal"] != _prepared_seal(state["spec"], state["model"],
+                                                state["prepared"], state["capture_fit"]):
+                raise ValueError("Validated preparation changed before fit")
+            return self._fit_prepared(state["spec"], state["model"],
+                state["prepared"], state["capture_fit"], event)
+        except Exception as exc:
+            event["state"] = "failed"
+            event["error"] = f"{type(exc).__name__}: {exc}"
+            raise
+
+    def run(self, spec, model, decisions, assembly, labels, *, capture_fit=False):
+        token = self._prepare_once(spec, model, decisions, assembly, labels,
+                                   capture_fit=capture_fit)
+        return self._consume_prepared(token)
+
+    def _fit_prepared(self, spec, model, prepared, capture_fit, event):
+        X, y, weights, P, decision_rows, receipt = prepared
+        fit_id = receipt["fit_id"]
+        event["fit_id"] = fit_id
+        cached = self._fits.get(fit_id)
+        if cached is not None and cached["state"] == "failed":
+            raise ValueError("Previous fit intent failed; implicit retry is forbidden")
+        reused = cached is not None
+        if cached is None:
+            if self.fit_intents >= self.max_fit_intents:
+                raise ValueError("New fit intent budget exhausted")
+            self.fit_intents += 1
+            cached = {"state": "fitting", "adapter": None}
+            self._fits[fit_id] = cached
+            event["new_fit_intent"] = self.fit_intents
+            try:
+                cached["adapter"] = TabularRegressor(model)
+                cached["adapter"].fit(X, y, sample_weight=weights)
+            except Exception:
+                cached["state"] = "failed"
+                event["fit_attempts"] = 0 if cached["adapter"] is None else cached["adapter"].fit_attempts
+                raise
+            cached["state"] = "fitted"
+            event["fit_attempts"] = cached["adapter"].fit_attempts
+        score = cached["adapter"].predict(P)
+        output = decision_rows.copy()
+        output["score"] = score.to_numpy()
+        output["fit_id"] = fit_id
+        output["prediction_id"] = receipt["prediction_id"]
+        receipt.update(
+            fit_reused=reused, call=event["call"], fit_intents_used=self.fit_intents,
+            actual_fit_attempts_this_call=event["fit_attempts"],
+            prediction_outputs=_fingerprint(output),
+            fitted_model=cached["adapter"].metadata(),
+        )
+        event["state"] = "succeeded"
+        json.dumps(receipt, allow_nan=False)
+        artifacts = None
+        if capture_fit:
+            # These are the actual matured values supplied to the fitted regressor.
+            # No forecast labels enter X/y/weights and no additional fit occurs.
+            artifacts = dict(fit_id=fit_id, adapter=cached["adapter"],
+                             X=X.copy(), y=y.copy(),
+                             weights=None if weights is None else weights.copy())
+        return LearningResult(output, receipt, artifacts)

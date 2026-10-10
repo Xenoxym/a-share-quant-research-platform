@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-10T17:56:02.053404+00:00",
-  "current_package": "R24T",
-  "task_id": "task-37e4f2cbcd1c",
+  "updated_at_utc": "2026-10-10T19:15:15.285592+00:00",
+  "current_package": "R24N",
+  "task_id": "task-4398d847ef66",
   "packages": [
     {
       "id": "R0",
@@ -479,7 +479,7 @@
     {
       "id": "R23C",
       "title": "四种模型在同36项信息上的资金结果比较",
-      "status": "真实RESULT已双复核结案，文档待公开发布",
+      "status": "真实RESULT已双复核结案、发布与新提交CI均完成",
       "detail": "极端随机树、随机森林、ElasticNet、Huber各拟合一次；同379842成熟训练/550711预测、相同36输入/周Top100/账户，两费用各真实执行；全部失败历史与零费用对照保留。",
       "dependencies": "R23D,E15,E16",
       "guide": "ML_FOUR_MODEL_ACCOUNT_RESULTS_20261010.md"
@@ -491,6 +491,22 @@
       "detail": "先处理原生目标接口和数据准备容量；最多2拟合/4真实路径的新有限预算须另登记。保留68直接信息、滚动、序列/关系、Alpha生成与批量吞吐。",
       "dependencies": "R23C,E15,E16",
       "guide": "ML_FOUR_MODEL_ACCOUNT_RESULTS_20261010.md"
+    },
+    {
+      "id": "R24M",
+      "title": "单次准备数据与旧模型作业兼容",
+      "status": "实测、双RESULT与本机6文件升级完成；公开与新CI待核查",
+      "detail": "单次prepare与旧v1/v2冻结兼容已通过60测试：22微型真实fit+1假失败，0市场fit/0账户；68首次准备峰值仍未证明解决。",
+      "dependencies": "R23C,R24T",
+      "guide": "ML_SINGLE_PREPARATION_ENGINEERING_20261010.md"
+    },
+    {
+      "id": "R24N",
+      "title": "明确原始收益与训练目标的原生接口",
+      "status": "已排队，未执行",
+      "detail": "新目标定义、成熟边界、训练trace与零重训审计；需要新的有限工程预算和双SOURCE。R24T科学2fit/4账户尚未消耗。",
+      "dependencies": "R24M,R24T",
+      "guide": "ML_SINGLE_PREPARATION_ENGINEERING_20261010.md"
     }
   ],
   "phase_counts": {
@@ -524,11 +540,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "同36项四模型全部实际完成：4个保存模型、8条资金路径。最高含费年化-10.05%，每日最大回撤-37.69%。真实RESULT已双复核结案，文档待公开发布。下一R24T已排队，尚未训练或执行新目标账户。",
+  "current_result": "R24M微型工程实际通过并升级6个本机文件，GitHub与新CI尚待本轮核查。最新市场R23C四模型/八账户已发布且两系统CI通过；没有达到重要盈利改善。",
   "near_term": [
-    "以真实收益/每日回撤和保存分数退化诊断判断这批，四种家族不是全参数调优。",
-    "下一步先补原生成熟训练目标接口、减少重复数据准备；新目标账户仍须新SOURCE/有限预算。",
-    "完成第三个独立阶段的覆盖检查，继续直接信息68、滚动、序列/关系、有限Alpha生成和吞吐工程的竞争路线。"
+    "完成本轮精确公开检查和新提交Windows/Ubuntu CI。",
+    "以新有限预算开展原始收益/训练目标接口工程，不把RankIC当盈利。",
+    "并行保留直接信息、全尺寸容量、成熟滚动及批量吞吐设计；实际数值任务逐批受监督。"
   ],
   "navigation": [
     {
@@ -789,14 +805,5 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": {
-    "stage": "R23C",
-    "task_id": "task-690a3cff7f34",
-    "registered_jobs": 8,
-    "completed_audited_models": 4,
-    "actual_real_account_paths": 8,
-    "additional_audit_fits": 0,
-    "source": "R23C_complete_result_summary_01.json",
-    "status": "真实RESULT已双复核结案，文档待公开发布"
-  }
+  "phase_summary": "本阶段只做训练流程工程：单次准备、一次性数据凭据、原生模型存档及旧冻结作业核查；22微型fit、0市场模型/账户。最新市场四模型最佳含费年化−10.05%、每日回撤−37.69%，没有盈利成果。"
 }

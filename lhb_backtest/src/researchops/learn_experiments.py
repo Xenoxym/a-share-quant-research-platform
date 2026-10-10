@@ -15,7 +15,7 @@ from .screen_experiments import ROLES, assembly_reference, same_json
 from ..alpharesearch.assembly import FeatureAssembly
 from ..alpharesearch.features.base import FeatureBlock
 from ..alpharesearch.registry import FeatureRegistry
-from ..alpharesearch.learning import LearningSpec, _prepare
+from ..alpharesearch.learning import LearningSpec, LearningRunner, _prepare
 from ..alpharesearch.models import ModelSpec
 from ..technical.artifacts import content_id, digest, write_json
 
@@ -41,7 +41,9 @@ def protocol(value):
     return spec, model, dict(schema=value["schema"], learning=spec.to_dict(), model=model.to_dict(), budget=budget)
 
 
-def inspect_inputs(project, proposal, *, include_data=False):
+def inspect_inputs(project, proposal, *, include_data=False, _runner=None, _capture_fit=False):
+    if _runner is not None and (not include_data or not isinstance(_runner, LearningRunner)):
+        raise ValueError("Internal preparation requires a learning runner and include_data")
     spec, model, doc = protocol(proposal["spec"])
     roles = verify_inputs(project, proposal["inputs"], doc["budget"]["max_input_bytes"])
     if set(roles) != ROLES:
@@ -57,8 +59,13 @@ def inspect_inputs(project, proposal, *, include_data=False):
     if not same_json(json.loads(roles["assembly_receipt"].read_text(encoding="utf-8")), assembly_reference(assembly, hashes)):
         raise ValueError("Learning assembly reference differs from files/declarations")
     decisions, labels = pd.read_parquet(roles["decisions"]), pd.read_parquet(roles["labels"])
-    prepared = _prepare(spec, model, decisions, assembly, labels)
-    base = prepared[-1]
+    if _runner is None:
+        prepared = _prepare(spec, model, decisions, assembly, labels)
+        base = prepared[-1]
+    else:
+        prepared = _runner._prepare_once(spec, model, decisions, assembly, labels,
+                                         capture_fit=_capture_fit)
+        base = _runner._prepared_receipt(prepared)
     info = {k: base[k] for k in ("fit_id", "prediction_id", "mature_training_rows", "prediction_rows")}
     info.update(source_files_by_reference=True, historical_source_certified=False,
         target_scope="mature training only; prediction labels ignored; metadata not vendor history")

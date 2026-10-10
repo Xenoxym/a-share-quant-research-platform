@@ -518,3 +518,6 @@ E19S实际7模型/14路径 → R23D68组装完成、首训资源失败0模型0�
 新的竞争路线保留：真实排名损失与排名Y回归分开；成熟滚动要逐段绑定模型与可见标签；36项组合表达可能削弱直接规模信息，要以直接原始字段的匹配消融检验；批量提速须分段测量，整次操作时间不是模型fit时间。上述均是未执行方案，不是额外模型或账户证据。
 
 实际阅读Qlib的[TRA官方说明](https://github.com/microsoft/qlib/blob/main/examples/benchmarks/TRA/README.md)、[路由模型](https://raw.githubusercontent.com/microsoft/qlib/main/qlib/contrib/model/pytorch_tra.py)、[序列数据集](https://raw.githubusercontent.com/microsoft/qlib/main/qlib/contrib/data/dataset.py)和[Alpha158配置](https://raw.githubusercontent.com/microsoft/qlib/main/examples/benchmarks/TRA/workflow_config_tra_Alpha158.yaml)。条件模式路由、随时间重训和横截面标签变换是不同假设；预测时路由与依赖真实标签的事后oracle不能混为一谈。官方历史误差记忆有horizon保护，本项目仍须按不规则周区间的label_known_at验收。其CSI300、60日序列、标签/时段和账户配置与本项目不同；没有安装、训练、复现收益或付费。私有来源卡R24X、设计卡R24Y/R24W/R24V/R24U保留竞争解释和最小否证试验。
+
+
+R24M工程已实际通过单次prepare及旧冻结兼容；这是资源依赖，非Alpha或收益证据。之后优先原始收益/训练目标接口，同时保留68首次峰值、直接市值等原始信息、滚动失效及共享矩阵吞吐竞争解释。已有TRA/DoubleAdapt等来源阅读不算本项目收益复现。
