@@ -502,3 +502,19 @@ S/P/F/C四段主要解决共同的容量/吞吐依赖，不能把这些工程阶
 实际合并68项并完成933284行组装；首个学习意图触及Windows可承诺空间保护，0保存模型/0账户，fit调用未知，失败完整保留。这是当前训练流水线容量证据，不是68项策略失败或成功。下一实际任务task-690a3cff7f34拟比较ExtraTrees/RandomForest/Huber/ElasticNet，复用36项输入和旧控制，最多4fit/8路径，须新SOURCE及有限资源预算。
 
 另已阅读作者[直接学习组合效用论文](https://arxiv.org/html/2005.13665v3)的方法/数据/训练/表1：用softmax配置资产权重并优化组合Sharpe，区别于预测逐股Y；美国四资产、波动缩放及算术指标不能冒充本项目A股长仓CAGR。仅来源卡R23H保存，无实现/拟合/收益声明。目标/损失、成熟滚动、序列/关系、自动公式与速度工程继续竞争，不能把换模型当全部研究。
+
+
+### 2026-10-10 · R23C完成后的三阶段覆盖检查
+
+E19S实际7模型/14路径 → R23D68组装完成、首训资源失败0模型0路径 → R23C同36四家族实际4模型/8路径。当前不是只研究初始16或提升树，32直接信息虽可物化但68训练容量尚未解决。训练目标、组合效用、成熟滚动、序列/关系和有限Alpha生成仍未形成新账户结果；不能把阅读/接口设计当完成。实际收益与回撤见[四模型报告](ML_FOUR_MODEL_ACCOUNT_RESULTS_20261010.html)，SOURCE/RESULT/公开与CI实耗以各共享时钟收据为准。
+
+计算期间实际检查原生prepare重复、只接受raw目标的接口边界，以及保存分数同分/股票代码排序的竞争解释。下一阶段先补容量/目标接口，随后有限经济消融；新增模型、同分诊断、论文或文件数量本身都不算盈利证明。R24T_native_target_capacity_design_01为未实施设计，R23M为官方Arrow/scikit-learn内存来源，主动搜索与竞争路线继续保留。
+
+
+### 2026-10-10 · R24T前置工程及竞争路线：已阅读、未执行
+
+四模型实际账户结束后，预备单次准备数据的内部接口；候选第5版仍只通过语法和文件校验，21个新测试尚未执行。第4版设计曾经两名独立复核接受，这不等于运行许可；第5版修正跨平台换行身份，必须再走正式SOURCE。215个源码/测试文件已复制到隔离项目，生产源码尚未替换。旧训练作业的冻结模块与新代码必须分别核查；微型工程拟合另计预算，不能占用或冒充R24T最多2个真实研究拟合、4条账户路径。单次准备只能去掉工作进程重复，不能据此声称原68项首次准备峰值已解决。
+
+新的竞争路线保留：真实排名损失与排名Y回归分开；成熟滚动要逐段绑定模型与可见标签；36项组合表达可能削弱直接规模信息，要以直接原始字段的匹配消融检验；批量提速须分段测量，整次操作时间不是模型fit时间。上述均是未执行方案，不是额外模型或账户证据。
+
+实际阅读Qlib的[TRA官方说明](https://github.com/microsoft/qlib/blob/main/examples/benchmarks/TRA/README.md)、[路由模型](https://raw.githubusercontent.com/microsoft/qlib/main/qlib/contrib/model/pytorch_tra.py)、[序列数据集](https://raw.githubusercontent.com/microsoft/qlib/main/qlib/contrib/data/dataset.py)和[Alpha158配置](https://raw.githubusercontent.com/microsoft/qlib/main/examples/benchmarks/TRA/workflow_config_tra_Alpha158.yaml)。条件模式路由、随时间重训和横截面标签变换是不同假设；预测时路由与依赖真实标签的事后oracle不能混为一谈。官方历史误差记忆有horizon保护，本项目仍须按不规则周区间的label_known_at验收。其CSI300、60日序列、标签/时段和账户配置与本项目不同；没有安装、训练、复现收益或付费。私有来源卡R24X、设计卡R24Y/R24W/R24V/R24U保留竞争解释和最小否证试验。
