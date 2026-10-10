@@ -57,6 +57,31 @@ def _schedule(calendar, cfg):
             if cfg["start"] <= day <= cfg["end"] and period(day) != period(nxt)}
 
 
+
+def _audit_target_metadata(source, fit):
+    """Independent semantic unit/version check, without portfolio helpers."""
+    from .targets import TrainingTargetSpec
+    old = source.get("schema") == "causal-learning-receipt-v2"
+    _require(fit.get("schema") == ("causal-fit-identity-v1" if old else "causal-fit-identity-v2"), "Audit learning/fit target versions differ")
+    settings = fit.get("settings", {})
+    if old:
+        _require("training_target" not in settings, "Old fit cannot bind new target fields")
+        return
+    _require(source.get("schema") == "causal-learning-receipt-v3", "Unknown audit target receipt")
+    d = settings.get("training_target", {})
+    _require(isinstance(d, dict) and set(d) == {"kind", "min_date_rows", "scale_floor", "unusable_policy"} and d["unusable_policy"] == "reject", "Audit strict target definition required")
+    cfg = TrainingTargetSpec(d["kind"], settings["train_start"], settings["train_end"], settings["fit_cutoff"], d["min_date_rows"], min(settings["max_input_rows"], 1000000), d["scale_floor"]).validated()
+    meta = source.get("training_target_receipt")
+    fields = {"schema", "target_id", "spec", "rows", "usable_rows", "missing_counts", "content", "usable_content", "unit", "group_denominator", "rank_ties", "zscore_ddof", "prediction_labels_used", "predicted_score_is_raw_return", "account_results"}
+    _require(isinstance(meta, dict) and set(meta) == fields and meta == fit.get("training_target_receipt"), "Audit target receipt binding differs")
+    _require(meta["schema"] == "training-target-receipt-v1" and meta["spec"] == vars(cfg) and meta["target_id"] == cfg.target_id, "Audit target spec identity differs")
+    n = source.get("mature_training_rows")
+    _require(type(n) is int and n >= 2 and type(meta["rows"]) is int and type(meta["usable_rows"]) is int and meta["rows"] == meta["usable_rows"] == n and meta["missing_counts"] == {"present": n} and type(meta["missing_counts"].get("present")) is int, "Audit mature target counts differ")
+    _require(meta["content"] == meta["usable_content"] == fit.get("target_trace") and meta["content"].get("rows") == n, "Audit full mature target content differs")
+    expected_unit = "dimensionless" if cfg.kind in ("date_zscore", "date_rank") else "decimal_return"
+    _require(meta["unit"] == source.get("score_unit") == expected_unit and meta["predicted_score_is_raw_return"] is (cfg.kind == "raw_return") and source.get("predicted_score_is_raw_return") is (cfg.kind == "raw_return"), "Audit target score units differ")
+    _require(meta["prediction_labels_used"] is False and meta["account_results"] is False and settings["target"] == "execution_window_return_decimal" and meta["group_denominator"] == "Observed labels known byfitcutoff within declaredtrainingdecisions" and meta["rank_ties"] == "average" and type(meta["zscore_ddof"]) is int and meta["zscore_ddof"] == 0, "Audit target scope/definition differs")
+
 def audit_score_portfolio(result, references, calendar, portfolio):
     """Rebuild schedule/ranks/weights without calling the portfolio builder."""
     _require(isinstance(result, LearningResult) and isinstance(portfolio, ScorePortfolio),
@@ -65,7 +90,7 @@ def audit_score_portfolio(result, references, calendar, portfolio):
     score, source, receipt = result.predictions, result.receipt, portfolio.receipt
     _keys(score, "Audit scores")
     _keys(references, "Audit references")
-    _require(source.get("schema") == "causal-learning-receipt-v2"
+    _require(source.get("schema") in {"causal-learning-receipt-v2", "causal-learning-receipt-v3"}
              and source.get("prediction_outputs") == _fingerprint(score)
              and source.get("prediction_membership") == _fingerprint(score[KEYS + CLOCKS])
              and source.get("prediction_rows") == len(score)
@@ -73,13 +98,14 @@ def audit_score_portfolio(result, references, calendar, portfolio):
              and source.get("prediction_missing", {}).get("rows") == len(score),
              "Learning score provenance differs")
     fit = source.get("fit_identity", {})
+    _audit_target_metadata(source, fit)
     fitted = source.get("fitted_model", {})
     excluded = fit.get("excluded_train_empty", [])
     retained = [key for key in fit["settings"]["features"] if key not in excluded]
     expected_prediction = content_id(dict(fit_id=source["fit_id"], protocol_id=source["protocol_id"],
         prediction_inputs=source["prediction_inputs"], prediction_missing=source["prediction_missing"],
         prediction_membership=source["prediction_membership"]))
-    _require(fit.get("schema")=="causal-fit-identity-v1"
+    _require(fit.get("schema") in {"causal-fit-identity-v1", "causal-fit-identity-v2"}
              and source.get("account_results") is False
              and fitted.get("schema")=="fitted-tabular-model-v1"
              and fitted.get("training_rows")==source.get("mature_training_rows")==fit["training_content"]["rows"]

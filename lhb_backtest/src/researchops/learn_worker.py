@@ -22,7 +22,7 @@ FILES = {"predictions.parquet", "learning_receipt.json", "model_metadata.json", 
 
 
 def output_files(cfg):
-    return FILES | ARTIFACT_FILES if cfg["spec"]["schema"] == "registered-alpha-learn-v2" else FILES
+    return FILES | ARTIFACT_FILES if cfg["spec"]["schema"] in {"registered-alpha-learn-v2", "registered-alpha-learn-v3"} else FILES
 
 
 def verify_job(job):
@@ -44,7 +44,7 @@ def compute(job):
     if cancel_reason(job) is not None:
         raise RuntimeError("Cancellation requested: " + cancel_reason(job))
     runner = LearningRunner(max_calls=1, max_fit_intents=1)
-    capture = cfg["spec"]["schema"] == "registered-alpha-learn-v2"
+    capture = cfg["spec"]["schema"] in {"registered-alpha-learn-v2", "registered-alpha-learn-v3"}
     folder = job / "learn_result"
     try:
         spec, model, _, info = inspect_inputs(cfg["project"], cfg, include_data=True,
@@ -95,6 +95,8 @@ def compute(job):
         if capture:
             artifact = result.fit_artifacts
             estimate = int(artifact["X"].memory_usage(index=True, deep=True).sum()) * 2 + 48 * len(artifact["X"])
+            if "target_trace" in artifact:
+                estimate += int(artifact["target_trace"].memory_usage(index=False, deep=True).sum()) * 2
             if _used(folder) + estimate + cfg["spec"]["budget"]["max_checkpoint_bytes"] > resources.max_output_bytes:
                 raise ValueError("Conservative training artifact byte estimate exceeds remaining output budget")
             save_learning_artifacts(result, folder,
@@ -105,7 +107,7 @@ def compute(job):
         write_json(folder / "attempts.json", attempts)
         verify_job(job)
         verify_inputs(cfg["project"], cfg["inputs"], cfg["spec"]["budget"]["max_input_bytes"])
-        manifest = dict(schema="registered-alpha-learn-manifest-v2" if capture else "registered-alpha-learn-manifest-v1", experiment_id=job.name,
+        manifest = dict(schema=("registered-alpha-learn-manifest-v3" if cfg["spec"]["schema"] == "registered-alpha-learn-v3" else "registered-alpha-learn-manifest-v2" if capture else "registered-alpha-learn-manifest-v1"), experiment_id=job.name,
             task_id=cfg["task_id"], input_hash=digest(job / "input.json"), engine_hash=cfg["engine_hash"],
             candidate_manifest_hash=digest(job / "candidate_manifest.json"),
             artifacts={p.relative_to(folder).as_posix(): digest(p) for p in folder.rglob("*") if p.is_file()})

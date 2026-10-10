@@ -16,7 +16,7 @@ from .learn_worker import output_files
 from ..alpharesearch.learning_artifacts import audit_learning_artifacts
 from .resources import WorkerResources
 from .screen_output_audit import _FrozenFinder
-from ..alpharesearch.learning import _fingerprint, _environment
+from ..alpharesearch.learning import _fingerprint, _environment, _prepared_parts
 from ..alpharesearch.models import LINEAR
 from ..alpharesearch.registry import implementation_hashes
 from ..technical.artifacts import content_id, digest, verify_artifacts
@@ -69,9 +69,10 @@ def audit_frozen(cfg, job):
     if any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in paths):
         raise ValueError("Linked learning output refused")
     manifest_hash = digest(folder / "manifest.json"); manifest = _read(folder / "manifest.json")
-    v2 = cfg["spec"]["schema"] == "registered-alpha-learn-v2"
+    v3 = cfg["spec"]["schema"] == "registered-alpha-learn-v3"
+    v2 = cfg["spec"]["schema"] in {"registered-alpha-learn-v2", "registered-alpha-learn-v3"}
     files = output_files(cfg)
-    header = dict(schema="registered-alpha-learn-manifest-v2" if v2 else "registered-alpha-learn-manifest-v1", experiment_id=job.name,
+    header = dict(schema=("registered-alpha-learn-manifest-v3" if v3 else "registered-alpha-learn-manifest-v2" if v2 else "registered-alpha-learn-manifest-v1"), experiment_id=job.name,
         task_id=cfg["task_id"], input_hash=digest(job / "input.json"), engine_hash=cfg["engine_hash"],
         candidate_manifest_hash=digest(job / "candidate_manifest.json"))
     if (set(manifest) != set(header)|{"artifacts"} or not same_json({k:manifest.get(k) for k in header},header)
@@ -82,7 +83,8 @@ def audit_frozen(cfg, job):
     if sum(p.stat().st_size for p in paths if p.is_file()) > WorkerResources.from_dict(cfg["resources"]).max_output_bytes:
         raise ValueError("Learning output exceeds byte budget")
     spec, model, _, info = inspect_inputs(cfg["project"], cfg, include_data=True)
-    info.pop("data"); X, y, weights, P, decision_rows, base = info.pop("prepared")
+    info.pop("data")
+    X, y, weights, P, decision_rows, target_trace, base = _prepared_parts(info.pop("prepared"))
     if not same_json(info, cfg["inspection"]):
         raise ValueError("Frozen learning input scope differs")
     predictions = pd.read_parquet(folder / "predictions.parquet")
@@ -114,7 +116,7 @@ def audit_frozen(cfg, job):
     if v2:
         persisted = audit_learning_artifacts(folder, X, y, weights, P, predictions, receipt,
             max_checkpoint_bytes=cfg["spec"]["budget"]["max_checkpoint_bytes"],
-            trusted_local=True)
+            trusted_local=True, target_trace=target_trace)
     verify_inputs(cfg["project"], cfg["inputs"], cfg["spec"]["budget"]["max_input_bytes"])
     if not same_json(verify_frozen_job(job,"alpha_learn"), cfg) or digest(folder/"manifest.json") != manifest_hash:
         raise ValueError("Learning identities changed during audit")
@@ -128,7 +130,7 @@ def audit_frozen(cfg, job):
         model_scores_independently_reproduced=False, vendor_history_certified=False, account_results=False)
     if persisted is not None:
         value.update(persisted)
-        value["schema"] = "registered-alpha-learn-audit-v2"
+        value["schema"] = "registered-alpha-learn-audit-v3" if v3 else "registered-alpha-learn-audit-v2"
         value["replay_scope"] = "frozen causal preparation and actual local pipeline reload reproduces train/forecast scores; no refit"
     return dict(value, audit_id=content_id(value))
 

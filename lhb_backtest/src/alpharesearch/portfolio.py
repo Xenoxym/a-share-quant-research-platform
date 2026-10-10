@@ -82,6 +82,45 @@ class ScorePortfolio:
     receipt: dict
 
 
+
+def _target_metadata(source, fit):
+    """Validate target units and mature scope separately from outer hashes."""
+    from .targets import TrainingTargetSpec
+    if source.get("schema") == "causal-learning-receipt-v2":
+        if fit.get("schema") != "causal-fit-identity-v1" or "training_target" in fit.get("settings", {}):
+            raise ValueError("Old learning and fit target versions differ")
+        return
+    if source.get("schema") != "causal-learning-receipt-v3" or fit.get("schema") != "causal-fit-identity-v2":
+        raise ValueError("Explicit learning and fit target versions differ")
+    settings = fit["settings"]
+    definition = settings.get("training_target")
+    if not isinstance(definition, dict) or set(definition) != {"kind", "min_date_rows", "scale_floor", "unusable_policy"} or definition["unusable_policy"] != "reject":
+        raise ValueError("Explicit target transform definition required")
+    cfg = TrainingTargetSpec(definition["kind"], settings["train_start"], settings["train_end"], settings["fit_cutoff"], definition["min_date_rows"], min(settings["max_input_rows"], 1000000), definition["scale_floor"]).validated()
+    target = source.get("training_target_receipt")
+    fields = {"schema", "target_id", "spec", "rows", "usable_rows", "missing_counts", "content", "usable_content", "unit", "group_denominator", "rank_ties", "zscore_ddof", "prediction_labels_used", "predicted_score_is_raw_return", "account_results"}
+    unit = "decimal_return" if cfg.kind in ("raw_return", "date_centered") else "dimensionless"
+    raw = cfg.kind == "raw_return"
+    n = source.get("mature_training_rows")
+    if (not isinstance(target, dict) or set(target) != fields
+            or target != fit.get("training_target_receipt")
+            or target["schema"] != "training-target-receipt-v1"
+            or target["target_id"] != cfg.target_id or target["spec"] != vars(cfg)
+            or type(n) is not int or n < 2
+            or type(target["rows"]) is not int or type(target["usable_rows"]) is not int
+            or target["rows"] != n or target["usable_rows"] != n
+            or target["missing_counts"] != {"present": n}
+            or type(target["missing_counts"].get("present")) is not int
+            or target["content"] != fit.get("target_trace") or target["usable_content"] != target["content"]
+            or target["content"].get("rows") != n
+            or target["unit"] != unit or source.get("score_unit") != unit
+            or target["predicted_score_is_raw_return"] is not raw or source.get("predicted_score_is_raw_return") is not raw
+            or target["prediction_labels_used"] is not False or target["account_results"] is not False
+            or target["group_denominator"] != "Observed labels known byfitcutoff within declaredtrainingdecisions"
+            or target["rank_ties"] != "average" or type(target["zscore_ddof"]) is not int or target["zscore_ddof"] != 0
+            or settings["target"] != "execution_window_return_decimal"):
+        raise ValueError("Native training target units/mature scope are inconsistent")
+
 def build_score_portfolio(result, references, calendar, spec):
     """Validate the whole source score table, then explicitly select account dates.
 
@@ -105,7 +144,7 @@ def build_score_portfolio(result, references, calendar, spec):
         raise ValueError("Unexpected source score columns")
     if set(references) != set(KEYS + REFERENCES):
         raise ValueError("Strict reference/eligibility columns required")
-    if source.get("schema") != "causal-learning-receipt-v2" or source.get("account_results") is not False:
+    if source.get("schema") not in {"causal-learning-receipt-v2", "causal-learning-receipt-v3"} or source.get("account_results") is not False:
         raise ValueError("Causal learning receipt required")
     if source.get("prediction_rows") != len(score) or source.get("prediction_outputs") != _fingerprint(score):
         raise ValueError("Source prediction output identity/row count changed")
@@ -116,8 +155,9 @@ def build_score_portfolio(result, references, calendar, spec):
     fit_identity = source.get("fit_identity")
     if not isinstance(fit_identity, dict) or source.get("fit_id") != content_id(fit_identity):
         raise ValueError("Source fit identity is inconsistent")
+    _target_metadata(source, fit_identity)
     fitted = source.get("fitted_model")
-    if (fit_identity.get("schema") != "causal-fit-identity-v1"
+    if (fit_identity.get("schema") not in {"causal-fit-identity-v1", "causal-fit-identity-v2"}
             or not isinstance(fitted, dict) or fitted.get("schema") != "fitted-tabular-model-v1"
             or fitted.get("model_id") != fit_identity.get("model_id")
             or source.get("model_id") != fit_identity.get("model_id")

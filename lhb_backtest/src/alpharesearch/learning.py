@@ -38,6 +38,19 @@ def _day(value):
     return value
 
 
+def _training_target_spec(cfg):
+    """Explicit transform definition; mature membership is validated separately."""
+    from .targets import TrainingTargetSpec
+    value = cfg["training_target"]
+    fields = {"kind", "min_date_rows", "scale_floor", "unusable_policy"}
+    if (not isinstance(value, dict) or set(value) != fields
+            or value["unusable_policy"] != "reject"):
+        raise ValueError("Explicit target fields and reject policy required")
+    return TrainingTargetSpec(value["kind"], cfg["train_start"], cfg["train_end"],
+        cfg["fit_cutoff"], value["min_date_rows"],
+        min(cfg["max_input_rows"], 1000000), value["scale_floor"]).validated()
+
+
 @dataclass(frozen=True)
 class LearningSpec:
     document_json: str
@@ -50,7 +63,12 @@ class LearningSpec:
             "target", "empty_feature_policy", "allow_weak_vintage", "weighting",
             "negative_control", "control_seed", "min_train_rows", "max_input_rows",
         }
-        if not isinstance(value, dict) or set(value) != fields or value["schema"] != "causal-learning-v1":
+        if not isinstance(value, dict):
+            raise ValueError("Strict causal learning fields required")
+        schema = value.get("schema")
+        if schema == "causal-learning-v2":
+            fields.add("training_target")
+        if set(value) != fields or schema not in {"causal-learning-v1", "causal-learning-v2"}:
             raise ValueError("Strict causal learning fields required")
         for key in ("name", "dataset_id", "universe_id"):
             required_id(value[key], key)
@@ -79,7 +97,13 @@ class LearningSpec:
         _integer(value["max_input_rows"], 2, 10000000, "max_input_rows")
         if value["min_train_rows"] > value["max_input_rows"]:
             raise ValueError("Training minimum exceeds input row cap")
-        return cls(json.dumps(dict(value, fit_cutoff=cutoff), sort_keys=True,
+        value = dict(value, fit_cutoff=cutoff)
+        if schema == "causal-learning-v2":
+            target = _training_target_spec(value)
+            value["training_target"] = dict(kind=target.kind,
+                min_date_rows=target.min_date_rows, scale_floor=target.scale_floor,
+                unusable_policy="reject")
+        return cls(json.dumps(value, sort_keys=True,
                               separators=(",", ":"), allow_nan=False))
 
     def to_dict(self):
@@ -96,8 +120,8 @@ def learning_spec(*, dataset_id, universe_id, features, train, predict, fit_cuto
                   name="causal_learning", empty_feature_policy="reject",
                   allow_weak_vintage=False, weighting="uniform_rows",
                   negative_control="none", control_seed=11,
-                  min_train_rows=2, max_input_rows=2000000):
-    return LearningSpec.from_dict(dict(
+                  min_train_rows=2, max_input_rows=2000000, training_target=None):
+    value = dict(
         schema="causal-learning-v1", name=name, dataset_id=dataset_id,
         universe_id=universe_id, features=list(features),
         train_start=train[0], train_end=train[1], predict_start=predict[0],
@@ -106,7 +130,10 @@ def learning_spec(*, dataset_id, universe_id, features, train, predict, fit_cuto
         allow_weak_vintage=allow_weak_vintage, weighting=weighting,
         negative_control=negative_control, control_seed=control_seed,
         min_train_rows=min_train_rows, max_input_rows=max_input_rows,
-    ))
+    )
+    if training_target is not None:
+        value.update(schema="causal-learning-v2", training_target=training_target)
+    return LearningSpec.from_dict(value)
 
 
 def _keys(frame, name):
@@ -279,6 +306,17 @@ def _prepare(spec, model, decisions, assembly, labels):
     P = pd.DataFrame(x_pred[retained].to_numpy(dtype=float), columns=retained,
                      index=pd.MultiIndex.from_frame(x_pred[KEYS]))
     y = pd.Series(t.target_return.to_numpy(dtype=float), index=index)
+    target_trace = target_receipt = None
+    if cfg["schema"] == "causal-learning-v2":
+        from .targets import build_training_targets
+        transformed = build_training_targets(t[KEYS + CLOCKS], t[KEYS + LABELS],
+                                              _training_target_spec(cfg))
+        target_trace, target_receipt = transformed.rows, transformed.receipt
+        if (not target_trace[KEYS].equals(t[KEYS].reset_index(drop=True))
+                or not target_trace.target_reason.eq("present").all()):
+            raise ValueError("Unusable mature target group rejected before fit; no silent row omission")
+        y = pd.Series(target_trace.training_target.to_numpy(dtype=float), index=index)
+    # Controls permute the transformed target, retaining raw and pre-control Y.
     if cfg["negative_control"] == "within_date_label_permutation":
         rng = np.random.default_rng(cfg["control_seed"])
         for positions in t.groupby("trade_date", sort=True).indices.values():
@@ -289,12 +327,15 @@ def _prepare(spec, model, decisions, assembly, labels):
         values = 1 / count
         weights = pd.Series(values / values.mean(), index=index)
 
-    code, environment = dict(implementation_hashes(CODE)), _environment()
+    code_paths = CODE + (["src/alpharesearch/targets.py"] if target_trace is not None else [])
+    code, environment = dict(implementation_hashes(code_paths)), _environment()
     settings = {key: cfg[key] for key in (
         "dataset_id", "universe_id", "features", "train_start", "train_end", "fit_cutoff",
         "target", "empty_feature_policy", "allow_weak_vintage", "weighting",
         "negative_control", "control_seed", "min_train_rows", "max_input_rows",
     )}
+    if target_trace is not None:
+        settings["training_target"] = cfg["training_target"]
     train_content = t[KEYS + CLOCKS + ["label_start", "label_end", "label_known_at"]].copy()
     train_content[retained] = X.to_numpy()
     train_content["target_return_used"] = y.to_numpy()
@@ -311,6 +352,9 @@ def _prepare(spec, model, decisions, assembly, labels):
             validate="one_to_one", sort=False)),
         implementation_hashes=code, environment=environment,
     )
+    if target_trace is not None:
+        fit_identity.update(schema="causal-fit-identity-v2",
+            training_target_receipt=target_receipt, target_trace=_fingerprint(target_trace))
     pred_content = p.loc[pred, KEYS + CLOCKS].reset_index(drop=True).copy()
     pred_content[retained] = P.to_numpy()
     pred_content = pred_content.merge(scoped.values[KEYS + ["observed_end", "known_at"]],
@@ -335,13 +379,30 @@ def _prepare(spec, model, decisions, assembly, labels):
         historical_execution_certified=False, account_results=False,
         scope="in-memory learning only; no durable registration or account execution",
     )
+    if target_trace is not None:
+        receipt.update(schema="causal-learning-receipt-v3",
+            training_target_receipt=target_receipt, score_unit=target_receipt["unit"],
+            predicted_score_is_raw_return=target_receipt["predicted_score_is_raw_return"])
     receipt["prediction_id"] = content_id({
         "fit_id": receipt["fit_id"], "protocol_id": spec.protocol_id,
         "prediction_inputs": receipt["prediction_inputs"],
         "prediction_missing": receipt["prediction_missing"],
         "prediction_membership": receipt["prediction_membership"],
     })
-    return X, y, weights, P, p.loc[pred].reset_index(drop=True), receipt
+    decision_rows = p.loc[pred].reset_index(drop=True)
+    if target_trace is not None:
+        return X, y, weights, P, decision_rows, target_trace, receipt
+    return X, y, weights, P, decision_rows, receipt
+
+
+def _prepared_parts(prepared):
+    """Normalize only explicit native preparation versions; no public bypass."""
+    if len(prepared) == 6 and prepared[-1]["schema"] == "causal-learning-receipt-v2":
+        X, y, weights, P, decisions, receipt = prepared
+        return X, y, weights, P, decisions, None, receipt
+    if len(prepared) == 7 and prepared[-1]["schema"] == "causal-learning-receipt-v3":
+        return prepared
+    raise ValueError("Preparation tuple and receipt versions differ")
 
 
 @dataclass
@@ -357,15 +418,18 @@ class _PreparedLearning:
 
 
 def _prepared_seal(spec, model, prepared, capture_fit):
-    X, y, weights, P, decision_rows, receipt = prepared
+    X, y, weights, P, decision_rows, target_trace, receipt = _prepared_parts(prepared)
     def frame(value):
         return dict(values=_fingerprint(value),
                     index=_fingerprint(value.index.to_frame(index=False)),
                     index_names=list(value.index.names))
-    return content_id(dict(spec=spec.to_dict(), model=model.to_dict(),
+    sealed = dict(spec=spec.to_dict(), model=model.to_dict(),
         capture_fit=capture_fit, X=frame(X), y=frame(y.to_frame("__value__")),
         weights=None if weights is None else frame(weights.to_frame("__value__")),
-        prediction_X=frame(P), decision_rows=frame(decision_rows), receipt=receipt))
+        prediction_X=frame(P), decision_rows=frame(decision_rows), receipt=receipt)
+    if target_trace is not None:
+        sealed["target_trace"] = frame(target_trace)
+    return content_id(sealed)
 
 
 class LearningRunner:
@@ -448,7 +512,7 @@ class LearningRunner:
         return self._consume_prepared(token)
 
     def _fit_prepared(self, spec, model, prepared, capture_fit, event):
-        X, y, weights, P, decision_rows, receipt = prepared
+        X, y, weights, P, decision_rows, target_trace, receipt = _prepared_parts(prepared)
         fit_id = receipt["fit_id"]
         event["fit_id"] = fit_id
         cached = self._fits.get(fit_id)
@@ -491,4 +555,6 @@ class LearningRunner:
             artifacts = dict(fit_id=fit_id, adapter=cached["adapter"],
                              X=X.copy(), y=y.copy(),
                              weights=None if weights is None else weights.copy())
+            if target_trace is not None:
+                artifacts["target_trace"] = target_trace.copy()
         return LearningResult(output, receipt, artifacts)

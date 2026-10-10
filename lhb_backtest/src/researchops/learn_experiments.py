@@ -22,22 +22,25 @@ from ..technical.artifacts import content_id, digest, write_json
 
 def protocol(value):
     fields = {"schema", "learning", "model", "budget"}
-    if not isinstance(value, dict) or set(value) != fields or value["schema"] not in {"registered-alpha-learn-v1", "registered-alpha-learn-v2"}:
+    if not isinstance(value, dict) or set(value) != fields or value["schema"] not in {"registered-alpha-learn-v1", "registered-alpha-learn-v2", "registered-alpha-learn-v3"}:
         raise ValueError("Strict registered learning protocol required")
     budget = value["budget"]
     fields = {"max_input_bytes", "max_task_fit_intents"}
     caps = [("max_input_bytes", 100_000_000_000), ("max_task_fit_intents", 1000)]
-    if value["schema"] == "registered-alpha-learn-v2":
+    if value["schema"] in {"registered-alpha-learn-v2", "registered-alpha-learn-v3"}:
         fields.add("max_checkpoint_bytes")
         caps.append(("max_checkpoint_bytes", 50_000_000))
     if not isinstance(budget, dict) or set(budget) != fields:
         raise ValueError("Strict learning input/task fit and v2 checkpoint budgets required")
-    if value["schema"] == "registered-alpha-learn-v2" and (type(budget["max_checkpoint_bytes"]) is not int or budget["max_checkpoint_bytes"] < 1024):
+    if value["schema"] in {"registered-alpha-learn-v2", "registered-alpha-learn-v3"} and (type(budget["max_checkpoint_bytes"]) is not int or budget["max_checkpoint_bytes"] < 1024):
         raise ValueError("Checkpoint minimum byte budget is 1024")
     for key, cap in caps:
         if type(budget[key]) is not int or not 1 <= budget[key] <= cap:
             raise ValueError("Bounded positive learning budget required: " + key)
     spec, model = LearningSpec.from_dict(value["learning"]), ModelSpec.from_dict(value["model"])
+    expected = "causal-learning-v2" if value["schema"] == "registered-alpha-learn-v3" else "causal-learning-v1"
+    if spec.to_dict()["schema"] != expected:
+        raise ValueError("Registered and native target protocol versions differ")
     return spec, model, dict(schema=value["schema"], learning=spec.to_dict(), model=model.to_dict(), budget=budget)
 
 
