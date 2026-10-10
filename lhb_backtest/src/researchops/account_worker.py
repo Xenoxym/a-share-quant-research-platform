@@ -1,6 +1,8 @@
 """Single frozen native scored account with explicit zero/configured scenarios."""
 import argparse
 import os
+import re
+import stat
 from pathlib import Path
 import threading
 import traceback
@@ -23,8 +25,23 @@ def output_bytes(job,cfg):
     for folder in (job/"account_result",native_folder(cfg)):
         if folder.exists():
             for p in folder.rglob("*"):
-                if p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()): raise ValueError("Linked account output refused")
-                if p.is_file(): total+=p.stat().st_size
+                try:
+                    file_stat=p.lstat()
+                except FileNotFoundError:
+                    # A writer can atomically rename its JSON UUID temp after the
+                    # listing. Only a truly absent temp entry is harmless. lstat
+                    # observes broken links too; canonical disappearance is fatal.
+                    if not re.fullmatch(r".+\.json\.[0-9a-f]{32}\.tmp", p.name):
+                        raise
+                    try:
+                        p.lstat()
+                    except FileNotFoundError:
+                        continue
+                    raise
+                if stat.S_ISLNK(file_stat.st_mode) or (hasattr(p,"is_junction") and p.is_junction()):
+                    raise ValueError("Linked account output refused")
+                if stat.S_ISREG(file_stat.st_mode):
+                    total+=file_stat.st_size
     return total
 
 def compute(job):
