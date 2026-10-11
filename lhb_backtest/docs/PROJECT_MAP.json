@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T08:00:30.216529+00:00",
-  "current_package": "R28",
-  "task_id": "task-f4546f720fc2",
+  "updated_at_utc": "2026-10-11T10:20:32.291943+00:00",
+  "current_package": "R29 → R29R",
+  "task_id": "task-7045ca8c5b4b",
   "packages": [
     {
       "id": "R0",
@@ -687,8 +687,8 @@
     {
       "id": "PUB14",
       "title": "公开下一批已经验收的结果",
-      "status": "准备精确18文件公开",
-      "detail": "task-3d1852a10417已领取，新3600秒含等待预算；现仅准备已验收MLP源码与真实68负结果/工程报告、导航，未推送，后续实际新HEAD双平台CI。",
+      "status": "推送完成；真实CI失败已保留",
+      "detail": "18候选实际16文件发布；Ubuntu与Windows均因旧genericMLP测试树参数失败，未接受该版本CI，后续PUB14F只修复一文件。",
       "dependencies": "PUB13,后续实际验收",
       "guide": "PUBLIC_DELIVERY.md"
     },
@@ -703,10 +703,42 @@
     {
       "id": "R28",
       "title": "首次完整信息神经网络账户检验",
-      "status": "准备中，尚未行情训练",
-      "detail": "同68字段/中心化目标/成熟期/周top100，32隐藏单元20轮、1拟合2费用路径有限对照；新SOURCE和资源准入后执行，不调参不重跑旧森林/控制。",
+      "status": "已完成真实账户核查",
+      "detail": "1个68项MLP、2条真实费用账户；含费年化−22.22%、DD−61.67%；两独立RESULT与正式归档完成，不晋级。",
       "dependencies": "R26实际完成,R27P真实接入验收",
-      "guide": "ML_MLP_NATIVE_INTEGRATION_20261011.html"
+      "guide": "ML_MLP_ACCOUNT_RESULTS_20261011_02.html"
+    },
+    {
+      "id": "PUB14F",
+      "title": "修复旧测试对MLP误传参数",
+      "status": "已完成修复及真实CI验收",
+      "detail": "原失败保留；单测试修复2c14bb5、Windows1559/Linux1556+3跳过、打包通过，最终两复核及正式归档完成。",
+      "dependencies": "PUB14真实失败/R27M已知信号参数",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R29",
+      "title": "旧模型分数复用，减少重复计算",
+      "status": "实际检查失败，未验收",
+      "detail": "38项34reportedpass/4fail；输入路径与意图上限夹具错误，14negative缺合法正例基线。7候选已晋级但未接受，0新训练/预测/账户，probe未启动。",
+      "dependencies": "R28、PUB14F正式结束",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "PUB15",
+      "title": "公开MLP真实结果和最新项目总览",
+      "status": "精确文档候选准备中",
+      "detail": "仅R28正式通过的亏损报告及导航/SVG；R29未验收代码不在本次公开清单。",
+      "dependencies": "R28、PUB14F正式结束",
+      "guide": "ML_MLP_ACCOUNT_RESULTS_20261011_02.html"
+    },
+    {
+      "id": "R29R",
+      "title": "修正复用接口的测试样本",
+      "status": "下一步，有限修复已准备",
+      "detail": "只改两测试夹具，23受影响检查一次；15未受影响检查复用。随后一次550711保存评分只读probe，0SRC变化/训练/预测/账户。",
+      "dependencies": "R29真实失败正式结案",
+      "guide": "BUILD_PROGRESS_20261006.md"
     }
   ],
   "phase_counts": {
@@ -740,13 +772,20 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "完整68项森林账户正式验收但没有优于基准；神经网络3处源码接入和13项原生集成检查已正式验收。准备首次1个行情MLP、2费用账户，尚未开始训练。",
+  "current_result": "最新已核查账户：68项MLP含费年化−22.22%、每日最大回撤−61.67%；零费也亏损，没有晋级。R29复用接口实际检查38项、34reportedpass/4fail，夹具错误导致14项缺合法正例基线（7被路径掩盖）；生产候选未验收，真实保存评分probe尚未运行。正在独立核失败结案及有限修复，不需要重训。",
   "near_term": [
-    "神经网络生产接入已验收；执行R28一个固定MLP/两费用账户，对比已完成森林及风险控制，0旧数值重算。",
-    "PUB14仅发布已验收的精确源码、报告和当前导航，复核后一次推送并核对真实新HEAD双平台CI。",
-    "继续保留持仓保留、滚动训练、真正排序损失、序列关系、分组信息消融和有限Alpha搜索，按账户结果决定路线。"
+    "如实闭合R29失败；仅修两处测试样本并核23项受影响检查，复用15项未受影响检查。",
+    "以R26保存的550711条分数完成一次只读兼容probe，不重新训练或预测。",
+    "另建实际持仓保留规则，再比较收益、回撤及换仓数量；本轮还没有这一功能。",
+    "公开经过核查的MLP亏损结果及当前总览；原始数据、模型、私有证据留本机。",
+    "继续保留成熟滚动、输入表示、信息组消融与有限Alpha搜索等竞争路线。"
   ],
   "navigation": [
+    {
+      "title": "首次完整68项小MLP的真实亏损账户报告",
+      "md": "ML_MLP_ACCOUNT_RESULTS_20261011_02.md",
+      "html": "ML_MLP_ACCOUNT_RESULTS_20261011_02.html"
+    },
     {
       "title": "小型神经网络的真实工程检查（尚无行情收益）",
       "md": "ML_MLP_ENGINEERING_20261011_02.md",
@@ -1211,6 +1250,8 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "R26完成2市场模型4真实路径，经济负面；R27M/R27P工程完成，0神经网络行情模型或账户；PUB14准备精确18文件发布。循环继续，不重复既有实验。",
-  "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering"
+  "phase_summary": "R28已正式完成1个68项MLP与2条真实费用账户，未通过收益/回撤门槛；R29已晋级但实际38检查失败，0新fit/predict/account，下一R29R只修两测试夹具及受影响23项。PUB14F真实新HEAD双平台CI正式验收；PUB15仅公开已核查MLP报告和导航。",
+  "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
+  "counters": "R29：实际38检查，34reportedpass/4fail；受影响覆盖暂不接受。0新训练、0预测、0checkpoint读取、0账户。R28已完成1模型与2费用路径。",
+  "recent": "最近三轮实际研究覆盖排名目标、新增32项原始信息和非树MLP；均未产生预定收益/回撤改善。PUB14F精确修复一个通用测试，真实双平台CI通过；下一公开交付只包括报告和导航。"
 }
