@@ -682,3 +682,92 @@ E19E实际启动：两名SOURCE接受用时323.72/430.11秒，均在600秒内。
 ## R24N 训练目标接口：实际工程验收
 
 任务task-4398d847ef66，46测试通过；10真实微型fit/0市场/0账户。原始、变换与实际Y、单位、成熟日期成员、保存模型重载与名单双核查，旧冻结及旧数据库main保持。SOURCE02双REVISE续约连接问题已保留，SOURCE03后执行；RESULT01双REVISE针对持续第8测试文件身份门禁，增量RESULT02未发复核；实际RESULT03从已登记设计预留转用600秒修订复核，原18000秒/10fit不重置；双RESULT后精确8文件升级。后续容量工程task-3ec42c1b10c2排队，不增发科学额度；原task-37e4f2cbcd1c的2拟合/4账户优先，等本轮PUBLIC/新CI和自己的SOURCE。
+
+
+R24N actual PUBLIC及新HEAD CI完成：78eb26346d5706939fc231301ea9dbf4997676ca / 38083842194，Windows1520passed，Ubuntu1517passed+3skip，pytest/wheel/template均成功。继续原R24T task-37e4f2cbcd1c，2行情训练/4账户未耗；不把10微型工程拟合算市场收益。
+
+
+### 2026-10-10 R24T 启动资源检查（21:09 UTC）
+
+R24N实际提交78eb263的CI38083842194成功：Windows1520通过，Ubuntu1517通过/3跳过。原R24T2拟合/4真实账户额度尚未使用；首begin和有限人工恢复均在claim/训练之前遇到Windows准入，后者完整Owned监督显示可承诺余量7331201024字节（约6.83GiB）、物理可用14001733632字节（约13.04GiB），Owned0、无会话或实验。旧失败与三轮窄复核实际不同裁决永久保留，没有将准备当成执行。
+
+新SOURCE03仍使用相同36特征、固定随机森林、成熟日期、目标、样本权重、周Top100及账户规则；根据旧同模型执行峰值5109604352字节，申请一次12GiB物理/6.5GiB可承诺准入，运行中4GiB物理/.75GiB可承诺、6GiB原生/8GiB树保护不变。新方案待真实双SOURCE，不宣称容量必通过或模型已完成。原18000秒阶段起点不变，分类有限预算16150秒，0增发科学额度。68项任务不套用此门槛，仍先处理首次prepare复制占用。
+
+
+## R24T资源释放后：实际半批与接续阻断
+
+2026-10-10T21:56:32.743858+00:00。第一模型exp-5eae4db19084实际训练379842行/预测550711行；第一账户exp-07ed5973797e实际两费用路径及原生审计完成。配置费用年化1.08%、每日回撤26.39%；整阶段没有正式验收。外层写完末端记录后Errno22退出，旧failed marker完整保留，第二case尚未创建。SOURCE04草案包含150秒零拟合/零账户重放身份恢复及原剩余1fit/2路径，预算分类17734≤原18000，不重置时钟；正在独立只读复核，尚未执行。自动审批两次拒绝存档真实正式复核决定，用户授权问题pending；没有伪造接受或公开上传。R24P只准备容量候选、26等价反例和一次full68prepare-only探针，均未执行。见[进度与阻断报告](ML_RUNNING_AND_RECOVERY_20261010.html)。
+
+
+## R24T接续修复与当前审批阻断
+
+截至2026-10-10T22:07:40.668348+00:00：本次实际保存1模型/2账户，原第一账户末端Errno22保留，第二模型尚未开始。恢复及下游收集/报告/发布草案已加Owned150守护与失败终态独立保存。SOURCE05真实超时REVISE保留，48.75秒计入原预算；SOURCE06另180秒从余量登记，原阶段18000秒不重置、分类17962.75。自动审批两次拒绝将工具返回的真实独立裁决存为正式接受，用户回应pending；没有绕过、重训、重跑账户或新发布。68项容量优化26个零拟合等价反例/至多一次完整准备仍仅草案。详见[实际运行进度](ML_RUNNING_AND_RECOVERY_20261010.html)。
+
+
+## 最初要求与当前完成度只读核对
+
+2026-10-10T22:59:39.015964+00:00：依据实际代码、92项任务列表和报告，保存[需求逐项对照](ML_PROJECT_REQUIREMENTS_AUDIT_20261010.md)。基础数据→特征→六表格模型→名单→主板账户→核查链可运行；更广系统未全部完成。原E19账户证据经后续任务重检，但原父任务仍active；早期审查/Notebook仍review，旧建仓/改名任务queued，实物和任务收尾不完全一致。总览已明确，未改历史结果或补造裁决。审批拒绝涉及真实意见写正式接受，不能当作策略/账户不可信判定。本轮0新增训练/账户/发布，原接续审批仍pending。
+
+
+## 2026-10-10T23:29:27.990259+00:00 · OSS01成熟框架复用审查
+
+本轮核对以前Qlib/AlphaGen/AlphaForge/RD-Agent的阅读记录与实际采用程度，补查NautilusTrader/RQAlpha/VeighNa/vectorbt并扩展浏览WonderTrader/Hikyuu/LEAN。十项候选、23条官方页面/选定源码记录，未审所有代码。发现通用表达式、训练/实验流程、组合和账户部分有重复自建，之前缺少系统的采用/自建比较；六表格模型训练算法实际来自scikit-learn。报告给出自己的时点/龙虎榜语义与独立核查保留、一个研究主干候选、有限兼容试点和跨账户对照顺序。
+
+[详细报告](ML_OPEN_SOURCE_REUSE_REVIEW_20261010.html)及[复用示意图](OPEN_SOURCE_REUSE_ARCHITECTURE_20261010.svg)已保存并接到总览；来源卡OSS01_source_review_20261010_01.json是文档研究记录，非独立双复核或软件兼容接受。0新增市场拟合/账户、0第三方安装/API费用/本次发布。R24T的原任务/预算/审批阻断及旧证据保持，不因资料研究改写其完成度。
+
+
+## 2026-10-10T23:50:29.735231+00:00 · 用户明确授权后的复核存档与接续
+
+两位复核者恢复原关闭代码意见，新SOURCE06意见从真实会话取回；核对14/30文件及冻结内容，原完成时间保留，R24T_close_code_reviews_02.json和R24T_source_reviews_06.json实际获准存档。旧两次拒绝及Errno22保留，未重训。完整旧接续需7300秒，实际剩约6673秒且可承诺4.23GiB低于6.5GiB，转先有限半批收束和低占用后续工作。详见[ML_REVIEW_RECORDS_AND_RESUME_20261010](ML_REVIEW_RECORDS_AND_RESUME_20261010.html)。
+
+
+## 2026-10-11 UTC／本机10日：真实半批收束与开源接续
+
+原两份静态意见存档获准。R24T原18000/关闭1600同起点，actualcentered1fit2paths；首metadata27.875浮点失败、SOURCE退回及HTML退回保留。修订双SOURCE/双RESULT通过，collect25.55sec/submit3.67sec/0新数值，父task-37e4f2cbcd1c部分completed，原子rank-only child task-6685e54450d1 queued尚未fit。含费1.08%/DD26.39%，halfsmallsize/lowvol支配。
+
+OSS02 task-85dc99b7686b实际4固定发行/3源码许可、环境冲突，posthoc包evidence-6ddd3f5a5eec，0install/fit/account，RESULT中。OSS03 Qlibwheel877755bytes/hash核验，隔离解包3971664bytes；8kernel12×120/3edge候选SOURCE中，未执行，不称完整Qlib接入。可读报告02与旧坏冻结HTML分开保留。
+
+
+### 2026-10-11T00:31:43.476860+00:00 · OSS02完成与OSS03真实失败
+
+OSS02双RESULT实际接受后通过ResearchOps正式submit/review，canonical子任务task-9607edd758f6已创建领取。OSS03双SOURCE02后仅执行一次；两个官方扩展成功导入，但取数六位证券代码未带.SZ后缀，与快照代码不符过滤零行。1.797秒/采样RSS212381696 bytes/Owned0，0核比较/0fit/0账户/0生产安装。首次失败、日志和SOURCE01拒绝完整保留；只读取数诊断不是重跑。独立RESULT中，OSS04修正契约候选SOURCE中、未执行。
+
+[本次实测](ML_OPEN_SOURCE_KERNEL_FIRST_TRIAL_20261010.html) · [总览](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+### 2026-10-11T00:48:43.972313+00:00 · OSS04小内核通过，OSS05真实表达式筹备
+
+OSS04规范task-311dd677dbe5仅一次运行，1440行/8×15=120数值和未来前缀组合通过。SOURCE01后执行，RESULT01两人接受；A独立标量参考重算120/B20，范围不扩张。2.921秒/采样RSS289427456/Owned0/0fit账户生产安装，旧OSS03失败保留。ResearchOps正式结案→task-5e9a2ed63907创建领取。OSS05先静态选读官方C.set/本地provider/表达式与完整配置工作流边界；metadata首次typing依赖冲突保留，先SOURCE前预算02把metadata cap8增至16、原3000起点不改，现12请求4909601bytes，固定12依赖wheel预计3769172bytes；未下载/安装/执行。拟独立venv复用旧base只读，只调用实际数据表达式API，排除MLflow/模型/账户/完整后端采用，双SOURCE中。
+
+[实测报告](ML_OPEN_SOURCE_KERNEL_RESULTS_20261010.html) · [总览](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+### 2026-10-11 UTC：OSS05真实接口准备失败，双RESULT中
+
+SOURCE01实际双REVISE，SOURCE02两人限定-B入口接受；实际唯一执行在任何下载前因im.distributions发现路径口径失败。143项安装基础库版本与原144项项目目录清单仅差lhb-backtest0.1.0，独立只读诊断已存。0下载/新环境/隔离安装/公式比较/fit/账户，外层0.703秒/Owned0；原SOURCE意见和失败不覆盖。两个源码复核都漏检此口径错误，不归因用户授权/环境变化。RESULT正在实核，新OSS06仅静态候选，未启动。
+
+
+### 2026-10-11 UTC：OSS05按失败诊断结案，OSS06独立SOURCE
+
+RESULT01 A要求纠正68资源范围，B接受负面证据；原分歧保留。报告02和58绑定增量RESULT02，两人分别77.698/45.020秒接受，原3000时钟未reset，0追加试点。真实结案task-5e9a2ed63907，canonical child task-15f712bb3d2e已领取。OSS06最多1隔离试点，2400秒/0新metadata/0fit账户，原143base-site元数据与144APP源码说明分列；不是重启原失败任务。完整68任务另需自己的资源SOURCE，12GiB/6.5GiB只属原36列排名任务。
+
+
+### 2026-10-11 UTC：OSS06真实失败收束与OSS07有限接续
+
+OSS06(task-15f712bb3d2e)实际一次准备、12官方wheel下载3769172字节；原143基础库口径通过。自己的ZIP预检禁止全部.data，误拒dill三个标准脚本，安装前失败。实际0安装/API/训练/账户；两名只读RESULT核83文件及真实失败后结案。旧失败和意见全部保留。独立子OSS07(task-6e61446cd128)已领取，复用13缓存wheel、0新增下载，交给标准pip并验证已知脚本正文/解释器映射；新2400秒有限阶段、一次试点，双SOURCE中未执行。R25R依然12GiB物理/6.5GiB可承诺，完整68另需资源计划。
+
+[当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+### 2026-10-11 UTC：OSS07标准安装真实通过，但状态检查错误保留
+
+一次实际执行16.203秒；13缓存包由标准pip隔离安装exit0，独立核666成员及3脚本正文/首行，原143项发行版本一致。API正常分支末端本方C.registered访问失败，0保存比较/数组/模型/账户；不能宣称72组通过。SOURCE01冻结遗漏及A超时保留，02双接受后实际执行，RESULT118项双限定接受结案。原阶段约696.74/2400秒未重置。子OSS08(task-679501ff2005)复用已装env、0新下载/安装，用官方公开get只读状态；独立一次API预算，双SOURCE中未执行。
+
+[当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+### 2026-10-11 UTC：OSS08真实接口72组通过与双结果复核
+
+OSS08(task-679501ff2005)唯一真实API约3.937秒/287363072字节采样RSS/Owned0/errors空；原13包环境复用，666成员再核、143基础版本一致，0新增下载/安装/fit/账户。12股120日6列实际/独立参考/未来数组保存，72组全部通过；A独立重算全部72原始，B标量重算72原始及72未来，前60日逐位一致。148项live/frozen双RESULT结案，原2400时钟不重置；此不涵盖全部Alpha158/360、完整工作流或收益。新OSS09(task-840fcd9d52f7)薄适配排队；原rank/容量仍优先。PUB10(task-6c5395061784)精确公开人话报告与导航，待双PUBLIC和真实新提交CI。
+
+[当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)

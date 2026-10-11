@@ -1,11 +1,22 @@
 # 项目总览：当前架构、全计划和进度
 
-更新（UTC）：2026-10-10T20:23:41.589054+00:00 · 当前工作包：R24T
+更新（UTC）：2026-10-11T01:57:41.545619+00:00 · 当前工作包：PUB10
 
 我们建设的是：把已有市场信息变成可检验的投资方法，再用真实资金账户的收益和回撤判断它是否值得继续。当前软件模块已具备研究闭环的基本接线；真实账户计算与独立接受的进度分别见下文。
 
 ## 从这里看整个计划
 
+- [成熟六公式接口：72组真实数值及未来前缀通过](ML_OPEN_SOURCE_EXPRESSION_API_RESULTS_20261011.md)（[网页](ML_OPEN_SOURCE_EXPRESSION_API_RESULTS_20261011.html)）
+- [隔离安装真实通过：验收检查故障与明确接续](ML_OPEN_SOURCE_EXPRESSION_INSTALL_AND_CHECK_FAILURE_20261011.md)（[网页](ML_OPEN_SOURCE_EXPRESSION_INSTALL_AND_CHECK_FAILURE_20261011.html)）
+- [安装前失败：错误来自自己的wheel布局检查](ML_OPEN_SOURCE_WHEEL_LAYOUT_FAILURE_20261010.md)（[网页](ML_OPEN_SOURCE_WHEEL_LAYOUT_FAILURE_20261010.html)）
+- [真实Qlib接口首次试点：下载前失败及原因](ML_OPEN_SOURCE_EXPRESSION_FIRST_TRIAL_20261010_02.md)（[网页](ML_OPEN_SOURCE_EXPRESSION_FIRST_TRIAL_20261010_02.html)）
+- [固定Qlib八内核：真实数值与时点兼容结果](ML_OPEN_SOURCE_KERNEL_RESULTS_20261010.md)（[网页](ML_OPEN_SOURCE_KERNEL_RESULTS_20261010.html)）
+- [首次Qlib实测：导入成功、取数错误及明确接续](ML_OPEN_SOURCE_KERNEL_FIRST_TRIAL_20261010.md)（[网页](ML_OPEN_SOURCE_KERNEL_FIRST_TRIAL_20261010.html)）
+- [真实半批训练目标账户结果与接续](ML_TARGET_PARTIAL_ACCOUNT_RESULTS_20261010_02.md)（[网页](ML_TARGET_PARTIAL_ACCOUNT_RESULTS_20261010_02.html)）
+- [固定开源发行与当前环境：实际兼容性](ML_OPEN_SOURCE_COMPATIBILITY_20261010_02.md)（[网页](ML_OPEN_SOURCE_COMPATIBILITY_20261010_02.html)）
+- [复核原意见已存档、目录现象与接续限制](ML_REVIEW_RECORDS_AND_RESUME_20261010.md)（[网页](ML_REVIEW_RECORDS_AND_RESUME_20261010.html)）
+- [成熟开源项目复用审查：哪些在重复、接下来怎样采用](ML_OPEN_SOURCE_REUSE_REVIEW_20261010.md)（[网页](ML_OPEN_SOURCE_REUSE_REVIEW_20261010.html)）
+- [最初要求逐项对照：已完成、部分完成、尚未开始](ML_PROJECT_REQUIREMENTS_AUDIT_20261010.md)（[网页](ML_PROJECT_REQUIREMENTS_AUDIT_20261010.html)）
 - [68项训练为何停止及实际资源需求](ML_68_FEATURE_RESOURCE_STOP_20261010.md)（[网页](ML_68_FEATURE_RESOURCE_STOP_20261010.html)）
 - [完整最大系统蓝图](ML_SYSTEM_BLUEPRINT_20261005.md)（[网页](ML_SYSTEM_BLUEPRINT_20261005.html)）
 - [完整工作包及交付计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.md)（[网页](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)）
@@ -25,9 +36,9 @@
 
 本E19阶段：工程3作业（2完成/1取消）；模型登记12项，有收据确认拟合12次、模型核查完成12项；真实账户已计算32情景，其中当前核查接受32情景。上限12次真实拟合/32个真实账户情景，外部费用$0。
 
-R24N微型训练目标接口已实际通过并升级8文件；本轮公开和新CI待验证。原R24T真实账户候选尚未训练，市场收益结论不变。
+OSS08真实六公式72组全部通过并双RESULT结案；PUB10正在整理可公开文档与导航，已补齐缺失链接，公开复核和实际新提交CI待核。0新市场训练或账户。
 
-本轮10合成fit、0市场fit/0账户，工程验收不代表收益；最新真实市场四模型仍均含费负收益。
+OSS08一次API/72组通过/0新增安装下载fit账户；公开交付仅文档。历史E19计数不是后续累计。
 
 ## 最简架构：六步就能理解
 
@@ -45,9 +56,9 @@ R24N微型训练目标接口已实际通过并升级8文件；本轮公开和新
 
 ## 接下来要做什么
 
-1. 完成本轮公开复核与实际新提交Windows/Ubuntu CI。
-2. 领取原R24T，冻结同36随机森林中心化/排名目标的2拟合/4真实账户路径与新双SOURCE后执行。
-3. 按证据接续68容量/直接信息、成熟滚动、序列关系、Alpha组合和批量吞吐；有限数值逐批。
+1. 完成本轮报告和导航的公开复核，精确清单发布并核实际新HEAD的两平台CI
+2. 若当前资源满足登记门槛，完成原排名目标模型与两条账户；否则先26项零拟合容量等价检查，完整68项容量另登记
+3. 将成熟六公式薄接既有特征协议；继续A股事件/形态/财务/市场特征、其他模型及滚动研究，以含费收益和每日回撤判断
 
 ## 全部工作包：原计划与补充包
 
@@ -80,7 +91,7 @@ R24N微型训练目标接口已实际通过并升级8文件；本轮公开和新
 | [E16](ALPHA_CAUSAL_LEARNING.md) | 训练、目标与预测协议 | 已完成工程验收 | 时间划分/成熟标签/预测名单约束；保存预测与元数据。 | E15,E11 |
 | [E17](ALPHA_SCORE_TO_ACCOUNT.md) | 分数变成持仓名单 | 已完成工程验收 | 按当时资格/分数/持仓数/权重生成计划，不自动挖特征。 | E16,E01 |
 | [E18](ALPHA_ACCOUNT_AUDIT.md) | 独立检查名单与账本 | 已完成工程验收 | 重建选择并复算现金/持仓/权益/收益，不重新训练。 | E17,E02 |
-| [E19](ML_E19_ACCOUNT_COMPARISON_20261009.md) | 首次新流水线真实闭环 | 整批已核查并发布，模型未达收益目标 | 12fit/32账户全部结果已报告；原12failed保持。保存分数诊断另记E19D，不重训或补跑。 | E14,E18 |
+| [E19](ML_E19_ACCOUNT_COMPARISON_20261009.md) | 首次新流水线真实闭环 | 12模型/32账户证据已重检报告；原父任务未正式结案 | 原12failed保留；后续独立任务完成账户重检。task-32a60b66115c仍active、无submission/review；证据状态与任务结案分开。 | E14,E18 |
 | [E20](ALPHA_SEQUENCE_WINDOWS.md) | 序列与事件数据集 | 日历窗口已正式接入，事件序列/真实试点待做 | E20私有30检查，E20B正式32检查；明确每日特征、可知时间/缺失掩码和有限批。没有序列模型。 | E07,E16 |
 | [E21](ML_SYSTEM_BLUEPRINT_20261005.md) | 神经网络模型 | 未开始 | MLP→GRU/TCN→Transformer，逐步比较并实测成本。 | E20,R2,E19 |
 | [E22](ML_SYSTEM_BLUEPRINT_20261005.md) | 席位关系图 | 未开始 | 当时关系统计→图模型，隔离未来新增关系。 | E02,E20,E19 |
@@ -115,10 +126,21 @@ R24N微型训练目标接口已实际通过并升级8文件；本轮公开和新
 | [E23HR](ML_FEATURE_COMPLETION_20261010.html) | 补充：资源恢复后补齐固定特征 | 20特征齐备并正式归档 | 6新任务补齐16项、复用4项；累计9登记/8成功/1旧失败/23声明。两名独立RESULT接受，0新模型/账户。关闭耗时下界1211秒超过600预算，原时钟保留。 | E23H,E23H0 |
 | [R23D](ML_68_FEATURE_RESOURCE_STOP_20261010.md) | 补充：直接信息与组合共同输入的真实账户检验 | 68项组装完成；首项训练因可承诺空间不足停止并正式结案；发布与新CI完成 | 68项=原16价量+20组合+32已有板型/龙虎榜/财务/市场信息，933284共同样本；组装峰2.81GiB，首项训练准备峰7.10GiB、执行峰6.74GiB。1失败意图，0成功拟合/账户，实际fit调用未知；非策略有效性结果，未自动重试，未改OS或终止其他应用。 | E19E,E21C,E23HR |
 | [R23C](ML_FOUR_MODEL_ACCOUNT_RESULTS_20261010.md) | 四种模型在同36项信息上的资金结果比较 | 真实RESULT已双复核结案、发布与新提交CI均完成 | 极端随机树、随机森林、ElasticNet、Huber各拟合一次；同379842成熟训练/550711预测、相同36输入/周Top100/账户，两费用各真实执行；全部失败历史与零费用对照保留。 | R23D,E15,E16 |
-| [R24T](ML_NATIVE_TRAINING_TARGET_ENGINEERING_20261010.md) | 成熟训练目标与组合映射的工程和账户检验 | 原任务仍排队，2拟合/4真实路径待新SOURCE及实际新CI | 优先原任务task-37e4f2cbcd1c同36随机森林中心化/排名目标账户消融；不重复旧raw训练、不增发原预算。 | R23C,E15,E16 |
+| [R24T](ML_TARGET_PARTIAL_ACCOUNT_RESULTS_20261010_02.md) | 成熟训练目标与组合映射的工程和账户检验 | 真实部分结案；仅1/2模型及2/4路径 | 父task completed；centered配置费CAGR1.08%/DD26.39%，被半仓小市值支配。旧Errno22及全部失败保留；rank未跑。 | R23C,E15,E16 |
 | [R24M](ML_SINGLE_PREPARATION_ENGINEERING_20261010.md) | 单次准备数据与旧模型作业兼容 | 实测、双复核、6文件升级、公开与新CI完成 | 单次prepare与旧v1/v2冻结兼容已通过60测试：22微型真实fit+1假失败，0市场fit/0账户；68首次准备峰值仍未证明解决。 | R23C,R24T |
-| [R24N](ML_NATIVE_TRAINING_TARGET_ENGINEERING_20261010.md) | 明确原始收益与训练目标的原生接口 | 微型实测、双RESULT与8文件本机升级完成；新公开与CI待验证 | 46项测试、10合成真实fit/0市场/0账户；原始/变换/实际Y及单位、存档/名单审计、旧冻结和旧库核查完成。 | R24M,R24T |
+| [R24N](ML_NATIVE_TRAINING_TARGET_ENGINEERING_20261010.md) | 明确原始收益与训练目标的原生接口 | 实际微型验证、双复核、本机升级、公开与新提交双系统CI完成 | 46项测试、10合成真实fit/0市场/0账户；原始/变换/实际Y及单位、存档/名单审计、旧冻结和旧库核查完成。 | R24M,R24T |
 | [R24P](ML_NATIVE_TRAINING_TARGET_ENGINEERING_20261010.md) | 首次prepare容量与批量吞吐工程 | 单独工程后续已排队，未执行 | 原68首次prepare峰值仍未解决；须另登记有限工程预算与SOURCE，不是再发市场2/4额度。 | R24N,R24T |
+| [OSS01](ML_OPEN_SOURCE_REUSE_REVIEW_20261010.md) | 现成量化框架比较与复用 | 来源/选定源码对照已完成；外部集成未开始 | 十项候选、23条主来源；通用模块需比较后采用。0新增训练/账户，未测兼容或迁移性能。 | 已有E01/E07/E16/E18；后续独立有限兼容试点 |
+| [R25R](ML_TARGET_PARTIAL_ACCOUNT_RESULTS_20261010_02.md) | 只接续未执行的排名目标 | 原子创建并排队；未训练/回测 | task-6685e54450d1；原剩余1fit2path，需新finite预算/SOURCE及6.5GiBcommit，不复训centered。 | R24T部分结案 |
+| [OSS02](ML_OPEN_SOURCE_COMPATIBILITY_20261010_02.md) | 固定外部量化发行与本机兼容性 | 已完成元数据分析及真实双RESULT | 固定4发行/依赖/平台/许可已检查；未做完整安装和后端兼容。canonical OSS03子任务已真实创建。 | OSS01 |
+| [OSS03](ML_OPEN_SOURCE_KERNEL_FIRST_TRIAL_20261010.md) | Qlib八基础内核小尺寸兼容性 | 已按失败范围真实结案 | 首次扩展导入成功，但代码后缀取数0行，0比较；双RESULT失败分析通过，不是兼容成功。 | OSS02 |
+| [OSS04](ML_OPEN_SOURCE_KERNEL_RESULTS_20261010.md) | 修正证券代码契约后的内核验证 | 小数据120组通过及双RESULT结案 | 1440行/8kernel×15cases；A独立核120/B20，0fit/账户/生产install，完整后端未测。 | OSS03 |
+| [OSS05](ML_OPEN_SOURCE_EXPRESSION_FIRST_TRIAL_20261010_02.md) | 隔离Qlib真实表达式与本地数据提供器 | 失败诊断双RESULT及正式结案 | 下载前唯一准备失败；独立诊断仅项目说明文件的发现路径差异。报告02纠正68准入，原失败/意见保留。 | OSS04 |
+| [OSS06](ML_OPEN_SOURCE_WHEEL_LAYOUT_FAILURE_20261010.md) | 修正版本发现口径后的实际Qlib接口 | 安装前失败，双RESULT结案 | 143基础版本通过，下载12wheel共3769172字节；误拒dill合法.data/scripts。0环境安装/API/fit账户；不是Qlib不兼容。 | OSS05 |
+| [OSS07](ML_OPEN_SOURCE_EXPRESSION_INSTALL_AND_CHECK_FAILURE_20261011.md) | 复用缓存与标准pip脚本映射的接口验证 | 安装通过、检查失败；双RESULT及正式结案 | 13缓存wheel标准pip安装及666成员核验；C.registered在重设配置后报错，0数组/比较/fit账户。后续不用重新安装。 | OSS06 |
+| [OSS08](ML_OPEN_SOURCE_EXPRESSION_API_RESULTS_20261011.md) | 复用已装环境的真实公式验收 | 72组实际通过、双RESULT及正式结案 | A独立72原始组；B独立72原始及72未来组；前60逐位同。0fit账户/新安装下载，完整后端未验收。 | OSS07 |
+| [OSS09](ML_OPEN_SOURCE_EXPRESSION_API_RESULTS_20261011.md) | 成熟特征薄适配现有协议 | 已排队，未执行 | 接FeatureBlock时点/单位/缺失/登记，0新计算引擎；原rank账户及容量优先。 | OSS08 |
+| [PUB10](ML_REVIEW_RECORDS_AND_RESUME_20261010.md) | 经核查报告及公开导航交付 | 准备双PUBLIC；未发布 | 精确文档清单；数据/矩阵/模型/安装包/环境/凭据留本机，核新提交CI。 | OSS08 |
 
 ## 报告接续规则
 
