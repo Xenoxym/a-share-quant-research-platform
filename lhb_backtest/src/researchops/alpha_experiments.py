@@ -63,6 +63,8 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     registry=FeatureRegistry.from_dict(json.loads(roles['registry'].read_text(encoding='utf-8')));spec=AlphaBatchSpec.from_dict(spec_raw,registry)
     if set(roles)!=spec.input_roles:raise ValueError('Input roles must exactly cover the frozen protocol')
     doc=spec.to_dict();blocks={};selection_info=None
+    prepared_leaves={}
+    full_membership=pd.read_parquet(roles['membership']) if doc['schema']=='alpha-feature-batch-v4' else None
     if doc['schema']=='alpha-feature-batch-v3':
         selected=doc['training_selection']
         read_role=lambda field:json.loads(roles[selected[field]].read_text(encoding='utf8'))
@@ -70,6 +72,20 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     for name,record in doc['blocks'].items():
         meta=json.loads(roles[record['definition']].read_text(encoding='utf-8'));units=meta.pop('units')
         block=FeatureBlock(pd.read_parquet(roles[record['values']]),pd.read_parquet(roles[record['missing']]),units,meta).validate();blocks[name]=block
+        if doc['schema']=='alpha-feature-batch-v4':
+            from ..alpharesearch.prepared_assembly import adapt_prepared_assembly
+            source=json.loads(roles[record['source_receipt']].read_text(encoding='utf-8'))
+            receipt=json.loads(roles[record['receipt']].read_text(encoding='utf-8'))
+            hashes={k:digest(roles[record[k]]) for k in ('values','missing','definition','source_receipt')}
+            hashes.update(registry=digest(roles['registry']),membership=digest(roles['membership']))
+            adapted=adapt_prepared_assembly(block,registry,full_membership,source,receipt,artifact_hashes=hashes)
+            if block.metadata.get('universe_id')!=doc['universe_id']:raise ValueError('Prepared universe differs from batch')
+            for key,binding in doc['bindings'].items():
+                if binding['block']!=name:continue
+                leaf=adapted.leaves.get(key)
+                if leaf is None or binding['column']!=leaf.column or binding['definition_id']!=leaf.definition_id or binding['materialization_id']!=leaf.materialization_id:raise ValueError('Prepared frozen leaf binding differs')
+                prepared_leaves[key]=leaf
+            continue
         current={d.definition_id:d for d in definitions_for_block(block)}
         receipt=verify_materialization(json.loads(roles[record['receipt']].read_text(encoding='utf-8')))
         artifact_expected={roles[record[r]].name:digest(roles[record[r]]) for r in ('values','missing')}
@@ -78,22 +94,29 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
             if binding['block']!=name:continue
             definition=current.get(binding['definition_id'])
             if definition is None or definition.key!=key or definition.key.split('.',1)[1]!=binding['column'] or binding['materialization_id']!=receipt['materialization_id']:raise ValueError('Bound definition/column/receipt does not match frozen block')
-    leaves={key:LeafBinding(blocks[b['block']],b['column'],b['definition_id'],b['materialization_id']) for key,b in doc['bindings'].items()}
+    leaves=prepared_leaves if doc['schema']=='alpha-feature-batch-v4' else {key:LeafBinding(blocks[b['block']],b['column'],b['definition_id'],b['materialization_id']) for key,b in doc['bindings'].items()}
     calendar=json.loads(roles['calendar'].read_text(encoding='utf-8'))
     if not isinstance(calendar,dict) or set(calendar)!={'trade_dates'}:raise ValueError('Explicit full calendar document required')
     full_days=calendar['trade_dates']
     if not isinstance(full_days,list) or not full_days or any(not isinstance(d,str) or date.fromisoformat(d).isoformat()!=d for d in full_days) or full_days!=sorted(set(full_days)):raise ValueError('Canonical unique sorted full calendar required')
     r=doc['ranges'];part=execution_partition(doc);days=[d for d in full_days if part['warmup_start']<=d<=part['end']]
-    p=pd.read_parquet(roles['membership']);p=p.loc[p.trade_date.between(part['warmup_start'],part['end'])].copy()
+    p=full_membership if full_membership is not None else pd.read_parquet(roles['membership']);p=p.loc[p.trade_date.between(part['warmup_start'],part['end'])].copy()
     clocks=pd.read_parquet(roles['decision_clocks']);clocks=clocks.loc[clocks.trade_date.between(part['warmup_start'],part['end'])].copy()
     if not p.trade_date.isin(days).all() or not clocks.trade_date.isin(days).all():raise ValueError('Development membership/clock date missing from frozen calendar')
-    evaluator=ExpressionEvaluator(registry,leaves,calendar=days,membership=p,decision_clocks=clocks,universe_id=doc['universe_id'],allow_weak_vintage=doc['allow_weak_vintage'],max_grid_cells=budget['max_grid_cells'],max_estimated_buffer_bytes=budget['max_buffer_bytes'])
+    evaluator_type=ExpressionEvaluator
+    if doc['schema']=='alpha-feature-batch-v4':
+        from ..alpharesearch.prepared_assembly import PreparedAssemblyEvaluator
+        evaluator_type=PreparedAssemblyEvaluator
+    evaluator=evaluator_type(registry,leaves,calendar=days,membership=p,decision_clocks=clocks,universe_id=doc['universe_id'],allow_weak_vintage=doc['allow_weak_vintage'],max_grid_cells=budget['max_grid_cells'],max_estimated_buffer_bytes=budget['max_buffer_bytes'])
     leaf_bytes=sum(len(evaluator.days)*(len(evaluator.stocks) if registry.resolve(key,leaves[key].definition_id).domain=='stock_day' else 1)*9 for key in leaves)
     if leaf_bytes>budget['max_buffer_bytes']:raise ValueError('Referenced numerical leaf buffer budget exceeded before preparation')
     # Validate only referenced leaves, with source clocks/version gates, no formula fit.
     for key,binding in leaves.items():evaluator._leaf(key,binding.definition_id)
     if not any(part['start']<=d<=part['end'] for d in p.trade_date):raise ValueError('No declared execution-partition decision rows in the frozen input')
     info={'execution_days':days,'execution_rows':len(p),'holdout_rows_executed':0,'source_files_by_reference':True,'historical_source_certified':False}
+    if doc['schema']=='alpha-feature-batch-v4':
+        info.update(leaf_source='prepared_assembly_v1',temporal_policy='decision_date_pointwise_only',
+                    original_raw_clocks_reconstructed=False,prepared_adapter_ids=sorted({leaf.materialization_id for leaf in leaves.values()}))
     if selection_info is not None:
         info.update(execution_partition=part['name'],forecast_rows_planned=int(p.trade_date.between(part['start'],part['end']).sum()),forecast_rows_executed=0,training_rows_executed=0,training_rows_output=0,training_rows_planned=int(p.trade_date.between(r['development_start'],r['development_end']).sum()),training_selection=selection_info)
     if include_evaluator:info['_evaluator']=evaluator

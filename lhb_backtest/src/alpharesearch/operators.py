@@ -9,7 +9,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from .contracts import MissingReason as M, VintagePolicy, required_id, timestamps
+from .contracts import MissingReason as M, VintagePolicy, required_id, timestamps, same_timestamp_instants
 from .dsl import CompiledExpression, verify_compiled
 from .features.base import FeatureBlock
 from .registry import FeatureRegistry, SHA, implementation_hashes
@@ -65,7 +65,7 @@ class ExpressionEvaluator:
         if clocks.decision_at.dt.tz_convert('Asia/Shanghai').dt.strftime('%Y-%m-%d').ne(clocks.trade_date).any():raise ValueError('Decision clock must belong to its local trading date')
         self.clocks=clocks.set_index('trade_date').reindex(days).decision_at
         p['decision_at']=timestamps(p.decision_at)
-        if not p.decision_at.reset_index(drop=True).equals(p.trade_date.map(self.clocks).reset_index(drop=True)):raise ValueError('Membership and session decision clocks differ')
+        if not same_timestamp_instants(p.decision_at.reset_index(drop=True),p.trade_date.map(self.clocks).reset_index(drop=True)):raise ValueError('Membership and session decision clocks differ')
         stocks=sorted(p.stock_code.unique());cells=len(days)*len(stocks)
         if cells>max_grid_cells:raise ValueError('Calendar grid resource budget exceeded before allocation')
         self.registry=registry;self.leaves=leaves.copy();self.days=days;self.stocks=stocks;self.membership=p[fields].reset_index(drop=True)

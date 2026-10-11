@@ -56,7 +56,21 @@ class LabelPurpose(str, Enum):
 def timestamp(value):
     """Require an explicit timezone; normalize to UTC without using the host clock."""
     if isinstance(value, str):
-        value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        import re
+        import pandas as pd
+        # Preserve every supported fractional digit. Some parsers silently
+        # truncate precision beyond ns, so reject such input before parsing.
+        if re.search(r'[.,]\d{10,}', value):
+            raise ValueError('Timestamp fractional precision exceeds nine digits')
+        # Retain the original ISO-only grammar; this validates syntax only.
+        # Its microsecond datetime result is deliberately never consumed.
+        datetime.fromisoformat(value.replace('Z', '+00:00'))
+        parsed = pd.Timestamp(value)
+        if pd.isna(parsed):
+            raise ValueError('Timestamp cannot be missing')
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError('Timestamp must include an explicit timezone')
+        return parsed.tz_convert('UTC')
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
         raise ValueError('Timestamp must include an explicit timezone')
     return value.astimezone(timezone.utc)
@@ -72,6 +86,16 @@ def timestamps(values):
         if values.isna().any():raise ValueError('Timestamp cannot be missing')
         return values.dt.tz_convert('UTC')
     return pd.to_datetime(values.map(timestamp),utc=True)
+
+
+def same_timestamp_instants(left, right):
+    """Exact aware instants and index, independent of ns/us storage precision.
+
+    Do not round, truncate, infer timezone or modify either input. Missing or
+    naive clocks are rejected by timestamps; a single nanosecond differs.
+    """
+    a, b = timestamps(left), timestamps(right)
+    return len(a) == len(b) and a.index.equals(b.index) and bool(a.eq(b).all())
 
 
 def known_at_from_publication(value, precision, market_timezone='Asia/Shanghai'):

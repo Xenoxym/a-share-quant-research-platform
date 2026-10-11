@@ -10,6 +10,7 @@ from .alpha_experiments import verify_inputs, verify_registered
 from .resources import WorkerResources
 from ..alpharesearch.batch_partition import execution_partition, validate_forecast_selection
 from ..alpharesearch.features.base import FeatureBlock
+from ..alpharesearch.contracts import same_timestamp_instants
 from ..alpharesearch.feature_storage import read_shared_index, read_compact_candidate, INDEX_FILES, CANDIDATE_FILES
 from ..technical.artifacts import content_id, digest, verify_artifacts
 
@@ -180,7 +181,7 @@ def audit_output(research,experiment):
             raise ValueError("Numerical feature definition/summary differs")
         for name in ("known_at","observed_end"):
             check=block.values[keys+[name]].merge(membership[keys+["decision_at"]],on=keys,validate="one_to_one")
-            if not pd.to_datetime(check[name],utc=True).equals(pd.to_datetime(check.decision_at,utc=True)):
+            if not same_timestamp_instants(check[name],check.decision_at):
                 raise ValueError("Numerical output clocks differ from declared development decisions")
     if not actual<=allowed or not completed or result["completed_candidates"]!=completed or result["failed_candidates"]!=len(candidates)-completed:
         raise ValueError("Numerical completion/failed counts or files differ")
