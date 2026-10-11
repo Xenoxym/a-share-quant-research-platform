@@ -1,6 +1,6 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T05:45:18.831846+00:00",
+  "updated_at_utc": "2026-10-11T06:26:59.559849+00:00",
   "current_package": "R26",
   "task_id": "task-812f80455aad",
   "packages": [
@@ -639,16 +639,16 @@
     {
       "id": "R26",
       "title": "完整信息的同模型账户消融",
-      "status": "SOURCE01独立审查中，未训练",
-      "detail": "task-812f80455aad；原36项加32项直接板型/龙虎榜/财务/市场信息，固定同RF两目标；最多2模型4费用路径，当前还未执行。",
+      "status": "执行中",
+      "detail": "完整68项第一个RF1拟合和550711预测已验收，第一组2费用账户正在执行；第二目标模型尚未启动。原2fit/4real路径、2线程、无重跑。",
       "dependencies": "R25RR/R24PF/R24PR",
       "guide": "ML_RESEARCH_PROGRESS_20261011.md"
     },
     {
       "id": "PUB12",
       "title": "真实账户和容量报告公开交付",
-      "status": "真实排队，未执行",
-      "detail": "task-8b6a17eb0218真实排队；新预算/精确清单/双PUBLIC/新headCI，0数值。",
+      "status": "已完成",
+      "detail": "745ddd9精确报告交付，实际新head双平台CI成功及双RESULT02正式关闭；原提交前EOF失败、收尾代码审查REVISE保持。",
       "dependencies": "PUB11",
       "guide": "ML_FULL68_PREPARATION_CAPACITY_20261011.md"
     },
@@ -667,6 +667,14 @@
       "detail": "task-dd5d010a8df1；仅补4项全通过，复用原87项。实际双复核及正式结案完成，生产代码已验收；0新市场模型/账户。",
       "dependencies": "R24PU",
       "guide": "ML_FULL68_PRODUCTION_UPGRADE_20261011_02.md"
+    },
+    {
+      "id": "PUB13",
+      "title": "公开已经验收的数据准备源码",
+      "status": "排队",
+      "detail": "task-a9856394e2e0：与报告发布分开，精确accepted learning.py及导航、新预算双PUBLIC与新HEAD CI；不重跑原91项本机检查。",
+      "dependencies": "PUB12,R24PR",
+      "guide": "ML_RESEARCH_PROGRESS_20261011.html"
     }
   ],
   "phase_counts": {
@@ -700,7 +708,7 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "排名模型账户含费年化−1.30%、最大回撤−25.14%，未晋级。完整68项数据准备与生产代码验收已完成；开始同模型36→68项信息对照，尚无本批新模型结果。",
+  "current_result": "完整68项第一个模型已训练并核查完成，保存379842训练行、550711预测行；正在运行无费/含费两条账户。报告745ddd9已发布且两平台CI通过，PUB12正式完成；接着单独公开已验收准备源码。",
   "near_term": [
     "R26：先检查固定方案与当前容量，再顺序训练68项原始收益目标和中心化收益目标模型，每个模型跑无费/含费两条账户。",
     "把已核查的排名回测、68项数据准备、代码升级报告及当前进度发布到GitHub；原始数据、模型与私密凭据留本机。",
@@ -1147,9 +1155,25 @@
     {
       "label": "R26_source_scope_01.json",
       "private_file": "本机证据/R26_source_scope_01.json"
+    },
+    {
+      "label": "R26_source_reviews_02.json",
+      "private_file": "本机证据/R26_source_reviews_02.json"
+    },
+    {
+      "label": "R26_admission_01.json",
+      "private_file": "本机证据/R26_admission_01.json"
+    },
+    {
+      "label": "PUB12_publication_01.json",
+      "private_file": "本机证据/PUB12_publication_01.json"
+    },
+    {
+      "label": "PUB12_publication_end_01.json",
+      "private_file": "本机证据/PUB12_publication_end_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "原回归87项通过、4项因Windows路径过长失败；仅补跑这4项，全部通过，两名独立复核接受后正式完成。原失败记录保留。新批最多2次市场训练、4条费用账户，旧结果直接复用。",
+  "phase_summary": "当前68模型研究按原两模型四账户有限方案继续；第一个模型学习操作843.922秒完成。PUB12报告正式交付，Windows1545通过，Linux1542通过3跳过；收尾导入遗漏在执行前被复核发现，原拒绝保留，修正后双接受且实际关闭，不重跑训练、回测或CI。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering"
 }

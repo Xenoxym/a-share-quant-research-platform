@@ -305,6 +305,10 @@ def _prepare(spec, model, decisions, assembly, labels):
     X = pd.DataFrame(x_train[retained].to_numpy(dtype=float), columns=retained, index=index)
     P = pd.DataFrame(x_pred[retained].to_numpy(dtype=float), columns=retained,
                      index=pd.MultiIndex.from_frame(x_pred[KEYS]))
+    # Intermediate wide joins are not returned or used by the learner.
+    # Preserve exact key dtypes/order for missingness identity before release.
+    prediction_keys = x_pred[KEYS].copy()
+    del x_train, x_pred
     y = pd.Series(t.target_return.to_numpy(dtype=float), index=index)
     target_trace = target_receipt = None
     if cfg["schema"] == "causal-learning-v2":
@@ -340,13 +344,17 @@ def _prepare(spec, model, decisions, assembly, labels):
     train_content[retained] = X.to_numpy()
     train_content["target_return_used"] = y.to_numpy()
     train_content["weight_used"] = 1.0 if weights is None else weights.to_numpy()
+    training_content_identity = _fingerprint(train_content)
+    del train_content
     reason_content = t[KEYS].merge(scoped.missing[KEYS + names], on=KEYS,
                                   validate="one_to_one", sort=False)
+    training_missing_identity = _fingerprint(reason_content)
+    del reason_content
     fit_identity = dict(
         schema="causal-fit-identity-v1", settings=settings, model_id=model.model_id,
         feature_definitions=definitions, feature_units={key: block.units[key] for key in names},
         feature_vintage=block.metadata["vintage"], excluded_train_empty=excluded,
-        training_content=_fingerprint(train_content), training_missing=_fingerprint(reason_content),
+        training_content=training_content_identity, training_missing=training_missing_identity,
         training_feature_clocks=_fingerprint(t[KEYS].merge(
             scoped.values[KEYS + ["observed_end", "known_at"]], on=KEYS,
             validate="one_to_one", sort=False)),
@@ -369,7 +377,7 @@ def _prepare(spec, model, decisions, assembly, labels):
         latest_training_label_known_at=t.label_known_at.max().isoformat(),
         prediction_rows=len(P), prediction_inputs=_fingerprint(pred_content),
         prediction_membership=_fingerprint(p.loc[pred, KEYS + CLOCKS].reset_index(drop=True)),
-        prediction_missing=_fingerprint(x_pred[KEYS].merge(
+        prediction_missing=_fingerprint(prediction_keys.merge(
             scoped.missing[KEYS + retained], on=KEYS, validate="one_to_one", sort=False)),
         full_assembly_version=block.metadata["version_id"],
         full_assembly_source_bindings=json.loads(json.dumps(
