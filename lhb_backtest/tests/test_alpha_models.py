@@ -19,7 +19,15 @@ def sample(n=360):
 @pytest.mark.parametrize("family", list(DEFAULTS))
 def test_each_family_learns_and_preserves_prediction_keys(family):
     x, y = sample()
-    params = {"min_samples_leaf": 4} if family not in {"ridge", "elastic_net", "huber"} else {}
+    # Give the known synthetic signal a family-appropriate learning budget.
+    # This fixture does not change the 20-epoch registered market experiment.
+    if family == "mlp":
+        params = {"hidden_units": 32, "batch_size": 32, "alpha": 0.001,
+                  "max_iter": 200, "learning_rate_init": 0.01}
+    elif "min_samples_leaf" in DEFAULTS[family]:
+        params = {"min_samples_leaf": 4}
+    else:
+        params = {}
     adapter = TabularRegressor(model_spec(family, params=params))
     adapter.fit(x.iloc[:260], y.iloc[:260])
     score = adapter.predict(x.iloc[260:])
