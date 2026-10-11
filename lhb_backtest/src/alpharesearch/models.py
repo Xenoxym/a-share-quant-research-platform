@@ -19,6 +19,7 @@ from ..technical.artifacts import content_id
 
 
 DEFAULTS = {
+    "mlp": {"hidden_units": 32, "max_iter": 20, "batch_size": 2048, "alpha": 1.0, "learning_rate_init": 0.001, "tol": 1e-5},
     "ridge": {"alpha": 10.0, "max_iter": 2000, "tol": 1e-6},
     "elastic_net": {"alpha": 0.001, "l1_ratio": 0.5, "max_iter": 2000, "tol": 1e-5},
     "huber": {"alpha": 0.0001, "epsilon": 1.35, "max_iter": 200, "tol": 1e-5},
@@ -72,9 +73,10 @@ class ModelSpec:
             raise ValueError("Unknown model parameter")
         params = {**DEFAULTS[family], **supplied}
         for key, item in params.items():
-            if key in {"max_iter", "n_estimators", "min_samples_leaf", "max_depth", "max_leaf_nodes"}:
+            if key in {"max_iter", "n_estimators", "min_samples_leaf", "max_depth", "max_leaf_nodes", "hidden_units", "batch_size"}:
                 bounds = {
-                    "max_iter": (1, 1000 if family == "hist_gbdt" else 10000),
+                    "max_iter": (1, 200 if family == "mlp" else 1000 if family == "hist_gbdt" else 10000),
+                    "hidden_units": (4, 128), "batch_size": (32, 8192),
                     "n_estimators": (1, 512), "min_samples_leaf": (1, 1000000),
                     "max_depth": (1, 32), "max_leaf_nodes": (2, 64),
                 }
@@ -87,12 +89,12 @@ class ModelSpec:
                 _number(item, 1, 10, key)
             elif key == "max_features":
                 _number(item, 0, 1, key, lower_inclusive=False)
-            elif key == "learning_rate":
+            elif key in {"learning_rate", "learning_rate_init"}:
                 _number(item, 0, 1, key, lower_inclusive=False)
             elif key == "tol":
                 _number(item, 0, 1, key, lower_inclusive=False)
         for key in params:
-            if key not in {"max_iter", "n_estimators", "min_samples_leaf", "max_depth", "max_leaf_nodes"}:
+            if key not in {"max_iter", "n_estimators", "min_samples_leaf", "max_depth", "max_leaf_nodes", "hidden_units", "batch_size"}:
                 params[key] = float(params[key])
         _integer(value["seed"], 0, 2**32 - 1, "seed")
         _integer(value["threads"], 1, 2, "threads")
@@ -134,7 +136,15 @@ def _pipeline(spec):
 
     cfg = spec.to_dict()
     family, params, seed = cfg["family"], cfg["params"], cfg["seed"]
-    if family == "ridge":
+    if family == "mlp":
+        import inspect
+        from sklearn.neural_network import MLPRegressor
+        if "sample_weight" not in inspect.signature(MLPRegressor.fit).parameters:
+            raise ImportError("Weighted MLP requires scikit-learn>=1.7; unweighted fallback is forbidden")
+        settings = dict(params)
+        width = settings.pop("hidden_units")
+        estimator = MLPRegressor(**settings, hidden_layer_sizes=(width,), activation="relu", solver="adam", random_state=seed, early_stopping=False, shuffle=True, warm_start=False, n_iter_no_change=settings["max_iter"] + 1)
+    elif family == "ridge":
         estimator = Ridge(**params, solver="lsqr", fit_intercept=True)
     elif family == "elastic_net":
         estimator = ElasticNet(**params, fit_intercept=True, selection="cyclic",
@@ -157,7 +167,7 @@ def _pipeline(spec):
         ("missing", MissingIndicator(features="all", error_on_new=False)),
     ], n_jobs=1)
     steps = [("inputs", inputs)]
-    if family in LINEAR:
+    if family in LINEAR or family == "mlp":
         steps.append(("scale", StandardScaler()))
     steps.append(("regressor", estimator))
     return Pipeline(steps)
@@ -232,8 +242,8 @@ class TabularRegressor:
             from threadpoolctl import threadpool_limits
 
             self._model = _pipeline(self.spec)
-            with warnings.catch_warnings(), threadpool_limits(limits=self.spec.to_dict()["threads"]):
-                warnings.simplefilter("error", ConvergenceWarning)
+            with warnings.catch_warnings(record=True) as captured, threadpool_limits(limits=self.spec.to_dict()["threads"]):
+                warnings.simplefilter("always" if self.spec.to_dict()["family"] == "mlp" else "error", ConvergenceWarning)
                 self.state = "fitting"
                 self.fit_attempts += 1
                 kwargs = {} if weight is None else {"regressor__sample_weight": weight}
@@ -241,6 +251,22 @@ class TabularRegressor:
             if self._model.named_steps["regressor"].n_features_in_ != 2 * len(self.feature_names):
                 raise ValueError("Fitted preprocessing changed feature width")
             cfg = self.spec.to_dict()
+            training_details = {}
+            if cfg["family"] == "mlp":
+                estimator = self._model.named_steps["regressor"]
+                iterations = int(estimator.n_iter_)
+                loss_curve = np.asarray(estimator.loss_curve_, dtype=float)
+                expected = f"Stochastic Optimizer: Maximum iterations ({cfg['params']['max_iter']}) reached and the optimization hasn't converged yet."
+                conv = [warning for warning in captured if issubclass(warning.category, ConvergenceWarning)]
+                if any(str(warning.message) != expected for warning in conv):
+                    raise ValueError("Unexpected MLP convergence warning")
+                if not (1 <= iterations <= cfg["params"]["max_iter"] and len(loss_curve) == iterations and np.isfinite(loss_curve).all()):
+                    raise ValueError("Invalid finite MLP training trace")
+                if conv and iterations != cfg["params"]["max_iter"]:
+                    raise ValueError("MLP epoch-budget warning does not match actual iterations")
+                if estimator.early_stopping or estimator.warm_start or estimator.validation_scores_ is not None:
+                    raise ValueError("Hidden MLP validation/refit is forbidden")
+                training_details = dict(training_stop_reason="epoch_budget" if iterations == cfg["params"]["max_iter"] else "training_tolerance", iterations=iterations, loss_curve=loss_curve.tolist(), convergence_reached=False if conv else None, optimizer="adam", objective="weighted_half_squared_error_plus_L2", internal_random_validation=False, recorded_training_warnings=[dict(category=warning.category.__name__, message=str(warning.message)) for warning in captured])
             imputer = dict(self._model.named_steps["inputs"].transformer_list)["values"]
             self._metadata = dict(
                 schema="fitted-tabular-model-v1", model_id=self.spec.model_id,
@@ -248,7 +274,7 @@ class TabularRegressor:
                 transformed_features=2 * len(self.feature_names),
                 imputation_medians=imputer.statistics_.tolist(),
                 preprocessing="train median plus missing flags for every feature",
-                scaling="train-only mean/std" if cfg["family"] in LINEAR else "none",
+                scaling="train-only mean/std" if cfg["family"] in LINEAR or cfg["family"] == "mlp" else "none",
                 preprocessing_weighting="unweighted; optional weights apply to regressor",
                 sample_weight_used=weight is not None,
                 early_stopping=False, forest_jobs=1, initialization_attempts=1, fit_attempts=1,
@@ -260,7 +286,9 @@ class TabularRegressor:
                 scope="numeric adapter only; E16 must validate features and mature labels",
                 account_results=False,
             )
-            if cfg["family"] in LINEAR:
+            if training_details:
+                self._metadata["neural_training"] = training_details
+            if cfg["family"] in LINEAR or cfg["family"] == "mlp":
                 scaler = self._model.named_steps["scale"]
                 self._metadata["scaler_mean"] = scaler.mean_.tolist()
                 self._metadata["scaler_scale"] = scaler.scale_.tolist()

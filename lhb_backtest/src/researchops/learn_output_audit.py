@@ -38,21 +38,50 @@ def _model_metadata(given, model, X, weights):
     expected = dict(schema="fitted-tabular-model-v1", model_id=model.model_id,
         spec=cfg, feature_names=list(X.columns), training_rows=len(X), transformed_features=2*len(X.columns),
         preprocessing="train median plus missing flags for every feature",
-        scaling="train-only mean/std" if cfg["family"] in LINEAR else "none",
+        scaling="train-only mean/std" if cfg["family"] in LINEAR or cfg["family"] == "mlp" else "none",
         preprocessing_weighting="unweighted; optional weights apply to regressor",
         sample_weight_used=weights is not None, early_stopping=False, forest_jobs=1,
         initialization_attempts=1, fit_attempts=1,
         implementation_hashes=implementation_hashes(["src/alpharesearch/models.py"]), environment=_environment(),
         scope="numeric adapter only; E16 must validate features and mature labels", account_results=False)
     arrays = {"imputation_medians"}
-    if cfg["family"] in LINEAR:
+    if cfg["family"] == "mlp":
+        arrays.add("neural_training")
+    if cfg["family"] in LINEAR or cfg["family"] == "mlp":
         arrays |= {"scaler_mean", "scaler_scale"}
     if (not isinstance(given, dict) or set(given) != set(expected)|arrays
             or not same_json({k:given[k] for k in expected}, expected)):
         raise ValueError("Fitted model metadata declaration differs")
+    if cfg["family"] == "mlp":
+        details = given["neural_training"]
+        required = {"training_stop_reason", "iterations", "loss_curve", "convergence_reached", "optimizer", "objective", "internal_random_validation", "recorded_training_warnings"}
+        if not isinstance(details, dict) or set(details) != required:
+            raise ValueError("Strict neural training fields required")
+        iterations, losses = details["iterations"], details["loss_curve"]
+        cap = cfg["params"]["max_iter"]
+        if (type(iterations) is not int or not 1 <= iterations <= cap
+                or not isinstance(losses,list) or len(losses) != iterations
+                or any(type(value) is not float for value in losses)
+                or not np.isfinite(losses).all() or any(value < 0 for value in losses)
+                or details["optimizer"] != "adam" or details["objective"] != "weighted_half_squared_error_plus_L2"
+                or details["internal_random_validation"] is not False):
+            raise ValueError("Invalid neural epochs/objective/loss trace")
+        expected_stop = "epoch_budget" if iterations == cap else "training_tolerance"
+        if details["training_stop_reason"] != expected_stop:
+            raise ValueError("Neural stopping reason differs from actual iterations")
+        warnings = details["recorded_training_warnings"]
+        if not isinstance(warnings,list) or any(not isinstance(w,dict) or set(w)!={"category","message"}
+                or type(w["category"]) is not str or type(w["message"]) is not str for w in warnings):
+            raise ValueError("Strict recorded neural warnings required")
+        convergence = [w for w in warnings if w["category"] == "ConvergenceWarning"]
+        expected_warning = f"Stochastic Optimizer: Maximum iterations ({cap}) reached and the optimization hasn't converged yet."
+        if any(w["message"] != expected_warning for w in convergence) or (convergence and iterations != cap):
+            raise ValueError("Unexpected neural convergence warning or epoch mismatch")
+        if details["convergence_reached"] is not (False if convergence else None):
+            raise ValueError("Neural convergence claim differs from recorded warning")
     raw = X.to_numpy(dtype=float); medians = np.nanmedian(raw, axis=0)
     _vector(given["imputation_medians"], medians, "median")
-    if cfg["family"] in LINEAR:
+    if cfg["family"] in LINEAR or cfg["family"] == "mlp":
         values = np.column_stack((np.where(np.isnan(raw), medians, raw), np.isnan(raw)))
         mean, variance = values.mean(axis=0), values.var(axis=0)
         eps = np.finfo(float).eps; n = len(X)

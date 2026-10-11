@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T06:26:59.559849+00:00",
-  "current_package": "R26",
-  "task_id": "task-812f80455aad",
+  "updated_at_utc": "2026-10-11T08:00:30.216529+00:00",
+  "current_package": "R28",
+  "task_id": "task-f4546f720fc2",
   "packages": [
     {
       "id": "R0",
@@ -639,10 +639,10 @@
     {
       "id": "R26",
       "title": "完整信息的同模型账户消融",
-      "status": "执行中",
-      "detail": "完整68项第一个RF1拟合和550711预测已验收，第一组2费用账户正在执行；第二目标模型尚未启动。原2fit/4real路径、2线程、无重跑。",
+      "status": "已完成真实账户验收",
+      "detail": "真实2模型/4费用路径已正式双RESULT03接受并133.110秒完整关闭。中心化68净年化1.4645%、DD−27.1413%，未达策略晋级；旧回测不重跑。",
       "dependencies": "R25RR/R24PF/R24PR",
-      "guide": "ML_RESEARCH_PROGRESS_20261011.md"
+      "guide": "ML_FULL68_ACCOUNT_RESULTS_20261011.html"
     },
     {
       "id": "PUB12",
@@ -671,10 +671,42 @@
     {
       "id": "PUB13",
       "title": "公开已经验收的数据准备源码",
-      "status": "排队",
-      "detail": "task-a9856394e2e0：与报告发布分开，精确accepted learning.py及导航、新预算双PUBLIC与新HEAD CI；不重跑原91项本机检查。",
+      "status": "已完成实际代码交付",
+      "detail": "精确7文件/5变动497833a，accepted f607准备代码公开；Windows1545/Linux1542+3及wheel/template成功，真实双RESULT正式关闭，后续PUB14。",
       "dependencies": "PUB12,R24PR",
       "guide": "ML_RESEARCH_PROGRESS_20261011.html"
+    },
+    {
+      "id": "R27M",
+      "title": "非树模型：隔离神经网络适配与小测试",
+      "status": "已完成隔离工程验收",
+      "detail": "一次14passed、5合成fit/4predict；真实双RESULT02和11.828秒完整关闭已完成。0行情模型/账户，本隔离阶段未晋级；后续R27P已经完成接入。",
+      "dependencies": "R24PR",
+      "guide": "ML_MLP_ENGINEERING_20261011_02.html"
+    },
+    {
+      "id": "PUB14",
+      "title": "公开下一批已经验收的结果",
+      "status": "准备精确18文件公开",
+      "detail": "task-3d1852a10417已领取，新3600秒含等待预算；现仅准备已验收MLP源码与真实68负结果/工程报告、导航，未推送，后续实际新HEAD双平台CI。",
+      "dependencies": "PUB13,后续实际验收",
+      "guide": "PUBLIC_DELIVERY.md"
+    },
+    {
+      "id": "R27P",
+      "title": "神经网络接入登记、核查与模型存档",
+      "status": "已完成原生生产接入验收",
+      "detail": "3处必要源码精确接入，13新检查一次通过17.81秒/完整27.203秒；1微型39成熟行拟合、40预测，真实双RESULT和正式关闭。0行情模型/账户，旧14项不重复。",
+      "dependencies": "R27M实际验收,R26正式关闭",
+      "guide": "ML_MLP_NATIVE_INTEGRATION_20261011.html"
+    },
+    {
+      "id": "R28",
+      "title": "首次完整信息神经网络账户检验",
+      "status": "准备中，尚未行情训练",
+      "detail": "同68字段/中心化目标/成熟期/周top100，32隐藏单元20轮、1拟合2费用路径有限对照；新SOURCE和资源准入后执行，不调参不重跑旧森林/控制。",
+      "dependencies": "R26实际完成,R27P真实接入验收",
+      "guide": "ML_MLP_NATIVE_INTEGRATION_20261011.html"
     }
   ],
   "phase_counts": {
@@ -708,13 +740,18 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "完整68项第一个模型已训练并核查完成，保存379842训练行、550711预测行；正在运行无费/含费两条账户。报告745ddd9已发布且两平台CI通过，PUB12正式完成；接着单独公开已验收准备源码。",
+  "current_result": "完整68项森林账户正式验收但没有优于基准；神经网络3处源码接入和13项原生集成检查已正式验收。准备首次1个行情MLP、2费用账户，尚未开始训练。",
   "near_term": [
-    "R26：先检查固定方案与当前容量，再顺序训练68项原始收益目标和中心化收益目标模型，每个模型跑无费/含费两条账户。",
-    "把已核查的排名回测、68项数据准备、代码升级报告及当前进度发布到GitHub；原始数据、模型与私密凭据留本机。",
-    "根据实际收益与回撤选择下一批，同时探索MLP、滚动训练、真正排序损失、持仓保留和自动Alpha公式，避免长期局部调参。"
+    "神经网络生产接入已验收；执行R28一个固定MLP/两费用账户，对比已完成森林及风险控制，0旧数值重算。",
+    "PUB14仅发布已验收的精确源码、报告和当前导航，复核后一次推送并核对真实新HEAD双平台CI。",
+    "继续保留持仓保留、滚动训练、真正排序损失、序列关系、分组信息消融和有限Alpha搜索，按账户结果决定路线。"
   ],
   "navigation": [
+    {
+      "title": "小型神经网络的真实工程检查（尚无行情收益）",
+      "md": "ML_MLP_ENGINEERING_20261011_02.md",
+      "html": "ML_MLP_ENGINEERING_20261011_02.html"
+    },
     {
       "title": "完整68项数据准备容量实测",
       "md": "ML_FULL68_PREPARATION_CAPACITY_20261011.md",
@@ -1174,6 +1211,6 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "当前68模型研究按原两模型四账户有限方案继续；第一个模型学习操作843.922秒完成。PUB12报告正式交付，Windows1545通过，Linux1542通过3跳过；收尾导入遗漏在执行前被复核发现，原拒绝保留，修正后双接受且实际关闭，不重跑训练、回测或CI。",
+  "phase_summary": "R26完成2市场模型4真实路径，经济负面；R27M/R27P工程完成，0神经网络行情模型或账户；PUB14准备精确18文件发布。循环继续，不重复既有实验。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering"
 }

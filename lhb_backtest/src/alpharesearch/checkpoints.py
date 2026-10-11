@@ -129,6 +129,28 @@ def load_checkpoint(directory, *, expected_manifest_sha256, trusted_local=False,
     model = joblib.load(io.BytesIO(payload))
     if model.named_steps["regressor"].n_features_in_ != meta["transformed_features"] or meta["transformed_features"] != 2 * len(meta["feature_names"]):
         raise ValueError("Fitted feature width differs")
+    if spec.to_dict()["family"] == "mlp":
+        # Compare reported epochs/loss/parameters against the actual saved estimator.
+        # This is independent of model producer metadata and never calls fit.
+        import math
+        estimator = model.named_steps["regressor"]
+        cfg = spec.to_dict(); params = cfg["params"]; details = meta.get("neural_training")
+        if not isinstance(details,dict):
+            raise ValueError("MLP checkpoint lacks actual neural training metadata")
+        expected_parameters = dict(hidden_layer_sizes=(params["hidden_units"],), activation="relu", solver="adam",
+            alpha=params["alpha"], batch_size=params["batch_size"], learning_rate_init=params["learning_rate_init"],
+            max_iter=params["max_iter"], tol=params["tol"], random_state=cfg["seed"], early_stopping=False,
+            shuffle=True, warm_start=False, n_iter_no_change=params["max_iter"]+1)
+        actual_parameters = estimator.get_params(deep=False)
+        if any(type(actual_parameters.get(k)) is not type(v) or actual_parameters[k] != v for k,v in expected_parameters.items()):
+            raise ValueError("MLP saved estimator parameters differ from declared spec")
+        if (type(estimator.n_iter_) is not int or estimator.n_iter_ != details.get("iterations")
+                or not 1 <= estimator.n_iter_ <= params["max_iter"]
+                or estimator.validation_scores_ is not None
+                or list(estimator.loss_curve_) != details.get("loss_curve")
+                or len(estimator.loss_curve_) != estimator.n_iter_
+                or not all(math.isfinite(value) and value >= 0 for value in estimator.loss_curve_)):
+            raise ValueError("MLP saved estimator epochs/loss/validation differ from receipt")
     adapter._model, adapter._metadata = model, meta
     adapter.feature_names = tuple(meta["feature_names"])
     adapter.state, adapter.initialization_attempts = "fitted", 0
