@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T03:35:15.188224+00:00",
-  "current_package": "R25RR",
-  "task_id": "task-7204d3bd57ca",
+  "updated_at_utc": "2026-10-11T05:45:18.831846+00:00",
+  "current_package": "R26",
+  "task_id": "task-812f80455aad",
   "packages": [
     {
       "id": "R0",
@@ -607,18 +607,18 @@
     {
       "id": "PUB11",
       "title": "下轮实质结果的集中公开",
-      "status": "已领取，准备精确公开清单",
-      "detail": "task-ba02ad111b4b；本批18代码/测试/文档，未推送新提交。",
+      "status": "公开、双平台CI、正式验收完成",
+      "detail": "0703d507；18清单/16变动；Windows1545、Linux1542+3跳过，0市场fit/account；PUB12已排队。",
       "dependencies": "PUB10",
       "guide": "ML_RESEARCH_RESUME_STATUS_20261011.md"
     },
     {
       "id": "R24PF",
       "title": "完整68项候选准备容量",
-      "status": "已排队，未执行",
-      "detail": "task-1d0120711bce；需独立资源/SOURCE，最多1次prepare/0fit账户，原36门槛不能借用。",
+      "status": "完整准备及独立结果正式验收完成",
+      "detail": "task-1d0120711bce；一次933284记录/68项准备，233秒/6.04GiB；0市场训练或回测。完整内容保持一致，后续生产升级独立。",
       "dependencies": "R24P",
-      "guide": "ML_DATA_PREPARATION_EQUIVALENCE_20261011.md"
+      "guide": "ML_FULL68_PREPARATION_CAPACITY_20261011.md"
     },
     {
       "id": "OSS10",
@@ -631,10 +631,42 @@
     {
       "id": "R25RR",
       "title": "排名实验资源记录与安全接续",
-      "status": "SOURCE01需修正，02候选复核中；尚未训练",
-      "detail": "task-7204d3bd57ca；保持36/RF/周Top100，先保存实际资源再判断；最多新1fit2真实路径，旧失败不退款。",
+      "status": "1模型2账户正式完成，收益未晋级",
+      "detail": "task-7204d3bd57ca；含费−1.30%/每日回撤−25.14%，零费11.95%/−22.14%；真实RESULT/66.2秒关闭完成。",
       "dependencies": "R25R",
-      "guide": "ML_RESEARCH_RESUME_STATUS_20261011.md"
+      "guide": "ML_RANK_ACCOUNT_RESULTS_20261011.md"
+    },
+    {
+      "id": "R26",
+      "title": "完整信息的同模型账户消融",
+      "status": "SOURCE01独立审查中，未训练",
+      "detail": "task-812f80455aad；原36项加32项直接板型/龙虎榜/财务/市场信息，固定同RF两目标；最多2模型4费用路径，当前还未执行。",
+      "dependencies": "R25RR/R24PF/R24PR",
+      "guide": "ML_RESEARCH_PROGRESS_20261011.md"
+    },
+    {
+      "id": "PUB12",
+      "title": "真实账户和容量报告公开交付",
+      "status": "真实排队，未执行",
+      "detail": "task-8b6a17eb0218真实排队；新预算/精确清单/双PUBLIC/新headCI，0数值。",
+      "dependencies": "PUB11",
+      "guide": "ML_FULL68_PREPARATION_CAPACITY_20261011.md"
+    },
+    {
+      "id": "R24PU",
+      "title": "完整68项数据准备代码升级",
+      "status": "原失败正式归档，后续R24PR补齐",
+      "detail": "task-aa9e5d395877正式结案为87通过4目录失败，不重标原通过；生产精确候选继续保留，补4项归独立R24PR。",
+      "dependencies": "R24PF",
+      "guide": "ML_FULL68_PREPARATION_CAPACITY_20261011.md"
+    },
+    {
+      "id": "R24PR",
+      "title": "短目录补齐4项未完成回归",
+      "status": "正式完成，91项合计通过",
+      "detail": "task-dd5d010a8df1；仅补4项全通过，复用原87项。实际双复核及正式结案完成，生产代码已验收；0新市场模型/账户。",
+      "dependencies": "R24PU",
+      "guide": "ML_FULL68_PRODUCTION_UPGRADE_20261011_02.md"
     }
   ],
   "phase_counts": {
@@ -668,13 +700,23 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "六成熟Qlib公式薄适配51项实际通过且双RESULT结案；R25R输入准备后训练前资源失败，0模型/账户；用户清理后10.48GiBcommit/15.61physical，新R25RR SOURCE01发现继承入口日志缺口、SOURCE02修正复核中。",
+  "current_result": "排名模型账户含费年化−1.30%、最大回撤−25.14%，未晋级。完整68项数据准备与生产代码验收已完成；开始同模型36→68项信息对照，尚无本批新模型结果。",
   "near_term": [
-    "R25RR资源日志修正独立SOURCE通过后实际现测，只接原排名1fit/2真实费用账户，以收益/每日回撤比较六旧对照",
-    "PUB11精确新代码、测试及阶段报告公开，观察新提交双平台CI；不用旧3114548的CI冒充",
-    "完整68项准备需独立资源/SOURCE；直接信息、成熟滚动、序列关系和有限Alpha增量保持"
+    "R26：先检查固定方案与当前容量，再顺序训练68项原始收益目标和中心化收益目标模型，每个模型跑无费/含费两条账户。",
+    "把已核查的排名回测、68项数据准备、代码升级报告及当前进度发布到GitHub；原始数据、模型与私密凭据留本机。",
+    "根据实际收益与回撤选择下一批，同时探索MLP、滚动训练、真正排序损失、持仓保留和自动Alpha公式，避免长期局部调参。"
   ],
   "navigation": [
+    {
+      "title": "完整68项数据准备容量实测",
+      "md": "ML_FULL68_PREPARATION_CAPACITY_20261011.md",
+      "html": "ML_FULL68_PREPARATION_CAPACITY_20261011.html"
+    },
+    {
+      "title": "排名模型真实账户结果",
+      "md": "ML_RANK_ACCOUNT_RESULTS_20261011.md",
+      "html": "ML_RANK_ACCOUNT_RESULTS_20261011.html"
+    },
     {
       "title": "这次接续的已完成与未完成，用人话说明",
       "md": "ML_RESEARCH_RESUME_STATUS_20261011.md",
@@ -1065,9 +1107,49 @@
     {
       "label": "R25RR_resource_observation_01.json",
       "private_file": "本机证据/R25RR_resource_observation_01.json"
+    },
+    {
+      "label": "R25RR_closure_01.json",
+      "private_file": "本机证据/R25RR_closure_01.json"
+    },
+    {
+      "label": "R24PF_operation_end_01.json",
+      "private_file": "本机证据/R24PF_operation_end_01.json"
+    },
+    {
+      "label": "R24PF_result_scope_01.json",
+      "private_file": "本机证据/R24PF_result_scope_01.json"
+    },
+    {
+      "label": "PUB11_closure_01.json",
+      "private_file": "本机证据/PUB11_closure_01.json"
+    },
+    {
+      "label": "R24PF_closure_01.json",
+      "private_file": "本机证据/R24PF_closure_01.json"
+    },
+    {
+      "label": "R24PU_failure_01.json",
+      "private_file": "本机证据/R24PU_failure_01.json"
+    },
+    {
+      "label": "R24PR_source_scope_02.json",
+      "private_file": "本机证据/R24PR_source_scope_02.json"
+    },
+    {
+      "label": "R24PR_closure_01.json",
+      "private_file": "本机证据/R24PR_closure_01.json"
+    },
+    {
+      "label": "R24PR_closing_operation_end_01.json",
+      "private_file": "本机证据/R24PR_closing_operation_end_01.json"
+    },
+    {
+      "label": "R26_source_scope_01.json",
+      "private_file": "本机证据/R26_source_scope_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "原排名仍待真正训练和账户；Qlib只完成小接口，完整68容量未做；PUB11实际新代码交付待复核。",
+  "phase_summary": "原回归87项通过、4项因Windows路径过长失败；仅补跑这4项，全部通过，两名独立复核接受后正式完成。原失败记录保留。新批最多2次市场训练、4条费用账户，旧结果直接复用。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering"
 }
