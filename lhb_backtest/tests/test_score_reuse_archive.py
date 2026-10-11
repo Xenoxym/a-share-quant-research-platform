@@ -101,7 +101,7 @@ def test_v2_archive_independently_reconciles_both_fee_accounts(v2_native_archive
     ("receipt_mode", "Archived score reuse receipt"),
     ("receipt_identity", "Archived score reuse receipt"),
     ("bundle_mode", "Strict versioned score reuse bundle"),
-    ("bundle_schema", "Strict versioned score reuse bundle"),
+    ("bundle_schema", "Receipt/bundle dynamic version differs"),
     ("producer_text", "Archived source role content"),
     ("consumer_text", "Archived source role content"),
     ("producer_fit", "Reuse model/prediction identity"),
