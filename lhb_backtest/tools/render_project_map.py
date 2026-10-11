@@ -32,8 +32,8 @@ def diagram(simple):
             ("数据来源与冻结", ["日线行情、交易日历、历史状态与公司行动", "龙虎榜原报告 / 席位；财报与公告股本", "保存快照、覆盖范围和信息可用时间"]),
             ("信息加工与候选", ["价量16项；板型29项；龙虎榜、财务、市场", "特征字典、统一组装；日历序列及缺失掩码", "受限组合公式、计算算子、共享缓存、快速初筛"]),
             ("学习与预测", ["回归、树与小神经网络；按时间划分训练和预测", "只使用已成熟标签；预处理仅学习训练数据", "目标变换仍是独立接口；实际模型与训练输入存档已验收"]),
-            ("组合与资金账户", ["当时资格、分数排序、持仓数量、权重与调仓", "原资金引擎：订单、现金、持股、权益事件", "零费与配置费分开运行；收益 / 回撤 / 仓位 / 换手"]),
-            ("独立核查与展示", ["重新生成选择名单，逐日检查现金与资产算数", "不认证供应商历史，也不重新拟合模型分数", "原工作台展示任务、账户、订单与诊断结果"]),
+            ("组合与资金账户", ["当时资格、分数排序、真实持股保留、权重与调仓", "原资金引擎：订单、现金、持股、权益事件", "零费与配置费分开运行；收益 / 回撤 / 仓位 / 换手"]),
+            ("独立核查与展示", ["从成交和现金流水重建持股与选择，逐日核账户", "不认证供应商历史，也不重新拟合模型分数", "原工作台展示任务、账户、订单与诊断结果"]),
         ]
         width, height = 980, 970
         nodes = []
@@ -85,6 +85,7 @@ def render(app):
         cards.append(f'<tr id="package-{esc(row["id"])}">{"".join(tds)}</tr>')
     footer="进度依据：本机任务库、CHECKPOINT及阶段收据。本页是当前摘要，不覆盖历史冻结结果。旧报告的‘下一步’指写作当时，当前下一步以本页和任务库为准。更新方式：修改PROJECT_MAP.json后运行python tools/render_project_map.py；阶段报告仍须关联原始证据。"
     counters=f'本E19阶段：工程{c.get("engineering_jobs",3)}作业（{c.get("engineering_completed",2)}完成/{c.get("engineering_cancelled",1)}取消）；模型登记{c.get("registered_fit_intents",0)}项，有收据确认拟合{c["real_fits"]}次、模型核查完成{c.get("audited_learning_completed",0)}项；真实账户已计算{c["real_accounts"]}情景，其中当前核查接受{c.get("qualified_account_scenarios",0)}情景。上限{c["fit_limit"]}次真实拟合/{c["real_account_limit"]}个真实账户情景，外部费用${c["paid_cost_usd"]}。'
+    counters=data.get('counters') or counters
     md=f'# 项目总览：当前架构、全计划和进度\n\n更新（UTC）：{data["updated_at_utc"]} · 当前工作包：{data["current_package"]}\n\n{intro}\n\n## 从这里看整个计划\n\n{nav_md}\n\n## 现在进行到哪里\n\n{counters}\n\n{data["current_result"]}\n\n{recent}\n\n## 最简架构：六步就能理解\n\n![当前最简功能架构](PROJECT_ARCHITECTURE_SIMPLE.svg)\n\n## 略详细架构：每一步里有什么\n\n![当前有用模块](PROJECT_ARCHITECTURE_DETAIL.svg)\n\n{boundary}\n\n## 一周例子\n\n示例：周五收盘后，以当时可知的信息给每只合格股票打分；按预先固定的规则选股和分配资金；下一个交易日开盘尝试调仓，此后逐日计算账户。新学习协议默认预测两次计划调仓开盘之间的收益，不是某天的绝对价格，也不是直接训练最大回撤。固定随机对照中的11是种子，不是11只股票。E19已固定共同主板名单、周调仓、100只目标持仓及四个对照；具体实验说明见本批报告。\n\n## 接下来要做什么\n\n'+"\n".join(f'{i}. {x}' for i,x in enumerate(data['near_term'],1))+f'\n\n## 全部工作包：原计划与补充包\n\n原编号表示设计和依赖，不是按编号顺序执行；E15—E18先补接线，E12—E14后补有限执行能力，详见建设记录。没有用完成包数给项目虚构完成百分比。\n\n'+"\n".join(table)+f'\n\n## 报告接续规则\n\n以后每份阶段结果和最终回复都附本总览、完整蓝图、完整工作包计划、详细建设记录；重要策略成果仍以经核查的收益/回撤改善为准，不能仅以RankIC或工程通过作为停止理由。\n\n{footer}\n'
     (docs/"PROJECT_MAP.md").write_text(md,encoding="utf-8")
     nav="".join(f'<a href="{esc(x.get("html",x["md"]))}">{esc(x["title"])}</a>' for x in data["navigation"])

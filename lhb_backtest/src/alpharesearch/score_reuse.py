@@ -44,23 +44,30 @@ def validate_reuse_identity(identity, learning):
              "Reuse source differs from declared producer implementation")
 
 
-def reuse_code_bundle(learning, portfolio, identity):
+def reuse_code_bundle(learning, portfolio, identity, *, holding_policy=None):
     validate_reuse_identity(identity, learning)
     required = dict(portfolio.receipt["implementation_hashes"])
     required.update(implementation_hashes(["src/alpharesearch/account.py", "src/alpharesearch/audit.py",
                                           "src/alpharesearch/score_reuse.py", *sorted(SHARED)]))
+    if holding_policy is not None:
+        required.update(implementation_hashes(['src/alpharesearch/holding_policy.py',
+                                              'src/alpharesearch/holding_policy_audit.py']))
     current = dict(implementation_hashes(list(required)))
     _require(required == current, "Current consumer source differs from declared portfolio")
     files = {n:dict(sha256=h,text=(APP/n).read_bytes().replace(b"\r\n",b"\n").decode("utf-8")) for n,h in current.items()}
     bundle = dict(schema="score-account-code-bundle-v2", verification_mode=MODE,
                   producer_identity=identity, consumer_files=files)
+    if holding_policy is not None:
+        bundle.update(schema='score-account-code-bundle-v3', holding_policy=holding_policy.to_dict())
     validate_reuse_bundle(bundle, learning, portfolio)
     return bundle
 
 
 def validate_reuse_bundle(bundle, learning, portfolio):
-    _require(isinstance(bundle, dict) and set(bundle) == {"schema", "verification_mode", "producer_identity", "consumer_files"}
-             and bundle["schema"] == "score-account-code-bundle-v2" and bundle["verification_mode"] == MODE,
+    dynamic = isinstance(bundle,dict) and bundle.get('schema') == 'score-account-code-bundle-v3'
+    fields = {'schema','verification_mode','producer_identity','consumer_files'} | ({'holding_policy'} if dynamic else set())
+    _require(isinstance(bundle, dict) and set(bundle) == fields
+             and bundle['schema'] in {'score-account-code-bundle-v2','score-account-code-bundle-v3'} and bundle['verification_mode'] == MODE,
              "Strict versioned score reuse bundle required")
     identity = bundle["producer_identity"]
     validate_reuse_identity(identity, learning)
@@ -68,6 +75,12 @@ def validate_reuse_bundle(bundle, learning, portfolio):
     _files(files)
     expected = portfolio.receipt["implementation_hashes"]
     required = set(expected) | {"src/alpharesearch/account.py", "src/alpharesearch/audit.py", "src/alpharesearch/score_reuse.py"} | SHARED
+    if dynamic:
+        from .holding_policy import ActualHoldingPolicy
+        policy = ActualHoldingPolicy.from_dict(bundle['holding_policy'])
+        cfg=portfolio.receipt['spec']
+        _require(policy.max_positions==cfg['top_k'] and policy.allocation==cfg['allocation'], 'Archived dynamic policy differs from portfolio limits')
+        required |= {'src/alpharesearch/holding_policy.py','src/alpharesearch/holding_policy_audit.py'}
     _require(set(files) == required and all(files[n]["sha256"] == h for n,h in expected.items()),
              "Archived consumer source differs from portfolio declaration")
     # Keep input serialization/time/value definitions compatible while permitting

@@ -57,7 +57,7 @@ def _account_spec(spec, cfg):
     return spec
 
 
-def score_account_definition(spec, receipt):
+def score_account_definition(spec, receipt, *, holding_policy=None):
     value = describe(spec)
     value.update(name=receipt["spec"]["name"], signal_interface="frozen_external_decisions",
         momentum="使用alpha_predictions.parquet的模型分数；原生动量参数不参与评分。",
@@ -71,6 +71,11 @@ def score_account_definition(spec, receipt):
         target_mismatch_eligible_rows=receipt["target_mismatch_eligible_rows"],
         model_reproduction_scope="保留模型与训练身份声明；本账户核查不重新训练或重放模型数值。",
         endpoint=receipt["terminal_policy"])
+    if holding_policy is not None:
+        value.update(holding_policy=holding_policy.to_dict(),
+            ranking='逐费用按信号日真实持仓保留Rank阈值内股票；新买从入场排名范围选取，代码升序处理并列。',
+            frozen_topk_role='decisions.parquet保留静态评分诊断；实际目标由各费用holding_choices和targets提供。',
+            actual_state_policy='仅使用执行日前一个已完成信号日收盘状态；退出意向不提前释放真实持仓槽。')
     return value
 
 
@@ -97,10 +102,15 @@ def _reference_prices(portfolio, bars):
              "Raw scored reference close differs from snapshot")
 
 
-def prepare_score_account(result, references, calendar, policy, snapshot, spec, *, reuse_identity=None):
+def prepare_score_account(result, references, calendar, policy, snapshot, spec, *, reuse_identity=None, holding_policy=None):
     """Return native runner prepared inputs, with copied evidence and clear definition."""
     cfg = policy.to_dict()
     spec = _account_spec(spec, cfg)
+    if holding_policy is not None:
+        from .holding_policy import ActualHoldingPolicy
+        _require(type(holding_policy) is ActualHoldingPolicy and reuse_identity is not None
+                 and holding_policy.max_positions==cfg['top_k'] and holding_policy.allocation==cfg['allocation'],
+                 'Dynamic v3 requires explicit policy, completed reuse identity and matching portfolio limits')
     snapshot, sm, tables = _snapshot(snapshot, calendar, cfg)
     portfolio = build_score_portfolio(result, references, calendar, policy)
     selection = audit_score_portfolio(result, references, calendar, portfolio)
@@ -113,8 +123,8 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec, 
         bundle = _code_bundle(result, portfolio)
     else:
         from .score_reuse import reuse_code_bundle
-        bundle = reuse_code_bundle(result, portfolio, reuse_identity)
-    definition = score_account_definition(spec, portfolio.receipt)
+        bundle = reuse_code_bundle(result, portfolio, reuse_identity, holding_policy=holding_policy)
+    definition = score_account_definition(spec, portfolio.receipt, holding_policy=holding_policy)
     receipt = dict(schema="score-account-input-receipt-v1",
         snapshot_id=sm["snapshot_id"], snapshot_manifest_sha256=digest(snapshot/"manifest.json"),
         portfolio_receipt_id=content_id(portfolio.receipt), learning_receipt_id=content_id(result.receipt),
@@ -130,7 +140,11 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec, 
               "alpha_learning_receipt.json":json.loads(json.dumps(result.receipt)),
               "alpha_portfolio_receipt.json":json.loads(json.dumps(portfolio.receipt)),
               "alpha_account_receipt.json":receipt, "alpha_scoring_code.json":bundle}
-    return dict(snapshot=snapshot, manifest=sm, decisions=portfolio.decisions.copy(),
+    if holding_policy is not None:
+        extras['alpha_holding_policy.json']=holding_policy.to_dict()
+        receipt.update(schema='score-account-input-receipt-v3',holding_policy_id=content_id(holding_policy.to_dict()),
+                       holding_evidence_schema='signal-close-actual-state-v1/actual-holding-selection-v1')
+    return dict(holding_policy=holding_policy,snapshot=snapshot, manifest=sm, decisions=portfolio.decisions.copy(),
                 schedule=portfolio.schedule.copy(), market=market, signal_definition=definition, extras=extras)
 
 
@@ -148,7 +162,18 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
     _, _, tables = _snapshot(snapshot, calendar, cfg)
     _reference_prices(portfolio, tables["bars"])
     receipt, bundle = read("alpha_account_receipt.json"), read("alpha_scoring_code.json")
-    definition = score_account_definition(spec, portfolio.receipt)
+    holding_policy=None
+    if receipt.get('schema')=='score-account-input-receipt-v3':
+        from .holding_policy import ActualHoldingPolicy
+        _require('alpha_holding_policy.json' in manifest['artifacts'], 'Missing dynamic holding policy artifact')
+        holding_policy=ActualHoldingPolicy.from_dict(read('alpha_holding_policy.json'))
+        _require(holding_policy.max_positions==cfg['top_k'] and holding_policy.allocation==cfg['allocation'],
+                 'Archived holding policy differs from portfolio limits')
+    else:
+        _require('alpha_holding_policy.json' not in manifest['artifacts'] and not (folder/'alpha_holding_policy.json').exists()
+                 and not any(k in receipt for k in ('holding_policy_id','holding_evidence_schema')),
+                 'Legacy static account contains hidden dynamic policy')
+    definition = score_account_definition(spec, portfolio.receipt, holding_policy=holding_policy)
     _require(read("definition.json")==definition, "Archived signal definition differs")
     result = read("result.json")
     native_code = {q.relative_to(folder/"code").as_posix():digest(q)
@@ -158,7 +183,7 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
              and manifest["code_hash"]==result["code_hash"]==content_id(native_code),
              "Native completed identity/code inventory differs")
     _require(result["definition"]==definition, "Result signal definition differs")
-    _require(receipt["schema"] in {"score-account-input-receipt-v1","score-account-input-receipt-v2"}
+    _require(receipt["schema"] in {"score-account-input-receipt-v1","score-account-input-receipt-v2","score-account-input-receipt-v3"}
              and receipt["snapshot_id"]==sm["snapshot_id"]
              and receipt["snapshot_manifest_sha256"]==digest(snapshot/"manifest.json")
              and receipt["portfolio_receipt_id"]==content_id(portfolio.receipt)
@@ -167,7 +192,14 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
              and receipt["calendar_id"]==content_id(calendar)
              and receipt["code_bundle_id"]==content_id(bundle)
              and receipt["signal_definition_id"]==content_id(definition), "Archived score-account input identity differs")
-    if receipt["schema"]=="score-account-input-receipt-v2":
+    if receipt['schema'] in {'score-account-input-receipt-v2','score-account-input-receipt-v3'}:
+        dynamic=receipt['schema']=='score-account-input-receipt-v3'
+        _require(bundle.get('schema')==('score-account-code-bundle-v3' if dynamic else 'score-account-code-bundle-v2'),
+                 'Receipt/bundle dynamic version differs')
+        if dynamic:
+            _require(receipt.get('holding_policy_id')==content_id(holding_policy.to_dict())
+                     and receipt.get('holding_evidence_schema')=='signal-close-actual-state-v1/actual-holding-selection-v1'
+                     and bundle.get('holding_policy')==holding_policy.to_dict(), 'Archived dynamic policy identity differs')
         from .score_reuse import validate_reuse_bundle
         files=validate_reuse_bundle(bundle,learning,portfolio)
         _require(receipt.get("verification_mode")=="reuse_completed_identity_v1"
@@ -193,4 +225,4 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
                      "Native frozen engine differs from score source code")
     expected = audit_score_portfolio(learning, references, calendar, portfolio)
     _require(receipt["independent_selection"]==expected, "Archived selection audit differs")
-    return dict(learning=learning, portfolio=portfolio, references=references, calendar=calendar, **tables)
+    return dict(holding_policy=None if holding_policy is None else holding_policy.to_dict(),learning=learning, portfolio=portfolio, references=references, calendar=calendar, **tables)

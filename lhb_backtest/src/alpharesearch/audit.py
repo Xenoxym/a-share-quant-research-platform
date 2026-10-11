@@ -343,7 +343,7 @@ def _audit_daily_state(eq, fills, positions, targets, quotes, actions, status, m
     return pd.DataFrame(daily)
 
 
-def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, schedule, actions, status, metadata):
+def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, schedule, actions, status, metadata, holding_policy=None, calendar=None):
     """Recalculate daily balances, fill/ledger links, targets and return metrics."""
     _require(isinstance(spec, ResearchSpec) and scenario in {"zero_transaction_cost", "configured"},
              "Validated native spec and explicit audited cost scenario required")
@@ -429,6 +429,15 @@ def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, s
             planned.append(dict(signal_date=day, execution_date=entry, stock_code=row.stock_code,
                                 equity_used=equity_before, reference_close=row.close, target_weight=row.target_weight,
                                 target_shares=np.floor(equity_before*row.target_weight/row.close/100)*100, rank=row.rank))
+    holding_audit = None
+    dynamic_members = None
+    if holding_policy is not None:
+        from .holding_policy_audit import audit_holding_history
+        _require('holding_choices' in output and isinstance(calendar,list), 'Missing per-fee holding choices/calendar')
+        planned, dynamic_members, holding_audit = audit_holding_history(output['holding_choices'], decisions,
+            schedule, ledger, fills, quotes, actions, status, metadata, spec, scenario, sessions, calendar, holding_policy)
+    elif 'holding_choices' in output:
+        raise ValueError('Legacy static account must not contain dynamic holding evidence')
     expected_targets = pd.DataFrame(planned, columns=["signal_date", "execution_date", "stock_code",
                                    "equity_used", "reference_close", "target_weight", "target_shares", "rank"])
     target_equity_error = 0.
@@ -440,6 +449,8 @@ def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, s
     # every scored stock for each buy. Empty scheduled groups still reject buys.
     selected_by_day = {day:set(group.stock_code) for day, group in decisions.loc[
         decisions.trade_date.isin(schedule) & decisions.selected].groupby("trade_date")}
+    if dynamic_members is not None:
+        selected_by_day = dynamic_members
     for row in fills.loc[buys].itertuples():
         active = [day for day, entry in schedule.items() if entry <= row.date]
         _require(active and row.stock_code in selected_by_day.get(max(active), set()),
@@ -490,6 +501,7 @@ def audit_account_tables(output, bars, spec, scenario, sessions, *, decisions, s
                 sessions=len(sessions), fills=len(fills), daily_errors=errors,
                 recalculated_metrics=expected_metrics, annualized_return=annual,
                 target_equity_error=target_equity_error, target_equity_absolute_tolerance=.001,
+                actual_holding_policy=holding_audit,
                 limits="Independent target/quantity, snapshot-relative closing/carrying marks and PnL arithmetic; vendor truth, queue fills and economic realism of declared policies are not authenticated.")
 
 
@@ -514,11 +526,16 @@ def audit_score_account_run(folder):
         _require(scenario in {"zero_transaction_cost", "configured"}, "Unaudited account scenario")
         tables = {k:pd.read_parquet(folder/scenario/(k+".parquet")) for k in
                   ("equity", "fills", "ledger", "positions", "targets")}
+        if data.get('holding_policy') is not None:
+            _require('holding_choices.parquet' in {p.name for p in (folder/scenario).iterdir()}, 'Missing scenario holding evidence')
+            tables['holding_choices'] = pd.read_parquet(folder/scenario/'holding_choices.parquet')
+        else:
+            _require(not (folder/scenario/'holding_choices.parquet').exists(), 'Legacy static account contains dynamic evidence')
         _equal_frame(pd.DataFrame(portfolio["equity"]), tables["equity"], ["date"])
         tables["metrics"] = portfolio["metrics"]
         scenarios[scenario] = audit_account_tables(tables, data["bars"], spec, scenario, sessions,
             decisions=data["portfolio"].decisions, schedule=data["portfolio"].schedule, actions=data["actions"],
-            status=data["status"], metadata=data["metadata"])
+            status=data["status"], metadata=data["metadata"], holding_policy=data.get("holding_policy"),calendar=data["calendar"])
     return dict(schema="independent-score-account-run-audit-v1", run_id=folder.name,
                 selection=selection, scenarios=scenarios, snapshot_id=sm["snapshot_id"],
                 signal_provenance="Declared learning/feature provenance; may contain LHB and other sources.",

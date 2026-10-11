@@ -23,10 +23,17 @@ ROLES={"predictions","learning_receipt","references","calendar"}
 
 def protocol(value):
     fields={"schema","portfolio","account","scenarios","snapshot_id","snapshot_manifest_hash","score_source","budget"}
-    if not isinstance(value,dict) or set(value)!=fields or value["schema"] not in {"registered-alpha-account-v1","registered-alpha-account-v2"}:
+    dynamic=isinstance(value,dict) and value.get('schema')=='registered-alpha-account-v3'
+    if dynamic:fields |= {'holding_policy'}
+    if not isinstance(value,dict) or set(value)!=fields or value['schema'] not in {'registered-alpha-account-v1','registered-alpha-account-v2','registered-alpha-account-v3'}:
         raise ValueError("Strict scored-account protocol required")
     policy=ScorePortfolioSpec.from_dict(value["portfolio"])
     spec=_account_spec(ResearchSpec.from_dict(value["account"]),policy.to_dict())
+    if dynamic:
+        from ..alpharesearch.holding_policy import ActualHoldingPolicy
+        holding=ActualHoldingPolicy.from_dict(value['holding_policy'])
+        if holding.max_positions!=spec.strategy.top_k or holding.allocation!=spec.strategy.allocation:
+            raise ValueError('Dynamic policy differs from declared portfolio limits')
     if value["scenarios"] != ["zero_transaction_cost","configured"]:
         raise ValueError("Scored account requires fixed zero/configured scenarios")
     for k,pattern in (("snapshot_id",r"[a-f0-9]{24}"),("snapshot_manifest_hash",r"[a-f0-9]{64}")):
@@ -39,10 +46,10 @@ def protocol(value):
     elif source.get("kind")=="registered_learning":
         fields = {"kind","experiment_id"} if value["schema"]=="registered-alpha-account-v1" else {"kind","experiment_id","verification_mode"}
         if (set(source)!=fields or not re.fullmatch(r"exp-[a-f0-9]{12}",str(source["experiment_id"]))
-                or (value["schema"]=="registered-alpha-account-v2" and source["verification_mode"]!="reuse_completed_identity_v1")):
+                or (value["schema"] in {"registered-alpha-account-v2","registered-alpha-account-v3"} and source["verification_mode"]!="reuse_completed_identity_v1")):
             raise ValueError("Registered learning identity required")
     else: raise ValueError("Unsupported score provenance")
-    if value["schema"]=="registered-alpha-account-v2" and source["kind"]!="registered_learning":
+    if value["schema"] in {"registered-alpha-account-v2","registered-alpha-account-v3"} and source["kind"]!="registered_learning":
         raise ValueError("Score reuse v2 requires completed registered learning")
     b=value["budget"]
     if not isinstance(b,dict) or set(b)!={"max_input_bytes","max_task_account_intents","max_real_account_intents","max_synthetic_account_intents"}:
@@ -83,7 +90,7 @@ def upstream(research,proposal):
     from .alpha_execution import verify_completed
     ex=research.store.experiment(source["experiment_id"])
     if ex["proposal"].get("kind")!="alpha_learn" or ex["status"]!="completed": raise ValueError("Completed registered learning required")
-    reuse = proposal["spec"]["schema"]=="registered-alpha-account-v2"
+    reuse = proposal["spec"]["schema"] in {"registered-alpha-account-v2","registered-alpha-account-v3"}
     if reuse:
         from .completed_learning_identity import verify_completed_learning_identity
         checked=verify_completed_learning_identity(research,ex["id"])

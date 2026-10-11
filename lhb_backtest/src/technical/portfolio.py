@@ -6,6 +6,7 @@ Slippage is an explicit cash charge on a raw opening-price fill, counted once.
 from __future__ import annotations
 
 import math
+import json
 
 import numpy as np
 import pandas as pd
@@ -28,8 +29,18 @@ def costs(value, side, day, execution, scenario):
     return {**c, "total": math.fsum(c.values())}
 
 
-def simulate(decisions, schedule, market, sessions, spec, scenario):
+def simulate(decisions, schedule, market, sessions, spec, scenario, *, holding_policy=None):
     e, s = spec.execution, spec.strategy
+    if holding_policy is not None:
+        from ..alpharesearch.holding_policy import (ActualHolding, SignalCloseState,
+                                                    ActualHoldingPolicy, select_actual_holdings)
+        if type(holding_policy) is not ActualHoldingPolicy or scenario not in {'configured','zero_transaction_cost'}:
+            raise ValueError('Explicit holding policy and supported fee scenario required')
+        if (s.family == 'allocation' or holding_policy.max_positions != s.top_k
+                or holding_policy.allocation != s.allocation):
+            raise ValueError('Holding policy differs from native position/allocation limits')
+    holding_choices = []
+    score_groups = {d:rows for d,rows in decisions.groupby('trade_date')} if holding_policy is not None else {}
     if not sessions:
         raise ValueError("交易日为空")
     selected = {d: rows.loc[rows.selected].sort_values("rank").to_dict("records")
@@ -76,6 +87,20 @@ def simulate(decisions, schedule, market, sessions, spec, scenario):
             if signal_day >= day:
                 raise AssertionError("信号时点未早于执行")
             candidates = selected.get(signal_day, [])
+            if holding_policy is not None:
+                if prev != signal_day:
+                    raise ValueError('Holding policy requires immediately preceding completed signal close')
+                state = SignalCloseState(signal_day, scenario, cash, receivable, equity_before,
+                    tuple(ActualHolding(code, int(pos['shares']), float(pos['mark']),
+                                        pos['quote_date'], pos['last_buy'])
+                          for code,pos in sorted(positions.items())))
+                choice = select_actual_holdings(score_groups[signal_day], state, holding_policy,
+                                                signal_date=signal_day, execution_date=day)
+                holding_choices.append(dict(signal_date=signal_day, execution_date=day, scenario=scenario,
+                    state_json=json.dumps(state.to_dict(), sort_keys=True, allow_nan=False),
+                    selection_json=json.dumps(choice.to_dict(), sort_keys=True, allow_nan=False)))
+                candidates = [dict(stock_code=r.stock_code, rank=r.rank, close=r.reference_close,
+                                   target_weight=r.target_weight) for r in choice.targets]
             targets = {r["stock_code"]: math.floor(equity_before*r["target_weight"]/r["close"]/100)*100 for r in candidates}
             target_ranks = {r["stock_code"]: r["rank"] for r in candidates}
             for r in candidates:
@@ -237,7 +262,12 @@ def simulate(decisions, schedule, market, sessions, spec, scenario):
         max_accounting_error=float(eq.accounting_error.max()),
         rejected=orders_df.loc[orders_df.filled_shares.eq(0), "reason"].value_counts().to_dict(),
         warnings=pd.Series([w["kind"] for w in warnings], dtype=str).value_counts().to_dict())
-    return {"metrics": metrics, "equity": eq, "orders": orders_df, "fills": fills_df, "ledger": ledger_df,
+    output = {"metrics": metrics, "equity": eq, "orders": orders_df, "fills": fills_df, "ledger": ledger_df,
             "positions": pd.DataFrame(holdings, columns=None if holdings else ["date", "stock_code", "shares", "mark", "market_value"]),
             "warnings": pd.DataFrame(warnings, columns=["date", "stock_code", "kind"]),
             "targets": pd.DataFrame(target_rows, columns=None if target_rows else ["signal_date", "execution_date", "stock_code", "target_shares"])}
+
+    if holding_policy is not None:
+        output['holding_choices'] = pd.DataFrame(holding_choices, columns=[
+            'signal_date','execution_date','scenario','state_json','selection_json'])
+    return output

@@ -46,7 +46,7 @@ def output_bytes(job,cfg):
 
 def score_reuse_identity(cfg):
     """Recheck the producer immediately before execution, via read-only DB access."""
-    if cfg["spec"]["schema"] != "registered-alpha-account-v2":
+    if cfg["spec"]["schema"] not in {"registered-alpha-account-v2","registered-alpha-account-v3"}:
         return None
     from .service import Research
     source=upstream(Research(cfg["project"],root=cfg["root"],readonly=True),cfg)
@@ -78,7 +78,11 @@ def compute(job):
                 entry["status"]="running";write_json(folder/"attempts.json",attempts)
     try:
         identity=score_reuse_identity(cfg)
-        prepared=prepare_score_account(*data) if identity is None else prepare_score_account(*data,reuse_identity=identity)
+        kwargs={} if identity is None else dict(reuse_identity=identity)
+        if cfg['spec']['schema']=='registered-alpha-account-v3':
+            from ..alpharesearch.holding_policy import ActualHoldingPolicy
+            kwargs['holding_policy']=ActualHoldingPolicy.from_dict(cfg['spec']['holding_policy'])
+        prepared=prepare_score_account(*data,**kwargs)
         spec=data[-1]
         result=run(cfg["project"],spec,root=cfg["root"],prepared=prepared,
             frozen_snapshot=data[-2],lock_root=job,scenarios=cfg["spec"]["scenarios"],publish=False,

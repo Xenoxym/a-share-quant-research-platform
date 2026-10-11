@@ -17,6 +17,24 @@ from ..technical.runner import code_inventory
 
 def read(p): return json.loads(p.read_text(encoding="utf-8"))
 
+def verify_registered_holding_policy(cfg, native):
+    """Bind archived policy to the registered experiment, not only to itself."""
+    schema=cfg['spec']['schema']
+    receipt=read(native/'alpha_account_receipt.json')
+    if schema=='registered-alpha-account-v3':
+        if (receipt.get('schema')!='score-account-input-receipt-v3'
+                or not (native/'alpha_holding_policy.json').is_file()
+                or not same_json(read(native/'alpha_holding_policy.json'),cfg['spec']['holding_policy'])
+                or receipt.get('holding_policy_id')!=content_id(cfg['spec']['holding_policy'])):
+            raise ValueError('Native actual holding policy differs from registered v3 policy')
+    elif schema in {'registered-alpha-account-v1','registered-alpha-account-v2'}:
+        expected='score-account-input-receipt-v1' if schema.endswith('v1') else 'score-account-input-receipt-v2'
+        if receipt.get('schema')!=expected or (native/'alpha_holding_policy.json').exists():
+            raise ValueError('Registered legacy account contains incompatible dynamic policy')
+    else:
+        raise ValueError('Unknown registered account policy version')
+
+
 def audit_frozen(cfg,job):
     if Path(__file__).resolve().parents[2]!=(job/"code").resolve(): raise ValueError("Account audit requires frozen source")
     folder=job/"account_result";native=native_folder(cfg)
@@ -49,6 +67,7 @@ def audit_frozen(cfg,job):
     attempts=dict(schema="alpha-account-attempts-v1",planned_accounts=cfg["planned_accounts"],model_fits=0,
         scenarios=[dict(scenario=s,status="completed") for s in cfg["spec"]["scenarios"]])
     if not same_json(read(folder/"attempts.json"),attempts): raise ValueError("Account attempt ledger differs")
+    verify_registered_holding_policy(cfg,native)
     audit=audit_score_account_run(native)
     listed=[p["metrics"]["scenario"] for p in result["portfolios"]]
     if set(listed)!=set(cfg["spec"]["scenarios"]) or len(listed)!=len(cfg["spec"]["scenarios"]):raise ValueError("Result scenario set differs")

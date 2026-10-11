@@ -634,3 +634,14 @@ R29R仅完成旧评分的来源/选股兼容，0新账户收益；R30准备单�
 已阅读[RQAlpha Plus官方目标下单说明](https://www.ricequant.com/doc/rqalpha-plus/api/order-api)和[开源项目批量调仓函数](https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_accounts/api/api_stock.py)选定实现；master未固定为不可变commit，Plus说明不等于本地开源运行证明。目标权重、实际仓位、订单必须分开。R31采用实际已成交持仓、各费用状态及独立核查，不复制外部代码或宣称复现收益。来源卡RQALPHA_POSITION_ORDER_SOURCE_CARD_20261011_01.json。
 
 新增竞争问题：该选定批量接口的预算计入预计平仓收入，我们当前引擎只按卖出前现金预订买单。两者假设不同，不能直接比较策略收益；后续可明确测试“已实际成交卖出后的资金”与现有保守规则，但未成交卖单不得提供预算。R31本阶段仍保持原现金规则，当前没有认定旧账户错误或新收益改善。
+
+
+## 2026-10-11：持仓改进后扩大信息组合，不停留在缓冲参数
+
+实际R31净CAGR5.48%/DD27.41%，收益改善但适当对照更优；固定100/150单候选后不扫保留数量。接续task-7b1104d51ec1 R32完整68信息→既有DSL严格适配、64固定跨信息表达式，成熟训练内家族/冗余筛选；后继另预算同ridge信息消融与含费账户。
+
+本轮新增一手阅读：Qlib v0.9.7的[Alpha158/Alpha360特征加载源码](https://raw.githubusercontent.com/microsoft/qlib/v0.9.7/qlib/contrib/data/loader.py)（所选配置函数），[101 Formulaic Alphas](https://arxiv.org/abs/1601.00991)（仅摘要），[PBO论文](https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf)（摘要和引言，不是全文）。仅借鉴可解释输入、时序表示和记录多重尝试；未安装/复制完整公式库，也不称当前A股盈利验证。
+
+本地推理：周决策的稀疏样本不能当连续日线滚动；市场共用正常数乘股票分数不改变排序；龙虎榜缺失不等于确认无事件。适配须保留source/definition/clock/reason。64候选是特征尝试，不是64个交易策略；当前未计算正式PBO，缺完整同等策略收益矩阵与方法实现，不能把IC表当PBO。
+
+竞争路线仍保留：成熟标签滚动、多来源评分、输入训练期变换、现代表格/序列/关系模型、独立现金规则。每三研究阶段检查投入与覆盖；实际闭环继续以含费收益与每日回撤判断。

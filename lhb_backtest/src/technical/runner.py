@@ -142,7 +142,9 @@ def run(project, spec=None, *, root=None, replay=None, progress=lambda m: None,
                 if scenarios is not None and scenario not in scenarios:
                     continue
                 progress(f"重算账户：{label}")
-                result = simulate(decision_table, schedule, market, sessions, spec, scenario)
+                holding_policy = prepared.get('holding_policy') if prepared is not None else None
+                result = simulate(decision_table, schedule, market, sessions, spec, scenario) if holding_policy is None else simulate(
+                    decision_table, schedule, market, sessions, spec, scenario, holding_policy=holding_policy)
                 target = folder / scenario
                 target.mkdir()
                 for key, frame in result.items():
