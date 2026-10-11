@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T01:57:41.545619+00:00",
-  "current_package": "PUB10",
-  "task_id": "task-6c5395061784",
+  "updated_at_utc": "2026-10-11T03:35:15.188224+00:00",
+  "current_package": "R25RR",
+  "task_id": "task-7204d3bd57ca",
   "packages": [
     {
       "id": "R0",
@@ -511,10 +511,10 @@
     {
       "id": "R24P",
       "title": "首次prepare容量与批量吞吐工程",
-      "status": "单独工程后续已排队，未执行",
-      "detail": "原68首次prepare峰值仍未解决；须另登记有限工程预算与SOURCE，不是再发市场2/4额度。",
+      "status": "26项小准备等价通过、部分结案；全68尚未验证",
+      "detail": "1实际pytest/0fit账户；候选不改变X/Y/名单/权重，生产学习源码未升级。全量另R24PF task-1d0120711bce。",
       "dependencies": "R24N,R24T",
-      "guide": "ML_NATIVE_TRAINING_TARGET_ENGINEERING_20261010.md"
+      "guide": "ML_DATA_PREPARATION_EQUIVALENCE_20261011.md"
     },
     {
       "id": "OSS01",
@@ -527,10 +527,10 @@
     {
       "id": "R25R",
       "title": "只接续未执行的排名目标",
-      "status": "原子创建并排队；未训练/回测",
-      "detail": "task-6685e54450d1；原剩余1fit2path，需新finite预算/SOURCE及6.5GiBcommit，不复训centered。",
+      "status": "训练前失败已双RESULT归档",
+      "detail": "379842/550711输入准备，native训练前断言失败；exp-b89345f8998d取消且1意图保留；实际0fit/predict/账户。",
       "dependencies": "R24T部分结案",
-      "guide": "ML_TARGET_PARTIAL_ACCOUNT_RESULTS_20261010_02.md"
+      "guide": "ML_RANK_PRETRAIN_RESOURCE_FAILURE_20261011.md"
     },
     {
       "id": "OSS02",
@@ -591,18 +591,50 @@
     {
       "id": "OSS09",
       "title": "成熟特征薄适配现有协议",
-      "status": "已排队，未执行",
-      "detail": "接FeatureBlock时点/单位/缺失/登记，0新计算引擎；原rank账户及容量优先。",
+      "status": "真实51项集成双RESULT结案",
+      "detail": "task completed；25stub+24回归+2实际Qlib六公式，0fit/predict/账户。Win嵌套证据复制失败保留，同字节平铺包完成归档；OSS10另排。",
       "dependencies": "OSS08",
-      "guide": "ML_OPEN_SOURCE_EXPRESSION_API_RESULTS_20261011.md"
+      "guide": "ML_MATURE_FEATURE_ADAPTER_RESULTS_20261011.md"
     },
     {
       "id": "PUB10",
       "title": "经核查报告及公开导航交付",
-      "status": "准备双PUBLIC；未发布",
-      "detail": "精确文档清单；数据/矩阵/模型/安装包/环境/凭据留本机，核新提交CI。",
+      "status": "实际公开及新提交双平台CI、双RESULT完成",
+      "detail": "32公开清单/30文件改变，3114548；Windows1520、Linux1517+3跳过，wheel/template通过。",
       "dependencies": "OSS08",
       "guide": "ML_REVIEW_RECORDS_AND_RESUME_20261010.md"
+    },
+    {
+      "id": "PUB11",
+      "title": "下轮实质结果的集中公开",
+      "status": "已领取，准备精确公开清单",
+      "detail": "task-ba02ad111b4b；本批18代码/测试/文档，未推送新提交。",
+      "dependencies": "PUB10",
+      "guide": "ML_RESEARCH_RESUME_STATUS_20261011.md"
+    },
+    {
+      "id": "R24PF",
+      "title": "完整68项候选准备容量",
+      "status": "已排队，未执行",
+      "detail": "task-1d0120711bce；需独立资源/SOURCE，最多1次prepare/0fit账户，原36门槛不能借用。",
+      "dependencies": "R24P",
+      "guide": "ML_DATA_PREPARATION_EQUIVALENCE_20261011.md"
+    },
+    {
+      "id": "OSS10",
+      "title": "成熟公式的信息重复与账户增量设计",
+      "status": "真实排队，未执行",
+      "detail": "task-57448daddabc；不重跑144小公式接口、不默认全Alpha158/360或完整后端。优先rank及68容量。",
+      "dependencies": "OSS09",
+      "guide": "ML_MATURE_FEATURE_ADAPTER_RESULTS_20261011.md"
+    },
+    {
+      "id": "R25RR",
+      "title": "排名实验资源记录与安全接续",
+      "status": "SOURCE01需修正，02候选复核中；尚未训练",
+      "detail": "task-7204d3bd57ca；保持36/RF/周Top100，先保存实际资源再判断；最多新1fit2真实路径，旧失败不退款。",
+      "dependencies": "R25R",
+      "guide": "ML_RESEARCH_RESUME_STATUS_20261011.md"
     }
   ],
   "phase_counts": {
@@ -636,13 +668,33 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "OSS08真实六公式72组全部通过并双RESULT结案；PUB10正在整理可公开文档与导航，已补齐缺失链接，公开复核和实际新提交CI待核。0新市场训练或账户。",
+  "current_result": "六成熟Qlib公式薄适配51项实际通过且双RESULT结案；R25R输入准备后训练前资源失败，0模型/账户；用户清理后10.48GiBcommit/15.61physical，新R25RR SOURCE01发现继承入口日志缺口、SOURCE02修正复核中。",
   "near_term": [
-    "完成本轮报告和导航的公开复核，精确清单发布并核实际新HEAD的两平台CI",
-    "若当前资源满足登记门槛，完成原排名目标模型与两条账户；否则先26项零拟合容量等价检查，完整68项容量另登记",
-    "将成熟六公式薄接既有特征协议；继续A股事件/形态/财务/市场特征、其他模型及滚动研究，以含费收益和每日回撤判断"
+    "R25RR资源日志修正独立SOURCE通过后实际现测，只接原排名1fit/2真实费用账户，以收益/每日回撤比较六旧对照",
+    "PUB11精确新代码、测试及阶段报告公开，观察新提交双平台CI；不用旧3114548的CI冒充",
+    "完整68项准备需独立资源/SOURCE；直接信息、成熟滚动、序列关系和有限Alpha增量保持"
   ],
   "navigation": [
+    {
+      "title": "这次接续的已完成与未完成，用人话说明",
+      "md": "ML_RESEARCH_RESUME_STATUS_20261011.md",
+      "html": "ML_RESEARCH_RESUME_STATUS_20261011.html"
+    },
+    {
+      "title": "排名实验：准备成功但训练尚未启动",
+      "md": "ML_RANK_PRETRAIN_RESOURCE_FAILURE_20261011.md",
+      "html": "ML_RANK_PRETRAIN_RESOURCE_FAILURE_20261011.html"
+    },
+    {
+      "title": "成熟六公式接入现有特征协议：51项实际集成",
+      "md": "ML_MATURE_FEATURE_ADAPTER_RESULTS_20261011.md",
+      "html": "ML_MATURE_FEATURE_ADAPTER_RESULTS_20261011.html"
+    },
+    {
+      "title": "26项小准备等价：已验证的范围与全量限制",
+      "md": "ML_DATA_PREPARATION_EQUIVALENCE_20261011.md",
+      "html": "ML_DATA_PREPARATION_EQUIVALENCE_20261011.html"
+    },
     {
       "title": "成熟六公式接口：72组真实数值及未来前缀通过",
       "md": "ML_OPEN_SOURCE_EXPRESSION_API_RESULTS_20261011.md",
@@ -997,9 +1049,25 @@
     {
       "label": "OSS07_source_scope_01.json",
       "private_file": "本机证据/OSS07_source_scope_01.json"
+    },
+    {
+      "label": "OSS09_closure_01.json",
+      "private_file": "本机证据/OSS09_closure_01.json"
+    },
+    {
+      "label": "R25R_closure_01.json",
+      "private_file": "本机证据/R25R_closure_01.json"
+    },
+    {
+      "label": "R25RR_source_scope_01.json",
+      "private_file": "本机证据/R25RR_source_scope_01.json"
+    },
+    {
+      "label": "R25RR_resource_observation_01.json",
+      "private_file": "本机证据/R25RR_resource_observation_01.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "OSS08一次API/72组通过/0新增安装下载fit账户；公开交付仅文档。历史E19计数不是后续累计。",
+  "phase_summary": "原排名仍待真正训练和账户；Qlib只完成小接口，完整68容量未做；PUB11实际新代码交付待复核。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering"
 }

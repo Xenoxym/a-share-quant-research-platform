@@ -771,3 +771,31 @@ OSS06(task-15f712bb3d2e)实际一次准备、12官方wheel下载3769172字节；
 OSS08(task-679501ff2005)唯一真实API约3.937秒/287363072字节采样RSS/Owned0/errors空；原13包环境复用，666成员再核、143基础版本一致，0新增下载/安装/fit/账户。12股120日6列实际/独立参考/未来数组保存，72组全部通过；A独立重算全部72原始，B标量重算72原始及72未来，前60日逐位一致。148项live/frozen双RESULT结案，原2400时钟不重置；此不涵盖全部Alpha158/360、完整工作流或收益。新OSS09(task-840fcd9d52f7)薄适配排队；原rank/容量仍优先。PUB10(task-6c5395061784)精确公开人话报告与导航，待双PUBLIC和真实新提交CI。
 
 [当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html)
+
+
+### 2026-10-11 UTC · PUB10与R24P实际结案并接续OSS09
+
+PUB10提交3114548：32公开清单中30文件变化；实际新CI38103969272 Windows1520通过，Linux1517通过3跳过，wheel/template成功。原PUBLIC01缺链接、02陈旧导航真实REVISE记录均保留，03实际双接受后发布。两个工程RESULT合并复核均接受、各自原3600时钟结案。
+
+R24P仅一次26项小等价：10目标/权重、8控制、8拒绝；pytest7.61秒，Owned最终0，实际OpenBLAS2。全68容量未证明，生产learning.py未升级；后续task-1d0120711bce另定资源和SOURCE。当前OSS09 task-840fcd9d52f7已领取，尚未运行；原排名R25R依实际6.5GiBcommit门槛待接。未因普通阶段完成暂停。
+
+
+### 2026-10-11T02:54:38.948259+00:00 · OSS09实际集成与排名SOURCE修订
+
+OSS09已按SOURCE02双接受运行唯一一次51项测试：25 stub合同、24旧登记/组装回归、2真实Qlib六公式小集成；144调用、未来前60日4320值/理由/时钟不变，操作29.329秒、Owned0、0fit/predict/账户。现在双RESULT核对真实证据，不宣称全市场/Linux后端或Alpha收益。
+
+R25R仍queued且0实验。原9000秒预算未重置；SOURCE01真实双REVISE发现collector分支、学习外层验收未被账户消费、旧身份库存与源码新增保护。另准备03误将控制JSON当目录的断言失败发生于训练前，记录保存。修订新执行器与完整冻结，随后只运行原未执行rank1fit/2真实路径。
+
+
+### 2026-10-11T03:03:26.929563+00:00 · OSS09真实结案，R25R计量修订
+
+OSS09双RESULT A369.08/B166.88秒在原400窗内接受；原3600阶段2140.77秒完成。第一次107嵌套证据Copy2出现WinError3，未导入/submit/review，残留保留；第二次平铺原字节并存original_path_map，在本机实际导入、提交、独立角色continue，创建OSS10 task-57448daddabc。没有重跑数值，未修改已冻结报告。
+
+R25R SOURCE02 A真实REVISE（393.25秒），B真实ACCEPT（332.39秒）：原四执行缺口已修，仍漏计四旧控制run215790094字节及SOURCE冻结9086770字节。新03明确所有59保护根4496170099字节及所有R25Rmetadata目录/文件入同一上界；原9000/1800/1200、科学和资源门槛不变，0fit/账户；正在独立复核。
+
+
+### 2026-10-11T03:28:32.420990+00:00 · R25R失败归档与用户清理后的有限接续
+
+R25R SOURCE03双接受后一次准备379842/550711；execute在native启动前断言失败，唯一登记取消，0fit/predict/账户，1意图不退。prepare采样峰值4.60GiB/最低commit1.94GiB；断言瞬间没有日志，不臆测字段。双RESULT真实时间内接受，正式结案生成R25RR task-7204d3bd57ca。用户清理后实际物理15.61GiB、commit10.48GiB；新有限9000秒阶段只修日志/parent8GiB且native6.5物理12不改科学定义，SOURCE01待审，无训练。准备脚本编码拼写失败已保留，02仅接未完成尾部，原时钟不重置。OSS09六公式51检查已经双RESULT正式结案；PUB11已领取待精确公开/新提交CI，不代替收益。
+
+[当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
