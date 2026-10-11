@@ -618,3 +618,19 @@ R26实际正式关闭，2完整68模型/4真实费用路径；中心化模型净
 下一轮竞争路线继续保留：实际成交持仓保留；有限成熟滚动；训练集限定输入变换/现代表示；信息组消融；真实pair/group或风险损失；序列/股票关系；有限表达式搜索。现有同一历史已被多次观看，大搜索不能再称未见验证。近期实际阅读的表格基准排除了时间序列，TabM README未安装/复现，Qlib滚动概念尚未核内部实现，均只作为启发，没有复现外部收益。
 
 [当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)。
+
+
+### 2026-10-11：组合复用前置已实际完成，公式搜索仍在竞争清单
+
+R29R仅完成旧评分的来源/选股兼容，0新账户收益；R30准备单次小合成v2存档反例，真正持仓与逐费用独立状态仍未实现。Qlib v0.9.7 RollingGen的expanding/sliding/truncation和TopkDropout实际持仓分支已读选定实现，版本tag未另解为不可变commit；先前“未读内部实现”是当时状态。滚动不能把多个fit_id的分数硬塞进单模型协议。
+
+补读[AlphaForge v3方法和实验](https://arxiv.org/html/2406.18394v3)及[AlphaGen官方适配接口](https://github.com/ICT-FinD-Lab/alphagen)：公式生成、因子池和组合可分层；梯度优化的是公式评分代理，仍须实际因子和账户评估。这些是接口启发，未安装/复现。外部样本、21日VWAP标签与限替换规则不能直接当本地周策略收益证据。最小候选是有限有意义语法批次与训练内组合比较，成熟标签/全部尝试留痕/规模与行业归因/最终含费CAGR-DD；不是无限IC搜索。阅读深度和竞争解释保存在本机来源卡。
+
+[当前总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+
+### 2026-10-11：真实持仓与目标订单，补读RQAlpha
+
+已阅读[RQAlpha Plus官方目标下单说明](https://www.ricequant.com/doc/rqalpha-plus/api/order-api)和[开源项目批量调仓函数](https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_accounts/api/api_stock.py)选定实现；master未固定为不可变commit，Plus说明不等于本地开源运行证明。目标权重、实际仓位、订单必须分开。R31采用实际已成交持仓、各费用状态及独立核查，不复制外部代码或宣称复现收益。来源卡RQALPHA_POSITION_ORDER_SOURCE_CARD_20261011_01.json。
+
+新增竞争问题：该选定批量接口的预算计入预计平仓收入，我们当前引擎只按卖出前现金预订买单。两者假设不同，不能直接比较策略收益；后续可明确测试“已实际成交卖出后的资金”与现有保守规则，但未成交卖单不得提供预算。R31本阶段仍保持原现金规则，当前没有认定旧账户错误或新收益改善。

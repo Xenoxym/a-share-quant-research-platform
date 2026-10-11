@@ -23,7 +23,7 @@ ROLES={"predictions","learning_receipt","references","calendar"}
 
 def protocol(value):
     fields={"schema","portfolio","account","scenarios","snapshot_id","snapshot_manifest_hash","score_source","budget"}
-    if not isinstance(value,dict) or set(value)!=fields or value["schema"]!="registered-alpha-account-v1":
+    if not isinstance(value,dict) or set(value)!=fields or value["schema"] not in {"registered-alpha-account-v1","registered-alpha-account-v2"}:
         raise ValueError("Strict scored-account protocol required")
     policy=ScorePortfolioSpec.from_dict(value["portfolio"])
     spec=_account_spec(ResearchSpec.from_dict(value["account"]),policy.to_dict())
@@ -37,9 +37,13 @@ def protocol(value):
         if set(source)!={"kind","statement"} or source["statement"]!="engineering scores only; no fitted strategy":
             raise ValueError("Explicit synthetic no-fit statement required")
     elif source.get("kind")=="registered_learning":
-        if set(source)!={"kind","experiment_id"} or not re.fullmatch(r"exp-[a-f0-9]{12}",str(source["experiment_id"])):
+        fields = {"kind","experiment_id"} if value["schema"]=="registered-alpha-account-v1" else {"kind","experiment_id","verification_mode"}
+        if (set(source)!=fields or not re.fullmatch(r"exp-[a-f0-9]{12}",str(source["experiment_id"]))
+                or (value["schema"]=="registered-alpha-account-v2" and source["verification_mode"]!="reuse_completed_identity_v1")):
             raise ValueError("Registered learning identity required")
     else: raise ValueError("Unsupported score provenance")
+    if value["schema"]=="registered-alpha-account-v2" and source["kind"]!="registered_learning":
+        raise ValueError("Score reuse v2 requires completed registered learning")
     b=value["budget"]
     if not isinstance(b,dict) or set(b)!={"max_input_bytes","max_task_account_intents","max_real_account_intents","max_synthetic_account_intents"}:
         raise ValueError("Strict account input/intent budgets required")
@@ -79,13 +83,21 @@ def upstream(research,proposal):
     from .alpha_execution import verify_completed
     ex=research.store.experiment(source["experiment_id"])
     if ex["proposal"].get("kind")!="alpha_learn" or ex["status"]!="completed": raise ValueError("Completed registered learning required")
-    checked=verify_completed(research,ex)
+    reuse = proposal["spec"]["schema"]=="registered-alpha-account-v2"
+    if reuse:
+        from .completed_learning_identity import verify_completed_learning_identity
+        checked=verify_completed_learning_identity(research,ex["id"])
+    else:
+        checked=verify_completed(research,ex)
     folder=research.root/"worker_jobs"/ex["id"]/"learn_result"
     paths=verify_inputs(research.project,proposal["inputs"],proposal["spec"]["budget"]["max_input_bytes"])
     for role,name in (("predictions","predictions.parquet"),("learning_receipt","learning_receipt.json")):
         if digest(paths[role])!=digest(folder/name): raise ValueError("Scores differ from registered learning output")
-    return dict(kind="registered_learning",experiment_id=ex["id"],output_manifest_hash=digest(folder/"manifest.json"),
+    provenance=dict(kind="registered_learning",experiment_id=ex["id"],output_manifest_hash=digest(folder/"manifest.json"),
         audit_id=checked["audit_id"],additional_fits=0,numeric_model_reproduction=False)
+    if reuse:
+        provenance.update(verification_mode="reuse_completed_identity_v1",additional_predict_calls=0,reuse_identity=checked)
+    return provenance
 
 def run_id(experiment):
     return datetime.fromtimestamp(experiment["created"],timezone.utc).strftime("%Y%m%dT%H%M%S")+"-"+experiment["id"][-8:]

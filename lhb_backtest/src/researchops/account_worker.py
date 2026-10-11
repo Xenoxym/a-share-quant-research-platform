@@ -10,7 +10,7 @@ import psutil
 import pyarrow as pa
 from .alpha_execution import THREAD_ENV, cancel_reason
 from .alpha_worker import verify_frozen_job, _watchdog
-from .account_experiments import inspect_inputs, native_folder, same_json
+from .account_experiments import inspect_inputs, native_folder, same_json, upstream
 from .resources import WorkerResources
 from ..alpharesearch.account import prepare_score_account
 from ..technical.artifacts import digest, write_json
@@ -44,6 +44,17 @@ def output_bytes(job,cfg):
                     total+=file_stat.st_size
     return total
 
+def score_reuse_identity(cfg):
+    """Recheck the producer immediately before execution, via read-only DB access."""
+    if cfg["spec"]["schema"] != "registered-alpha-account-v2":
+        return None
+    from .service import Research
+    source=upstream(Research(cfg["project"],root=cfg["root"],readonly=True),cfg)
+    if not same_json(source,cfg["upstream"]):
+        raise ValueError("Saved-score producer changed before account execution")
+    return source["reuse_identity"]
+
+
 def compute(job):
     if Path(__file__).resolve().parents[2]!=(job/"code").resolve(): raise ValueError("Account must run frozen modules")
     cfg=verify_job(job); resources=WorkerResources.from_dict(cfg["resources"])
@@ -66,7 +77,8 @@ def compute(job):
                     if prior["status"]=="running": prior["status"]="completed"
                 entry["status"]="running";write_json(folder/"attempts.json",attempts)
     try:
-        prepared=prepare_score_account(*data)
+        identity=score_reuse_identity(cfg)
+        prepared=prepare_score_account(*data) if identity is None else prepare_score_account(*data,reuse_identity=identity)
         spec=data[-1]
         result=run(cfg["project"],spec,root=cfg["root"],prepared=prepared,
             frozen_snapshot=data[-2],lock_root=job,scenarios=cfg["spec"]["scenarios"],publish=False,

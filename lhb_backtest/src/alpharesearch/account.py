@@ -97,7 +97,7 @@ def _reference_prices(portfolio, bars):
              "Raw scored reference close differs from snapshot")
 
 
-def prepare_score_account(result, references, calendar, policy, snapshot, spec):
+def prepare_score_account(result, references, calendar, policy, snapshot, spec, *, reuse_identity=None):
     """Return native runner prepared inputs, with copied evidence and clear definition."""
     cfg = policy.to_dict()
     spec = _account_spec(spec, cfg)
@@ -109,7 +109,11 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec):
     bars = features(tables["bars"], calendar, spec.strategy)
     market = Market(bars, calendar.copy(), tables["actions"], tables["status"],
                     tables["metadata"], sm["missing_action_files"])
-    bundle = _code_bundle(result, portfolio)
+    if reuse_identity is None:
+        bundle = _code_bundle(result, portfolio)
+    else:
+        from .score_reuse import reuse_code_bundle
+        bundle = reuse_code_bundle(result, portfolio, reuse_identity)
     definition = score_account_definition(spec, portfolio.receipt)
     receipt = dict(schema="score-account-input-receipt-v1",
         snapshot_id=sm["snapshot_id"], snapshot_manifest_sha256=digest(snapshot/"manifest.json"),
@@ -118,6 +122,9 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec):
         code_bundle_id=content_id(bundle), signal_definition_id=content_id(definition),
         independent_selection=selection, account_results=False, numeric_model_reproduction=False,
         scope="prepared inputs only; caller's registered executor must run and audit the account")
+    if reuse_identity is not None:
+        receipt.update(schema="score-account-input-receipt-v2",
+                       verification_mode="reuse_completed_identity_v1",reuse_identity_id=reuse_identity["identity_id"])
     extras = {"alpha_predictions.parquet":result.predictions.copy(),
               "alpha_references.parquet":references.copy(),
               "alpha_learning_receipt.json":json.loads(json.dumps(result.receipt)),
@@ -151,7 +158,7 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
              and manifest["code_hash"]==result["code_hash"]==content_id(native_code),
              "Native completed identity/code inventory differs")
     _require(result["definition"]==definition, "Result signal definition differs")
-    _require(receipt["schema"]=="score-account-input-receipt-v1"
+    _require(receipt["schema"] in {"score-account-input-receipt-v1","score-account-input-receipt-v2"}
              and receipt["snapshot_id"]==sm["snapshot_id"]
              and receipt["snapshot_manifest_sha256"]==digest(snapshot/"manifest.json")
              and receipt["portfolio_receipt_id"]==content_id(portfolio.receipt)
@@ -160,16 +167,24 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
              and receipt["calendar_id"]==content_id(calendar)
              and receipt["code_bundle_id"]==content_id(bundle)
              and receipt["signal_definition_id"]==content_id(definition), "Archived score-account input identity differs")
-    _require(bundle["schema"]=="score-account-code-bundle-v1", "Scoring code bundle schema differs")
-    for name, value in bundle["files"].items():
-        _require(hashlib.sha256(value["text"].encode("utf-8")).hexdigest()==value["sha256"],
-                 "Archived scoring source changed")
-    required = dict(learning.receipt["fit_identity"]["implementation_hashes"])
-    for name, sha in portfolio.receipt["implementation_hashes"].items():
-        _require(name not in required or required[name]==sha, "Archived learning/portfolio code versions differ")
-        required[name] = sha
-    _require(all(bundle["files"].get(name, {}).get("sha256")==sha for name, sha in required.items()),
-             "Archived source differs from declared learning/portfolio implementation")
+    if receipt["schema"]=="score-account-input-receipt-v2":
+        from .score_reuse import validate_reuse_bundle
+        files=validate_reuse_bundle(bundle,learning,portfolio)
+        _require(receipt.get("verification_mode")=="reuse_completed_identity_v1"
+                 and receipt.get("reuse_identity_id")==bundle["producer_identity"]["identity_id"],
+                 "Archived score reuse receipt differs")
+        required={n:v["sha256"] for n,v in files.items()}
+    else:
+        _require(bundle["schema"]=="score-account-code-bundle-v1", "Scoring code bundle schema differs")
+        for name, value in bundle["files"].items():
+            _require(hashlib.sha256(value["text"].encode("utf-8")).hexdigest()==value["sha256"],
+                     "Archived scoring source changed")
+        required = dict(learning.receipt["fit_identity"]["implementation_hashes"])
+        for name, sha in portfolio.receipt["implementation_hashes"].items():
+            _require(name not in required or required[name]==sha, "Archived learning/portfolio code versions differ")
+            required[name] = sha
+        _require(all(bundle["files"].get(name, {}).get("sha256")==sha for name, sha in required.items()),
+                 "Archived source differs from declared learning/portfolio implementation")
     # Independently compare frozen native files to overlapping source identities.
     for name, sha in required.items():
         if name.startswith("src/technical/"):

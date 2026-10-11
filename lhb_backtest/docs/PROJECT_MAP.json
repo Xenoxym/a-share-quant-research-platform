@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T10:20:32.291943+00:00",
-  "current_package": "R29 → R29R",
-  "task_id": "task-7045ca8c5b4b",
+  "updated_at_utc": "2026-10-11T12:34:02.898065+00:00",
+  "current_package": "PUB16：精确公开已验收接口；随后R31真实持仓",
+  "task_id": "task-a4af7b25c41a",
   "packages": [
     {
       "id": "R0",
@@ -719,26 +719,58 @@
     {
       "id": "R29",
       "title": "旧模型分数复用，减少重复计算",
-      "status": "实际检查失败，未验收",
-      "detail": "38项34reportedpass/4fail；输入路径与意图上限夹具错误，14negative缺合法正例基线。7候选已晋级但未接受，0新训练/预测/账户，probe未启动。",
+      "status": "原失败已保留，后续R29R恢复验收",
+      "detail": "原38项34reportedpass/4fail永久保留。R29R只修23受影响检查，15合法未变检查复用；不擦掉原失败。",
       "dependencies": "R28、PUB14F正式结束",
-      "guide": "BUILD_PROGRESS_20261006.md"
+      "guide": "ML_SCORE_REUSE_20261011_04.html"
     },
     {
       "id": "PUB15",
       "title": "公开MLP真实结果和最新项目总览",
-      "status": "精确文档候选准备中",
-      "detail": "仅R28正式通过的亏损报告及导航/SVG；R29未验收代码不在本次公开清单。",
+      "status": "已发布，真实双平台CI已通过",
+      "detail": "26ae92f：精确10份文档、9项实际变动；Windows1559通过、Ubuntu1556通过+3skip，打包与模板均成功。没有未验收SRC或原数据。",
       "dependencies": "R28、PUB14F正式结束",
       "guide": "ML_MLP_ACCOUNT_RESULTS_20261011_02.html"
     },
     {
       "id": "R29R",
       "title": "修正复用接口的测试样本",
-      "status": "下一步，有限修复已准备",
-      "detail": "只改两测试夹具，23受影响检查一次；15未受影响检查复用。随后一次550711保存评分只读probe，0SRC变化/训练/预测/账户。",
+      "status": "已完成工程验收；没有新账户收益",
+      "detail": "23actualPASS＋15valid复用；550711保存评分/18900选择。0fit/predict/load/account。首次归档180秒失败保留，后续单次有限元数据恢复成功；不代表v2原生账户或持仓保留已验证。",
       "dependencies": "R29真实失败正式结案",
-      "guide": "BUILD_PROGRESS_20261006.md"
+      "guide": "ML_SCORE_REUSE_20261011_04.html"
+    },
+    {
+      "id": "R30",
+      "title": "旧评分进入完整账户存档的反例检查",
+      "status": "原失败正式结案，原存档保留",
+      "detail": "临时current路径消失导致8dots无最终收据；归档第一次超过180秒也保留。双复核后的进程监督、明确依赖范围恢复实际完成，0新数值。",
+      "dependencies": "R29R实际恢复closure02/end02",
+      "guide": "ML_SCORE_REUSE_20261011_04.html"
+    },
+    {
+      "id": "PUB16",
+      "title": "公开经过验收的评分复用代码和说明",
+      "status": "准备精确公开，尚未推送",
+      "detail": "精确20文件，仅已接受5源码3测试及人类说明/导航；原始数据、模型、数据库和私人证据不发布。必须实际新HEAD CI。",
+      "dependencies": "PUB15、R29R实际恢复结束",
+      "guide": "ML_SCORE_REUSE_20261011_04.html"
+    },
+    {
+      "id": "R30R",
+      "title": "稳定测试目录并复用原合成存档",
+      "status": "已完成实际16项工程验收及正式归档",
+      "detail": "task-7854c9cdab68；16唯一PASS、48进度；0fit/predict/load/nativeRun/simulate、一原存档读取。RESULT01未执行关闭的两个缺口修正后，RESULT02双接受，closure01/end01/Ownedwrapperend01真实完成。",
+      "dependencies": "R30失败关闭",
+      "guide": "ML_V2_ACCOUNT_ARCHIVE_20261011.html"
+    },
+    {
+      "id": "R31",
+      "title": "真实成交持仓缓冲与逐费用独立选择",
+      "status": "后继任务已创建，未执行",
+      "detail": "task-05918a693278；新买前100/实际持有前150可保留，先工程和独立核查再新组合账户，0重训旧模型。",
+      "dependencies": "R30R实际完成/PUB16源码冻结解除",
+      "guide": "ML_V2_ACCOUNT_ARCHIVE_20261011.html"
     }
   ],
   "phase_counts": {
@@ -772,15 +804,24 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "最新已核查账户：68项MLP含费年化−22.22%、每日最大回撤−61.67%；零费也亏损，没有晋级。R29复用接口实际检查38项、34reportedpass/4fail，夹具错误导致14项缺合法正例基线（7被路径掩盖）；生产候选未验收，真实保存评分probe尚未运行。正在独立核失败结案及有限修复，不需要重训。",
+  "current_result": "R30R实际16项存档检查全部通过、零新训练/预测/模型加载/账户模拟；双结果复核和受进程监督的正式关闭均完成。原R30路径失败和归档失败完整保留。正式v2 worker市场执行、真实持仓缓冲仍未实现。最近市场策略没有达到预定收益/回撤改善。",
   "near_term": [
-    "如实闭合R29失败；仅修两处测试样本并核23项受影响检查，复用15项未受影响检查。",
-    "以R26保存的550711条分数完成一次只读兼容probe，不重新训练或预测。",
-    "另建实际持仓保留规则，再比较收益、回撤及换仓数量；本轮还没有这一功能。",
-    "公开经过核查的MLP亏损结果及当前总览；原始数据、模型、私有证据留本机。",
-    "继续保留成熟滚动、输入表示、信息组消融与有限Alpha搜索等竞争路线。"
+    "PUB16精确20文件候选，双独立PUBLIC后一次推送；实际新提交双平台CI和结果关闭。",
+    "R31真实持仓/逐费用独立选择：新买前100，实际持有仍合格前150可保留；先反例和原生审计接入。",
+    "正式注册来源继续复用原评分，后续有限新组合账户比较含费年化与日回撤，不重训旧模型。",
+    "滚动多模型来源、现代表示、信息组、序列关系与有限Alpha池并行竞争；现金资金规则另外研究。"
   ],
   "navigation": [
+    {
+      "title": "旧评分进入新账户：16项实际存档验证与持仓规则例子",
+      "md": "ML_V2_ACCOUNT_ARCHIVE_20261011.md",
+      "html": "ML_V2_ACCOUNT_ARCHIVE_20261011.html"
+    },
+    {
+      "title": "旧模型评分怎样复用、还缺什么",
+      "html": "ML_SCORE_REUSE_20261011_04.html",
+      "md": "ML_SCORE_REUSE_20261011_04.md"
+    },
     {
       "title": "首次完整68项小MLP的真实亏损账户报告",
       "md": "ML_MLP_ACCOUNT_RESULTS_20261011_02.md",
@@ -1247,11 +1288,15 @@
     {
       "label": "PUB12_publication_end_01.json",
       "private_file": "本机证据/PUB12_publication_end_01.json"
+    },
+    {
+      "label": "R30实际监控失败及独立有限归档复核03",
+      "private_file": "本机证据/R30_failure_result_reviews_03.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "R28已正式完成1个68项MLP与2条真实费用账户，未通过收益/回撤门槛；R29已晋级但实际38检查失败，0新fit/predict/account，下一R29R只修两测试夹具及受影响23项。PUB14F真实新HEAD双平台CI正式验收；PUB15仅公开已核查MLP报告和导航。",
+  "phase_summary": "评分来源分离及550711保存评分读取、小型双费用存档的16项工程检查已经正式验收。PUB16准备只公开5源码/3测试及说明导航；真实数据和模型留本机。R31将接实际成交持仓、每种费用独立选择与审计，之后才新组合账户。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
-  "counters": "R29：实际38检查，34reportedpass/4fail；受影响覆盖暂不接受。0新训练、0预测、0checkpoint读取、0账户。R28已完成1模型与2费用路径。",
-  "recent": "最近三轮实际研究覆盖排名目标、新增32项原始信息和非树MLP；均未产生预定收益/回撤改善。PUB14F精确修复一个通用测试，真实双平台CI通过；下一公开交付只包括报告和导航。"
+  "counters": "R29R23实际PASS＋15有效复用=38unique；550711保存评分/18900选择记录。R30原8dots无最终收据失败保留。R30R16实际PASS/48进度事件，0新fit/predict/load/native/simulate，一次旧存档读取；实际关闭和Owned监督结束。",
+  "recent": "实际研究路径：排名目标→36到68信息增量→小MLP均未获预定收益/回撤改善；随后打通评分复用，为组合实验准备。继续保持滚动、表示、信息组、序列关系和有限公式搜索。"
 }
