@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-12T20:37:28.109173+00:00",
-  "current_package": "共同日期、全64预测及模型容量工程已完成；真实计算等待Windows可承诺内存",
-  "task_id": "task-1e87a5d5318b",
+  "updated_at_utc": "2026-10-12T22:30:41.517554+00:00",
+  "current_package": "132列RF真实账户负结果已完成；接续固定岭回归与浅层提升树",
+  "task_id": "task-f80028761bc9",
   "packages": [
     {
       "id": "R0",
@@ -895,8 +895,8 @@
     {
       "id": "R32FPALL",
       "title": "真实64列预测与132列输入",
-      "status": "原计划等待资源续跑",
-      "detail": "task-1e87a5d5318b，原all64-forecast-20261012计划；0预测/fit/account。启动要求空池commit≥9GiB，最近约7.8GiB，保持原预算与截止。",
+      "status": "已完成",
+      "detail": "exp-494b295f54cc首次核查通过：64/0，每项550711预测行，训练重算0。完整132列933284样本已保存；原68逐值/缺失/时钟不变；公式计算保存135秒，执行核查阶段1400秒。",
       "dependencies": "R32FALL",
       "guide": "CONSTRUCTION_20261012.md"
     },
@@ -906,6 +906,22 @@
       "status": "工程已完成",
       "detail": "task-16dfd7427637；原始矩阵显式有限上限两亿格，默认3200万不变；commit不足启动前拒绝。108模型加14资源测试、一次独立工程复核。",
       "dependencies": "R32FALL",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R32PAIR",
+      "title": "132列同条件真实模型与账户",
+      "status": "已完成，负结果保留",
+      "detail": "复用旧68；新增一次centered RF和两条真实费用情景，含费−3.10%/32.46%，未改善；不按单列盈利门槛删特征。",
+      "dependencies": "R32FPALL、R32CAP、原68中心化基线",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R32DIVERSITY",
+      "title": "同132输入的两种互补模型",
+      "status": "已规划，岭回归登记准备中",
+      "detail": "固定ridge与hist_gbdt，各至多一次fit及一个双情景账户；复用132矩阵/旧账户规则，阶段两小时，不调参。",
+      "dependencies": "R32PAIR、已保存132矩阵",
       "guide": "CONSTRUCTION_20261012.md"
     }
   ],
@@ -940,11 +956,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "共同日期修复87项通过；全候选预测小样本最终51项通过；模型容量及Windows启动检查122项通过。真实64预测未启动，完整132模型账户尚未完成。",
+  "current_result": "新增一次RF训练及两个账户情景已完成。含费132年化−3.10%/逐日回撤32.46%，旧68为+1.46%/27.14%；未改善。继续同132输入的两种互补模型，不重算公式或旧基线。",
   "near_term": [
-    "Windows可承诺余量≥9GiB后，在原计划截止前续跑全部64预测，复用训练期，不新增重复实验。",
-    "合并完整132列；执行已保存同股票/日期/成熟标签的RF32配对，最多2次训练及4次账户。",
-    "按含费收益、逐日回撤、各年表现和仓位换手选择下一步，RankIC仅作诊断。"
+    "依原有限预算串行执行固定ridge及hist_gbdt，最多2新fit和2账户作业4情景。",
+    "完整132输入、同日期/成熟标签/权重/股票池/账户；已见历史不冒充全新测试。",
+    "按实际含费收益、逐日回撤、年份、仓位及换手选择下一方向；不只追求RankIC。"
   ],
   "navigation": [
     {
@@ -1484,8 +1500,8 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "已完成4个实际行情模型、10个费用账户情景与64列训练期计算；原11个核心行情进程累计52.1分钟，不等于整个24小时工作时间。大量跨度为准备、源码、核查、发布、失败修复与等待；完整132列新模型尚未做。旧单列诊断错误已定位，技术修复仍未执行。",
+  "phase_summary": "本批已完成共同日期修复、64真实预测、完整132矩阵及首次132 RF模型/账户。同条件旧68结果复用，新132 RF为负结果；下一有限阶段扩展模型。此前24小时统计仍按原报告范围保留，非本批总成本。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
-  "counters": "1次真实Screen失败；0真实预测计算、0新fit/account、费用$0。容量工程108+14项通过。Token账单未知。",
-  "recent": "新架构实际施工：共同日期修复→一次辅助诊断输出失败停止重跑→全列预测与来源合并→有限真实预测资源交接→容量及启动检查→保存配对研究方案。无新模型账户结果。"
+  "counters": "本批132配对：实际新fit1、真实账户作业1/情景2；旧68模型/账户复用，追加两模型阶段尚未完成。旧取消/拒绝和失败证据保留。费用$0，Token未知。",
+  "recent": "共同日期修复→全64预测→保存132矩阵→实测资源校准→一次RF真实学习/账户→负结果整理→固定两互补模型阶段。"
 }
