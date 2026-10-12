@@ -28,10 +28,10 @@ def output_bytes(job,cfg):
                 try:
                     file_stat=p.lstat()
                 except FileNotFoundError:
-                    # A writer can atomically rename its JSON UUID temp after the
-                    # listing. Only a truly absent temp entry is harmless. lstat
-                    # observes broken links too; canonical disappearance is fatal.
-                    if not re.fullmatch(r".+\.json\.[0-9a-f]{32}\.tmp", p.name):
+                    # Atomic JSON writes use a short reserved temp name; frozen
+                    # legacy writers used JSON UUID names. Only truly absent temp
+                    # entries are harmless. Canonical loss and links remain fatal.
+                    if not re.fullmatch(r"(?:.+\.json\.[0-9a-f]{32}\.tmp|\.j-[a-z0-9_]{8}\.tmp)", p.name):
                         raise
                     try:
                         p.lstat()

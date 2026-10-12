@@ -44,7 +44,7 @@ def write_json(path: Path, value):
     try:
         # An independent short basename avoids extending an already-long target.
         with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", dir=path.parent, prefix="", suffix="", delete=False
+            mode="w", encoding="utf-8", dir=path.parent, prefix=".j-", suffix=".tmp", delete=False
         ) as stream:
             temp = Path(stream.name)
             stream.write(data)
