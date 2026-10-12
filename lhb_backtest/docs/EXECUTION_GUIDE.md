@@ -67,3 +67,14 @@ Agent先写“做哪些实验”的计划；Python负责按顺序登记和运行
 计划首版是预先写好的提案和实验引用；没有结果占位符、自动生成下一份提案、自动搜索、任意Shell和新的并行调度。数值步骤串行执行，已有两槽资源池继续生效。需要动态训练→预测→账户提案时，通过专用适配器构建下一份计划，不能声称通用DAG已实现。
 
 相关：[施工方案和外部来源](EXECUTION_REFACTOR_PLAN_20261012.md) · [底层API](WORKER_GUIDE.md) · [旧总控](CONTROLLER_GUIDE.md)
+
+
+## 先看一个任务的短摘要
+
+从lhb_backtest运行：
+
+```powershell
+..\.venv\Scripts\python.exe tools/execution.py brief task-25edb495e891
+```
+
+这是只读入口：返回任务目标与标准的有限摘要、实验状态计数、最近3项实验／错误、证据数量和登记预算。truncated_fields列出省略字段；完整规格、结果和失败按需展开。失败也占已登记数量；unregistered_slots不是实际fit余量，也不是启动授权。命令不领取任务、不初始化不存在的库、不启动计算、不核查全量产物或调用模型。结果后怎样重新规划见[Codex项目施工方式](CODEX_PROJECT_WORKFLOW.html)。

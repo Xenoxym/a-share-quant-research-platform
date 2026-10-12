@@ -1176,3 +1176,10 @@ E33X公开收尾：源代码提交[e23f5d6](https://github.com/Xenoxym/a-share-q
 本机与公开CI数量差20项，来自本机未公开的test_audited_expression_handoff.py实验草稿；不是已发布文件漏测，同名公开测试内容一致。该草稿不在本次公开清单，也不计作已完成生产接入。
 
 [当前总览](PROJECT_MAP.html) · [完整蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)。
+
+
+## 2026-10-12：Codex项目施工方式与持续规划
+
+收到用户贴出的完整交接，核对当前执行器与官方项目／Chat／子Agent机制，比较单主Chat、两Chat Planner–Executor和按需子Agent路线。采用一个当前成果主Chat承担规划＋实施，阶段证据反馈后重新选路线；不建立固定上层审批。旧交付计划和纲领的冲突正文已统一。
+
+实际增量：tools/execution.py新增brief只读任务摘要，失败计数及截断显式保留；不读取完整历史或启动实验。新摘要与已有执行计划21项、已有Research API10项测试通过，限定工程复核未发现阻断；发布／CI记录见CODEX_PROJECT_WORKFLOW.md。原R32SM任务实际仍queued、0登记，按原有限工程范围接续。没有新增真实模型、账户或收益；132列公平比较待完成。

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#496d88"/></marker></defs>
+<style>text{font-family:"Microsoft YaHei",system-ui,sans-serif;fill:#20334c}.h{font-size:25px;font-weight:700}.t{font-size:20px}.s{font-size:17px}.box{fill:#fff;stroke:#92afc5;stroke-width:2}.line{stroke:#496d88;stroke-width:2.5;fill:none;marker-end:url(#arrow)}</style>
+<rect width="1120" height="700" fill="#f2f6fa"/>
+<text x="32" y="42" class="h">一个本地项目：代码、资料、长期准则和真实结果</text>
+<rect x="32" y="76" width="1056" height="86" rx="14" fill="#e2edf7"/>
+<text x="54" y="110" class="t">用户给目标与约束；AI负责研究、方案选择与实施判断</text>
+<text x="54" y="141" class="s">目标：可重复的量化研究；最终比较账户收益与回撤，不以代码量或审批数衡量进步</text>
+<rect x="32" y="211" width="310" height="193" rx="14" class="box"/>
+<text x="53" y="246" class="t">当前主 Chat</text>
+<text x="53" y="282" class="s">先规划：目标、假设、成熟替代</text>
+<text x="53" y="316" class="s">再实施：必要代码、反例、集成</text>
+<text x="53" y="350" class="s">结果后：继续、改方向或结束支线</text>
+<text x="53" y="384" class="s">两项责任，不是两层固定审批</text>
+<rect x="413" y="211" width="273" height="193" rx="14" class="box"/>
+<text x="434" y="246" class="t">已有 Python 执行入口</text>
+<text x="434" y="282" class="s">只读任务摘要、登记与恢复</text>
+<text x="434" y="316" class="s">有限预算、原实验不重复启动</text>
+<text x="434" y="350" class="s">稳定自动核对和必要审计</text>
+<text x="434" y="384" class="s">无额外模型调用与主管平台</text>
+<rect x="757" y="211" width="331" height="193" rx="14" class="box"/>
+<text x="778" y="246" class="t">已有数值 worker 与结果</text>
+<text x="778" y="282" class="s">特征 → 训练 → 预测 → 账户</text>
+<text x="778" y="316" class="s">程序批量计算，保留尝试和失败</text>
+<text x="778" y="350" class="s">同条件收益、回撤与诊断</text>
+<text x="778" y="384" class="s">当前132列完整实验仍待完成</text>
+<path d="M342 301H405" class="line"/><path d="M686 301H749" class="line"/>
+<path d="M922 404V444H187V412" class="line"/>
+<text x="352" y="469" class="s">实际证据反馈，重新判断路线；没有新证据就不继续修辅助流程</text>
+<rect x="32" y="499" width="470" height="100" rx="13" class="box" stroke-dasharray="7 5"/>
+<text x="54" y="533" class="t">按需：临时子Agent／小型Skill</text>
+<text x="54" y="566" class="s">独立调查、明确并行、关键复核；无需六个长期Chat</text>
+<rect x="530" y="499" width="558" height="100" rx="13" class="box"/>
+<text x="552" y="533" class="t">持久记录复用现有文件和任务库</text>
+<text x="552" y="566" class="s">AGENTS · 总览／蓝图 · 执行指南 · 原实验与结果</text>
+<text x="32" y="650" class="s">两个长期 Planner–Executor Chat：先用真实任务检验收益，当前不作为每阶段固定管理层。</text>
+</svg>

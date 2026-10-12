@@ -6,7 +6,10 @@ padding:10px;text-align:left;vertical-align:top}th{background:#edf3fa}
 pre{padding:18px;background:#edf3fa;overflow:auto;border-radius:8px}
 code{font-size:14px}img{max-width:100%;height:auto}blockquote{border-left:4px solid #4d83b8;
 margin:18px 0;padding:8px 20px;background:#f2f6fc}
-@media(max-width:700px){main{margin:0;padding:18px}table{display:block;overflow:auto}}</style><main><h1>执行系统重构方案（2026-10-12）</h1>
+@media(max-width:700px){main{margin:0;padding:18px}table{display:block;overflow:auto}}</style><main><blockquote>
+<p>后续补充：项目、Chat、持续规划责任和模型选择统一在<a href="CODEX_PROJECT_WORKFLOW.html">Codex施工方式</a>；不是新增固定主管或审批层。</p>
+</blockquote>
+<h1>执行系统重构方案（2026-10-12）</h1>
 <p>本次要解决的是：做一个实验，为什么先后需要复制脚本、找历史文件、请多个 Agent 反复检查，然后才真正计算？新的施工目标是：把这些确定性的工作交给一个稳定的程序；Agent 主要负责研究问题、实现新能力、解释异常和判断结果。</p>
 <p>这是施工前的方案。完成情况和实测结果另记在交付报告中。本次没有把旧研究结果当作新成果，也不承诺重构后策略收益变好。</p>
 <h2>1. 先把整个量化项目摆清楚</h2>

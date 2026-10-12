@@ -24,19 +24,22 @@ def main():
     run.add_argument("--steps", type=int, default=40)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
+    brief = commands.add_parser("brief", help="Read bounded task facts without running work")
+    brief.add_argument("task_id")
     a = p.parse_args()
-    research = Research(a.project, a.root, readonly=a.command == "status")
-    plans = ExecutionPlans(research)
-    if a.command == "status":
-        value = plans.status(a.plan_id)
+    research = Research(a.project, a.root, readonly=a.command != "run")
+    if a.command == "brief":
+        value = research.brief(a.task_id)
+    elif a.command == "status":
+        value = ExecutionPlans(research).status(a.plan_id)
     else:
-        value = plans.run(
+        value = ExecutionPlans(research).run(
             json.loads(a.session.read_text(encoding="utf-8-sig")),
             json.loads(a.file.read_text(encoding="utf-8-sig")),
             max_steps=a.steps,
         )
     print(json.dumps({"ok": True, "data": value}, ensure_ascii=False, allow_nan=False))
-    return 1 if any(s["status"] == "blocked" for s in value["steps"]) else 0
+    return 1 if any(s["status"] == "blocked" for s in value.get("steps", [])) else 0
 
 
 if __name__ == "__main__":

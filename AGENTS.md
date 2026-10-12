@@ -3,7 +3,8 @@
 实际项目：D:\Projects\a-share-quant-research-platform。从 lhb_backtest 运行命令，Python通常为 ..\.venv\Scripts\python.exe。不要创建旧名目录或改写冻结历史路径。
 
 ## 按当前问题读取
-- 当前状态：lhb_backtest/docs/PROJECT_MAP.md。
+- 当前状态：lhb_backtest/docs/PROJECT_MAP.md；Chat、模型与持续规划方式：docs/CODEX_PROJECT_WORKFLOW.md。
+- 续跑先用 tools/execution.py brief <task-id> 只读摘要；有截断时展开相关原合同，不把摘要当验收。
 - 执行实验、恢复任务、预算和日志：lhb_backtest/docs/EXECUTION_GUIDE.md；新默认入口 tools/execution.py。
 - 研究方向和整体边界：docs/PROJECT_CHARTER.md、docs/RESEARCH_RADAR.md；选择新主题时读，普通工程修改不要求重读全部蓝图。
 - 数据时间和账户约定：docs/DATA_CONTRACT.md；相关代码修改时读。
@@ -22,6 +23,8 @@
 
 ## 施工与质量
 先写清复杂改动的方案、可复用组件和验收例子，再施工。小改动不另建庞大流程。
+主Chat承担持续规划与实施：复杂新方向区分目标、约束、假设、成熟替代及最小证据；阶段结果后重新选择路线。用户的技术建议和AI自己的方案都可被证据推翻，硬约束保持。
+同类失败两次无新证据、出现影响结论的错误或辅助流程成为主要工作时，重新规划而非继续局部修补。不要把这些判断做成每次操作的模板／主管审批；不新建固定两层Chat或监督链。
 固定核对、格式、链接、预算和状态转换用Python/pytest完成，不调用Agent裁决。
 注册、恢复、审计缓存、时间泄漏等关键逻辑变更：运行相关反例及完整小样本，再安排一次有明确范围的独立Agent工程复核；允许为此委派子Agent，提供精简问题和文件清单，不继承整段历史。
 账户规则修改或重要收益结论：两名独立Agent针对数值及科学边界复核。普通文档、路径、缓存清理不触发双复核。

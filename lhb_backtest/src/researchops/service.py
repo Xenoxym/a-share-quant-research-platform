@@ -115,6 +115,70 @@ class Research:
             ],
         )
 
+
+    def brief(self, task):
+        """Read bounded task facts for planning; never claim, audit, or run work."""
+        truncated = []
+
+        def clip(value, field, limit=300):
+            if value is None or len(value) <= limit:
+                return value
+            truncated.append(field)
+            return value[:limit] + "…"
+
+        def criteria(values, field):
+            if len(values) > 2:
+                truncated.append(field)
+            return [clip(v, f"{field}[{i}]", 200) for i, v in enumerate(values[:2])]
+
+        with self.store.connection() as db:
+            # All facts refer to one SQLite read snapshot, including under WAL.
+            db.execute("BEGIN")
+            row = db.execute(
+                "SELECT id,spec,status,updated FROM tasks WHERE id=?", (task,)
+            ).fetchone()
+            if row is None:
+                raise ValueError("任务不存在")
+            spec = json.loads(row["spec"])
+            counts = dict(db.execute(
+                "SELECT status,COUNT(*) FROM experiments WHERE task_id=? GROUP BY status",
+                (task,),
+            ).fetchall())
+            latest = db.execute(
+                "SELECT id,status,run_id,error,result IS NOT NULL AS has_result "
+                "FROM experiments WHERE task_id=? ORDER BY updated DESC,id DESC LIMIT 3",
+                (task,),
+            ).fetchall()
+            evidence_count = db.execute(
+                "SELECT COUNT(*) FROM evidence WHERE task_id=?", (task,)
+            ).fetchone()[0]
+        registered = sum(counts.values())
+        return {
+            "schema": "task-brief-v1",
+            "task_id": row["id"],
+            "status": row["status"],
+            "updated": row["updated"],
+            **{k: clip(spec[k], k) for k in ("title", "question", "rationale", "scope")},
+            **{k: criteria(spec[k], k) for k in ("success_criteria", "stop_criteria")},
+            "budget": {
+                "max_registered_experiments": spec["max_experiments"],
+                "registered_experiments": registered,
+                "unregistered_slots": max(0, spec["max_experiments"] - registered),
+            },
+            "experiment_counts": counts,
+            "latest_experiments": [
+                {
+                    "id": ex["id"], "status": ex["status"], "run_id": ex["run_id"],
+                    "has_result": bool(ex["has_result"]),
+                    "error": clip(ex["error"], f"{ex['id']}.error", 200),
+                }
+                for ex in latest
+            ],
+            "evidence_count": evidence_count,
+            "truncated_fields": truncated,
+            "limits": "摘要不是验收；完整合同与产物按需读取。剩余登记位不是训练预算，也不授权启动。",
+        }
+
     def context(self, task):
         value = self.store.get(task)
         # Derived access paths do not alter the recorded historical payload.
