@@ -1185,3 +1185,10 @@ E33X公开收尾：源代码提交[e23f5d6](https://github.com/Xenoxym/a-share-q
 实际增量：tools/execution.py新增brief只读任务摘要，失败计数及截断显式保留；不读取完整历史或启动实验。新摘要与已有执行计划21项、已有Research API10项测试通过，限定工程复核未发现阻断；发布／CI记录见CODEX_PROJECT_WORKFLOW.md。原R32SM任务实际仍queued、0登记，按原有限工程范围接续。没有新增真实模型、账户或收益；132列公平比较待完成。
 
 本批源码公开提交b9d2043；实际CI38219964897：Windows1738通过、572.56秒；Ubuntu1735通过／3跳过、344.96秒，打包及模板检查均成功。相同queued任务context输出265,773字节，brief1,792字节；不是Pro用量换算。只补记既有文档，不重复运行源码CI。下一阶段仍修共同成熟范围，再补全132列公平模型／账户比较。
+
+
+## 2026-10-12 新架构第一批施工
+
+共同日期工程87项通过，两名静态复核接受；一次修正64诊断在保存前超过原50MB输出预算，保留失败且不自动重跑。随后实现全部候选预测协议及原来源/键域合并，复用既有worker和R33逻辑；189项旧回归通过、最终51项通过。真实64预测计划已保存，Windows commit7.92GiB低于声明8GiB上限，启动前交接；132模型账户尚未运行。详见[这批具体做了什么](CONSTRUCTION_20261012.html)。
+
+[项目构成](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)

@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-12T08:04:41.636321+00:00",
-  "current_package": "执行重构与Codex施工方式已完成；下一包是共同成熟日期修复",
-  "task_id": "task-25edb495e891",
+  "updated_at_utc": "2026-10-12T20:20:36.982550+00:00",
+  "current_package": "共同日期和全部候选预测工程已通过；真实预测等待内存预检续跑",
+  "task_id": "task-1e87a5d5318b",
   "packages": [
     {
       "id": "R0",
@@ -871,10 +871,10 @@
     {
       "id": "R32SM",
       "title": "让所有候选用同一组成熟周比较",
-      "status": "真实子任务已排队；尚未实施",
-      "detail": "仍queued，只修所有公式共同可评价日期及缺结果逻辑；153成熟周、原始结果保留。此额外诊断不能代替全部64列的模型增量对照。",
+      "status": "工程已完成",
+      "detail": "共同日期仅由固定时钟决定，保留原输入/选股；87项相关测试与两名独立复核通过。真实辅助诊断单次输出预算失败，不自动重跑。",
       "dependencies": "R32SC真实缺陷诊断与完成归档",
-      "guide": "ML_SCREEN_MATURITY_DISCOVERY_20261011.md"
+      "guide": "CONSTRUCTION_20261012.md"
     },
     {
       "id": "E33X",
@@ -883,6 +883,22 @@
       "detail": "统一有限计划、原实验恢复、审计复用；首轮165目录及收尾缓存合计释放约5.48GB，1307助手可恢复归档。实际调用/反例通过，源代码e23f5d6的Windows/Ubuntu完整测试和打包通过。132列科学任务未执行。",
       "dependencies": "现有Research、SQLite、worker和资源池",
       "guide": "EXECUTION_REFACTOR_RESULTS_20261012.md"
+    },
+    {
+      "id": "R32FALL",
+      "title": "全部组合特征进入预测期",
+      "status": "工程已完成，小样本贯通",
+      "detail": "保留原全部64候选，不依赖旧≤8名单；复用原worker及完整键域合并，189项回归及最终51项检查通过。",
+      "dependencies": "R32SM、原NC64",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R32FPALL",
+      "title": "真实64列预测与132列输入",
+      "status": "原计划等待资源续跑",
+      "detail": "task-1e87a5d5318b；0新预测计算/fit/account。物理14.25GiB但commit7.92GiB，数值启动前交接；保留同一计划和预算。",
+      "dependencies": "R32FALL",
+      "guide": "CONSTRUCTION_20261012.md"
     }
   ],
   "phase_counts": {
@@ -916,11 +932,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "已有统一执行入口和审计复用；本轮增加只读任务摘要，统一持续规划与按风险协作规则。源码b9d2043双平台CI通过，本机31项相关测试通过。一个实际任务输出由265,773降至1,792字节，不是Token账单测量。成熟日期修复仍queued、0登记，132列新模型／账户仍未完成。",
+  "current_result": "共同日期修复87项通过；全候选预测小样本最终51项通过。一次真实辅助诊断因50MB输出预算失败，未重跑；真实64预测尚未启动，132模型账户仍未完成。",
   "near_term": [
-    "先接续原task-25edb495e891，修共同成熟窗口与缺失／现金反例；遵守原工程规格和预算，不启动新真实Screen／模型／账户。",
-    "然后复用64列已有结果，补齐预测期和132列矩阵；原68与132同模型同条件训练及账户对照，分别报告共同样本和覆盖变化。",
-    "依据结果与成本重新选择模型、特征、组合或成熟组件；数值程序有限批量执行，主Chat持续判断路线。"
+    "先按原all64-forecast-20261012计划收取核查、检查Windowscommit资源；只算全部64预测期，复用训练期。",
+    "构建完整132列，明确修正一亿格配置上限及转换后资源，保持原名单和日期。",
+    "同条件68/132模型和含费账户比较，以收益与逐日回撤选择下一方向。"
   ],
   "navigation": [
     {
@@ -1462,6 +1478,6 @@
   "real_matrix_plan_saved": true,
   "phase_summary": "已完成4个实际行情模型、10个费用账户情景与64列训练期计算；原11个核心行情进程累计52.1分钟，不等于整个24小时工作时间。大量跨度为准备、源码、核查、发布、失败修复与等待；完整132列新模型尚未做。旧单列诊断错误已定位，技术修复仍未执行。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
-  "counters": "上一轮24h：4次实际训练/5账户作业×2费用=10情景；64公式批次1/单列诊断1。当前澄清没有新数值运行，本64批新增模型账户仍0，费用$0。",
-  "recent": "2026-10-12：上轮执行重构后，合并用户交接与官方／工程资料；比较三条路线；修改冲突活动准则；增加只读brief；31项本机检查和243个页面链接通过；源码b9d2043的Windows1738／Ubuntu1735+3跳过CI通过。没有新增Chat、模型设置、真实行情训练或账户。"
+  "counters": "本轮：1次真实Screen失败；0真实预测计算、0新fit/account、费用$0。工程小样本worker不算市场实验。Token精确用量未知。",
+  "recent": "2026-10-12新架构首批施工：日期工程→一次诊断输出失败停止重跑→全列预测与来源合并工程→有限真实预测计划资源交接。无新模型或账户。"
 }

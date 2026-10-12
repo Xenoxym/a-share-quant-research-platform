@@ -15,7 +15,7 @@ import pyarrow as pa
 
 from .resources import WorkerResources, hidden_console_record
 from ..alpharesearch.dsl import verify_compiled
-from ..alpharesearch.batch_partition import execution_partition
+from ..alpharesearch.batch_partition import execution_partition, is_forecast_batch, forecast_binding
 from ..alpharesearch.features.base import FeatureBlock
 from ..alpharesearch.feature_storage import write_shared_index, write_compact_candidate
 from ..technical.artifacts import content_id, digest, verify_artifacts, write_json
@@ -66,7 +66,7 @@ def compute(job):
     resources=WorkerResources.from_dict(cfg["resources"])
     pa.set_cpu_count(resources.library_threads);pa.set_io_thread_count(1)
     spec,registry,info=inspect_inputs(cfg["project"],cfg,include_evaluator=True)
-    evaluator=info.pop("_evaluator");doc=spec.to_dict();part=execution_partition(doc);forecast=doc["schema"]=="alpha-feature-batch-v3"
+    evaluator=info.pop("_evaluator");doc=spec.to_dict();part=execution_partition(doc);forecast=is_forecast_batch(doc)
     runtime={"environment_threads":{name:os.environ.get(name) for name in (
         "OMP_NUM_THREADS","OPENBLAS_NUM_THREADS","MKL_NUM_THREADS","NUMEXPR_NUM_THREADS",
         "VECLIB_MAXIMUM_THREADS","BLIS_NUM_THREADS","ARROW_NUM_THREADS")},
@@ -99,7 +99,7 @@ def compute(job):
                 source_file_authentication="registered role files verified by SHA; vendor history not authenticated",
                 independent_reproduction=False,holdout_rows_executed=0)
             if forecast:
-                meta.update(execution_partition="forecast_features",holdout_rows_executed=len(values),forecast_rows_executed=len(values),training_rows_executed=training_evaluated,training_rows_output=0,training_selection_sha256=next(r["sha256"] for r in cfg["inputs"] if r["role"]==doc["training_selection"]["receipt_role"]),unseen_holdout_claim=False)
+                meta.update(execution_partition="forecast_features",holdout_rows_executed=len(values),forecast_rows_executed=len(values),training_rows_executed=training_evaluated,training_rows_output=0,unseen_holdout_claim=False,**forecast_binding(doc,{r["role"]:r["sha256"] for r in cfg["inputs"]}))
             block=FeatureBlock(values,missing,block.units,meta).validate()
             if compact:
                 if shared_index is None:
@@ -143,7 +143,7 @@ def compute(job):
         verification_scope="frozen numerical execution/output identity; not independent full numerical reproduction or account evidence")
     if forecast:
         n=info["forecast_rows_planned"] if completed else 0
-        result.update(execution_partition="forecast_features",holdout_rows_executed=n,forecast_rows_executed=n,training_rows_executed=info["training_rows_planned"] if completed else 0,training_rows_output=0,training_selection_sha256=next(r["sha256"] for r in cfg["inputs"] if r["role"]==doc["training_selection"]["receipt_role"]),unseen_holdout_claim=False)
+        result.update(execution_partition="forecast_features",holdout_rows_executed=n,forecast_rows_executed=n,training_rows_executed=info["training_rows_planned"] if completed else 0,training_rows_output=0,unseen_holdout_claim=False,**forecast_binding(doc,{r["role"]:r["sha256"] for r in cfg["inputs"]}))
     if compact:result["storage_layout"]="shared_index_v1"
     write_json(folder/"result.json",result)
     manifest=dict(schema="registered-alpha-feature-manifest-v3" if forecast else "registered-alpha-feature-manifest-v2" if compact else "registered-alpha-feature-manifest-v1",experiment_id=cfg["experiment_id"],

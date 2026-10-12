@@ -105,6 +105,8 @@ def test_immature_values_are_ignored_and_selected_unknown_means_unknown_window()
     w = first.windows.loc[first.windows.trade_date.eq("2024-01-04")]
     assert w.window_gross_return.isna().all() and w.endpoint_nav.isna().all()
     assert not first.trials.proxy_complete.any()
+    assert first.trials.proxy_windows.eq(3).all()
+    assert first.receipt['evaluation_domain']['mature_dates'] == ['2024-01-02', '2024-01-03', '2024-01-04']
 
 
 def test_omitted_selected_label_never_changes_selection_or_reweights_other_stock():
@@ -118,6 +120,8 @@ def test_omitted_selected_label_never_changes_selection_or_reweights_other_stock
     assert pd.isna(w.endpoint_nav)
     t = second.trials.set_index("channel_id").loc["interaction_merit"]
     assert not t.promoted and t.selection_reason == "incomplete_common_proxy_domain"
+    assert t.proxy_windows == 3
+    assert '2024-01-03' in second.receipt['evaluation_domain']['mature_dates']
 
 
 def test_cash_slots_ties_and_declared_direction_are_not_implicit_shorting():
@@ -400,3 +404,118 @@ def test_official_source_rejects_complex_before_float_conversion(binary, contain
     with pytest.raises(ValueError, match="Complex"):
         assemble_features(decisions, [source], universe_id="synthetic_universe",
                           block_ids={"daily":"e"*64}, selected_keys=["daily."+field])
+
+
+def unfinished_tail():
+    data = list(changed(example(), min_proxy_windows=2))
+    late = data[1].trade_date.eq("2024-01-04")
+    data[1].loc[late, "target_end_at"] = "2024-01-08T09:30:00+08:00"
+    data[-1].loc[late, "label_end"] = data[-1].loc[late, "label_known_at"] = "2024-01-08T09:30:00+08:00"
+    cfg = data[0].to_dict()
+    first = copy.deepcopy(cfg["channels"][0])
+    second = dict(first, channel_id="copy_merit", feature_key="test.copy")
+    cfg.update(channels=[first, second], family_quotas={"core": {"merit": 2, "exploration": 0}})
+    data[0] = ScreenSpec.from_dict(cfg)
+    return data
+
+
+def test_shared_mature_domain_does_not_reward_cash_in_unfinished_tail():
+    data = unfinished_tail()
+    first = screen(*data)
+    tail = data[2].block.values.trade_date.eq("2024-01-04")
+    data[2].block.values.loc[tail, "test.copy"] = np.nan
+    data[2].block.missing.loc[tail, "test.copy"] = M.UNCOVERED.value
+    second = screen(*data)
+    # Same mature X and Y: both statistics and promotion must remain identical.
+    pd.testing.assert_frame_equal(first.trials, second.trials)
+    pd.testing.assert_frame_equal(first.redundancy, second.redundancy)
+    mature = second.daily.in_comparison
+    pd.testing.assert_frame_equal(first.daily.loc[mature], second.daily.loc[mature])
+    assert second.trials.proxy_complete.all()
+    assert second.trials.proxy_windows.eq(2).all()
+    assert second.trials.conditional_rows.eq(8).all()
+    tail_windows = second.windows.loc[second.windows.trade_date.eq("2024-01-04")]
+    assert set(tail_windows.selected_stocks) == {0, 1}
+    assert tail_windows.unknown_reason.eq("immature_target_window").all()
+    assert not tail_windows.in_comparison.any()
+    assert tail_windows.window_gross_return.isna().all()
+    assert tail_windows.endpoint_nav.isna().all()
+    assert second.receipt["development_decisions"] == 12
+    domain = second.receipt["evaluation_domain"]
+    assert domain["mature_dates"] == ["2024-01-02", "2024-01-03"]
+    assert domain["excluded_immature_dates"] == ["2024-01-04"]
+    assert domain["mature_decisions"] == 8
+
+
+def test_unfinished_tail_y_is_not_consumed_or_used_to_define_common_dates():
+    data = unfinished_tail()
+    first = screen(*data)
+    late = data[-1].trade_date.eq("2024-01-04")
+    data[-1]["target_return"] = data[-1].target_return.astype(object)
+    data[-1].loc[late, "target_return"] = "not a numeric mature outcome"
+    second = screen(*data)
+    for attr in ("daily", "trials", "selections", "windows", "redundancy"):
+        pd.testing.assert_frame_equal(getattr(first, attr), getattr(second, attr))
+    assert first.receipt["evaluation_domain"] == second.receipt["evaluation_domain"]
+    assert first.receipt["consumed_outcomes"] == second.receipt["consumed_outcomes"]
+
+
+@pytest.mark.parametrize("seconds,windows", [(-1, 3), (0, 3), (1, 2)])
+def test_declared_endpoint_at_cutoff_is_included_without_inspecting_y(seconds, windows):
+    data = list(changed(example(), min_proxy_windows=2))
+    endpoint = (pd.Timestamp(data[0].to_dict()["diagnostic_cutoff"])
+                + pd.Timedelta(seconds=seconds)).isoformat()
+    late = data[1].trade_date.eq("2024-01-04")
+    data[1].loc[late, "target_end_at"] = endpoint
+    data[-1].loc[late, "label_end"] = data[-1].loc[late, "label_known_at"] = endpoint
+    result = screen(*data)
+    assert result.trials.proxy_windows.eq(windows).all()
+    assert result.trials.proxy_complete.all()
+
+
+def test_zero_mature_windows_with_all_cash_is_not_complete():
+    data = list(example())
+    schedules = [
+        ("2024-01-02", "2024-01-05", "2024-01-08"),
+        ("2024-01-03", "2024-01-08", "2024-01-09"),
+        ("2024-01-04", "2024-01-09", "2024-01-10"),
+    ]
+    for day, entry, end in schedules:
+        selected = data[1].trade_date.eq(day)
+        data[1].loc[selected, "execution_at"] = entry + "T09:30:00+08:00"
+        data[1].loc[selected, "target_end_at"] = end + "T09:30:00+08:00"
+        selected = data[-1].trade_date.eq(day)
+        data[-1].loc[selected, "label_start"] = entry + "T09:30:00+08:00"
+        data[-1].loc[selected, "label_end"] = data[-1].loc[selected, "label_known_at"] = end + "T09:30:00+08:00"
+    cfg = data[0].to_dict()
+    cfg["diagnostic_cutoff"] = "2024-01-04T23:00:00+08:00"
+    for channel in cfg["channels"]:
+        channel["condition"] = dict(feature_key="test.first", op="gt", threshold=2)
+    data[0] = ScreenSpec.from_dict(cfg)
+    result = screen(*data)
+    assert result.trials.proxy_windows.eq(0).all()
+    assert not result.trials.proxy_complete.any()
+    assert not result.trials.promoted.any()
+    assert result.windows.cash_weight.eq(1).all()
+    assert result.windows.window_gross_return.isna().all()
+    assert result.receipt["evaluation_domain"]["mature_dates"] == []
+
+
+def test_mature_missing_selected_y_stays_unknown_with_unfinished_tail():
+    data = unfinished_tail()
+    first = screen(*data)
+    missing = (data[-1].trade_date.eq("2024-01-03")
+               & data[-1].stock_code.eq("600002.SH"))
+    data[-1] = data[-1].loc[~missing]
+    second = screen(*data)
+    pd.testing.assert_frame_equal(first.selections, second.selections)
+    assert first.receipt["evaluation_domain"] == second.receipt["evaluation_domain"]
+    assert second.trials.proxy_windows.eq(2).all()
+    assert not second.trials.proxy_complete.any()
+    windows = second.windows.loc[second.windows.trade_date.eq("2024-01-03")]
+    assert windows.in_comparison.all()
+    assert windows.selected_unknown_targets.eq(1).all()
+    assert windows.window_gross_return.isna().all()
+    assert windows.endpoint_nav.isna().all()
+    assert second.windows.loc[second.windows.trade_date.eq("2024-01-04"),
+                              "unknown_reason"].eq("immature_target_window").all()

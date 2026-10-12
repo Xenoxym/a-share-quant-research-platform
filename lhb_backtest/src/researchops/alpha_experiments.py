@@ -16,7 +16,8 @@ import pandas as pd
 
 from .store import text
 from ..alpharesearch.batch import AlphaBatchSpec
-from ..alpharesearch.batch_partition import execution_partition, validate_forecast_selection
+from ..alpharesearch.batch_partition import (execution_partition, validate_forecast_selection,
+    validate_forecast_source, is_prepared_batch)
 from ..alpharesearch.features.base import FeatureBlock
 from ..alpharesearch.registry import FeatureRegistry,definitions_for_block,verify_materialization,SHA
 from ..alpharesearch.operators import ExpressionEvaluator,LeafBinding
@@ -64,15 +65,20 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     if set(roles)!=spec.input_roles:raise ValueError('Input roles must exactly cover the frozen protocol')
     doc=spec.to_dict();blocks={};selection_info=None
     prepared_leaves={}
-    full_membership=pd.read_parquet(roles['membership']) if doc['schema']=='alpha-feature-batch-v4' else None
+    full_membership=pd.read_parquet(roles['membership']) if is_prepared_batch(doc) else None
     if doc['schema']=='alpha-feature-batch-v3':
         selected=doc['training_selection']
         read_role=lambda field:json.loads(roles[selected[field]].read_text(encoding='utf8'))
         selection_info=validate_forecast_selection(doc,read_role('receipt_role'),read_role('summary_role'),read_role('library_role'),read_role('source_receipt_role'),input_hashes={k:digest(roles[selected[v]]) for k,v in [('summary_sha256','summary_role'),('library_sha256','library_role'),('source_receipt_sha256','source_receipt_role')]})
+    if doc['schema']=='alpha-feature-batch-v6':
+        source=doc['forecast_source']
+        read_source=lambda field:json.loads(roles[source[field]].read_text(encoding='utf-8'))
+        selection_info=validate_forecast_source(doc,read_source('input_role'),read_source('audit_role'),
+            read_source('manifest_role'),input_hashes={r['role']:r['sha256'] for r in proposal['inputs']})
     for name,record in doc['blocks'].items():
         meta=json.loads(roles[record['definition']].read_text(encoding='utf-8'));units=meta.pop('units')
         block=FeatureBlock(pd.read_parquet(roles[record['values']]),pd.read_parquet(roles[record['missing']]),units,meta).validate();blocks[name]=block
-        if doc['schema']=='alpha-feature-batch-v4':
+        if is_prepared_batch(doc):
             from ..alpharesearch.prepared_assembly import adapt_prepared_assembly
             source=json.loads(roles[record['source_receipt']].read_text(encoding='utf-8'))
             receipt=json.loads(roles[record['receipt']].read_text(encoding='utf-8'))
@@ -94,7 +100,7 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
             if binding['block']!=name:continue
             definition=current.get(binding['definition_id'])
             if definition is None or definition.key!=key or definition.key.split('.',1)[1]!=binding['column'] or binding['materialization_id']!=receipt['materialization_id']:raise ValueError('Bound definition/column/receipt does not match frozen block')
-    leaves=prepared_leaves if doc['schema']=='alpha-feature-batch-v4' else {key:LeafBinding(blocks[b['block']],b['column'],b['definition_id'],b['materialization_id']) for key,b in doc['bindings'].items()}
+    leaves=prepared_leaves if is_prepared_batch(doc) else {key:LeafBinding(blocks[b['block']],b['column'],b['definition_id'],b['materialization_id']) for key,b in doc['bindings'].items()}
     calendar=json.loads(roles['calendar'].read_text(encoding='utf-8'))
     if not isinstance(calendar,dict) or set(calendar)!={'trade_dates'}:raise ValueError('Explicit full calendar document required')
     full_days=calendar['trade_dates']
@@ -104,7 +110,7 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     clocks=pd.read_parquet(roles['decision_clocks']);clocks=clocks.loc[clocks.trade_date.between(part['warmup_start'],part['end'])].copy()
     if not p.trade_date.isin(days).all() or not clocks.trade_date.isin(days).all():raise ValueError('Development membership/clock date missing from frozen calendar')
     evaluator_type=ExpressionEvaluator
-    if doc['schema']=='alpha-feature-batch-v4':
+    if is_prepared_batch(doc):
         from ..alpharesearch.prepared_assembly import PreparedAssemblyEvaluator
         evaluator_type=PreparedAssemblyEvaluator
     evaluator=evaluator_type(registry,leaves,calendar=days,membership=p,decision_clocks=clocks,universe_id=doc['universe_id'],allow_weak_vintage=doc['allow_weak_vintage'],max_grid_cells=budget['max_grid_cells'],max_estimated_buffer_bytes=budget['max_buffer_bytes'])
@@ -114,11 +120,11 @@ def inspect_inputs(project,proposal,*,include_evaluator=False):
     for key,binding in leaves.items():evaluator._leaf(key,binding.definition_id)
     if not any(part['start']<=d<=part['end'] for d in p.trade_date):raise ValueError('No declared execution-partition decision rows in the frozen input')
     info={'execution_days':days,'execution_rows':len(p),'holdout_rows_executed':0,'source_files_by_reference':True,'historical_source_certified':False}
-    if doc['schema']=='alpha-feature-batch-v4':
+    if is_prepared_batch(doc):
         info.update(leaf_source='prepared_assembly_v1',temporal_policy='decision_date_pointwise_only',
                     original_raw_clocks_reconstructed=False,prepared_adapter_ids=sorted({leaf.materialization_id for leaf in leaves.values()}))
     if selection_info is not None:
-        info.update(execution_partition=part['name'],forecast_rows_planned=int(p.trade_date.between(part['start'],part['end']).sum()),forecast_rows_executed=0,training_rows_executed=0,training_rows_output=0,training_rows_planned=int(p.trade_date.between(r['development_start'],r['development_end']).sum()),training_selection=selection_info)
+        info.update(execution_partition=part['name'],forecast_rows_planned=int(p.trade_date.between(part['start'],part['end']).sum()),forecast_rows_executed=0,training_rows_executed=0,training_rows_output=0,training_rows_planned=int(p.trade_date.between(r['development_start'],r['development_end']).sum()),**({'forecast_source':selection_info} if doc['schema']=='alpha-feature-batch-v6' else {'training_selection':selection_info}))
     if include_evaluator:info['_evaluator']=evaluator
     return spec,registry,info
 
@@ -129,6 +135,9 @@ def register(research,session,proposal):
     with research.store.connection() as db:research.store.owned(db,session)
     from .resources import WorkerResources
     resources=WorkerResources.from_dict(proposal.get('resources',WorkerResources().to_dict())).to_dict()
+    if proposal.get('spec',{}).get('schema')=='alpha-feature-batch-v6':
+        from ..alpharesearch.forecast_handoff import verify_registered_forecast_producer
+        verify_registered_forecast_producer(research,proposal)
     spec,registry,inspection=inspect_inputs(research.project,proposal)
     timeout=proposal.get('timeout_seconds',1200)
     if type(timeout) is not int or not 30<=timeout<=7200:raise ValueError('Bounded batch execution timeout required')

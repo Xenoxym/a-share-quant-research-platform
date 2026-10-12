@@ -259,6 +259,11 @@ def screen(spec, decisions, assembly, labels):
     cfg, p, scoped, target, label_reason = _prepare(spec, decisions, assembly, labels)
     daily, selections, windows, trials = [], [], [], []
     dates = list(p.groupby("trade_date", sort=True).indices.items())
+    # Shared comparison eligibility is decided from declared clocks, before
+    # consulting any candidate's X coverage or the availability/value of Y.
+    mature_rows = p.target_end_at.le(pd.Timestamp(cfg["diagnostic_cutoff"])).to_numpy()
+    mature_dates = [day for day, index in dates if mature_rows[index[0]]]
+    immature_dates = [day for day, index in dates if not mature_rows[index[0]]]
     for channel in cfg["channels"]:
         cid = channel["channel_id"]
         raw = scoped.values[channel["feature_key"]].to_numpy(dtype=float)
@@ -270,11 +275,15 @@ def screen(spec, decisions, assembly, labels):
         for day, index in dates:
             index = np.asarray(index)
             active = index[eligible[index]]
-            ic, pairs, ic_reason = _rank_ic(score[active], target.iloc[active].to_numpy(), cfg["min_pairs"])
+            included = bool(mature_rows[index[0]])
+            ic, pairs, ic_reason = (
+                _rank_ic(score[active], target.iloc[active].to_numpy(), cfg["min_pairs"])
+                if included else (None, 0, "immature_target_window")
+            )
             if ic is not None:
                 ic_values.append(ic)
             ncond = int(cond[index].sum())
-            daily.append(dict(channel_id=cid, trade_date=day, decision_rows=len(index),
+            daily.append(dict(channel_id=cid, trade_date=day, in_comparison=included, decision_rows=len(index),
                 condition_true=ncond, condition_false=int((cond_known[index] & ~cond[index]).sum()),
                 condition_unknown=int((~cond_known[index]).sum()), feature_present=int(np.isfinite(raw[index]).sum()),
                 eligible_rows=len(active), conditional_coverage=None if not ncond else len(active)/ncond,
@@ -288,6 +297,17 @@ def screen(spec, decisions, assembly, labels):
             for rank, pos in enumerate(positions, 1):
                 selections.append(dict(channel_id=cid, trade_date=day, sample_id=p.iloc[pos].sample_id,
                     stock_code=p.iloc[pos].stock_code, score=float(score[pos]), rank=rank, weight=1/cfg["top_k"]))
+            if not included:
+                # Keep the original X selection and date in the ledger. Neither
+                # a held-stock unknown nor an empty cash slot can affect metrics.
+                windows.append(dict(channel_id=cid, trade_date=day, in_comparison=False,
+                    execution_at=p.iloc[index[0]].execution_at,
+                    target_end_at=p.iloc[index[0]].target_end_at,
+                    selected_stocks=len(positions), cash_weight=1-len(positions)/cfg["top_k"],
+                    selected_unknown_targets=None, window_gross_return=None,
+                    endpoint_nav=None, endpoint_drawdown=None,
+                    unknown_reason="immature_target_window"))
+                continue
             unknown = int(target.iloc[positions].isna().sum())
             reason = "selected_outcome_unknown" if unknown else None
             with np.errstate(over="ignore", invalid="ignore"):
@@ -308,24 +328,25 @@ def screen(spec, decisions, assembly, labels):
                     peak = max(peak, nav); drawdown = max(drawdown, 1-nav/peak)
             elif reason is None:
                 reason = "prior_path_unknown"
-            windows.append(dict(channel_id=cid, trade_date=day, execution_at=p.iloc[index[0]].execution_at,
+            windows.append(dict(channel_id=cid, trade_date=day, in_comparison=True, execution_at=p.iloc[index[0]].execution_at,
                 target_end_at=p.iloc[index[0]].target_end_at, selected_stocks=len(positions),
                 cash_weight=1-len(positions)/cfg["top_k"], selected_unknown_targets=unknown,
                 window_gross_return=ret, endpoint_nav=nav if path_known else None,
                 endpoint_drawdown=drawdown if path_known else None,
                 unknown_reason=reason))
-        denominator = int(cond.sum()); neligible = int(eligible.sum())
+        denominator = int(cond[mature_rows].sum()); neligible = int(eligible[mature_rows].sum())
         coverage = None if not denominator else neligible/denominator
         quality = (denominator >= cfg["min_condition_rows"]
                    and coverage is not None and coverage >= cfg["min_coverage"])
-        complete = path_known and len(dates) >= cfg["min_proxy_windows"]
+        complete = path_known and len(mature_dates) >= cfg["min_proxy_windows"]
         trials.append(dict(channel_id=cid, feature_key=channel["feature_key"], family=channel["family"],
             direction=channel["direction"], route=channel["route"], exploration_reason=channel["exploration_reason"],
             condition=channel["condition"], status="evaluated", conditional_rows=denominator,
             eligible_rows=neligible, coverage=coverage, quality_passed=quality,
             rank_ic_mean=None if not ic_values else float(np.mean(ic_values)), rank_ic_dates=len(ic_values),
             proxy_complete=bool(complete), proxy_total_gross_return=nav-1 if complete else None,
-            proxy_endpoint_max_drawdown=drawdown if complete else None, proxy_windows=len(dates),
+            proxy_endpoint_max_drawdown=drawdown if complete else None, proxy_windows=len(mature_dates),
+            input_windows=len(dates), excluded_immature_windows=len(immature_dates),
             promoted=False, selection_reason="quality_not_met" if not quality else "pending_family_quota"))
     # Pareto comparison uses the same complete nonoverlapping window domain, not
     # each candidate's selectively available "good" dates. IC is not a hard gate.
@@ -352,7 +373,7 @@ def screen(spec, decisions, assembly, labels):
                                      else "family_quota_or_proxy_dominance")
     names = sorted({c["feature_key"] for c in cfg["channels"]})
     pair_count = len(names)*(len(names)-1)//2
-    redundancy = redundancy_pairs(scoped.values, names, cfg["min_pairs"],
+    redundancy = redundancy_pairs(scoped.values.loc[mature_rows], names, cfg["min_pairs"],
                                   cfg["max_redundancy_pairs"])
     consumption = p.copy()
     consumption["target_used"] = target
@@ -364,7 +385,12 @@ def screen(spec, decisions, assembly, labels):
         candidate_direction_condition_intents=len(cfg["channels"]), development_decisions=len(p),
         redundancy_pairs_computed=len(redundancy), redundancy_pairs_omitted=pair_count-len(redundancy),
         implementation_hashes=dict(implementation_hashes(CODE)), environment=_environment(),
-        outcome_scope="mature development only; future target numeric values not consumed",
+        evaluation_domain=dict(policy="declared-target-end-by-fixed-cutoff-v1",
+            diagnostic_cutoff=cfg["diagnostic_cutoff"], mature_dates=mature_dates,
+            excluded_immature_dates=immature_dates, mature_decisions=int(mature_rows.sum()),
+            original_membership_preserved=True, candidate_coverage_defines_domain=False,
+            outcome_availability_defines_domain=False),
+        outcome_scope="common clock-mature development only; unavailable Y remains unknown",
         proxy="fixed-K equal slots; empty slots cash; nonoverlapping endpoint gross path only",
         account_results=False, annualized_results=False, complete_intraperiod_drawdown=False,
         historical_execution_certified=False, input_artifact_verification="caller responsibility; declarations are not authentication",

@@ -8,7 +8,8 @@ import pandas as pd
 
 from .alpha_experiments import verify_inputs, verify_registered
 from .resources import WorkerResources
-from ..alpharesearch.batch_partition import execution_partition, validate_forecast_selection
+from ..alpharesearch.batch_partition import (execution_partition, validate_forecast_selection,
+    validate_forecast_source, is_forecast_batch, forecast_binding)
 from ..alpharesearch.features.base import FeatureBlock
 from ..alpharesearch.contracts import same_timestamp_instants
 from ..alpharesearch.feature_storage import read_shared_index, read_compact_candidate, INDEX_FILES, CANDIDATE_FILES
@@ -21,7 +22,7 @@ def _expected_definitions(proposal,roles,job):
     from ..alpharesearch.dsl import verify_compiled
     from ..alpharesearch.contracts import timestamps
     registry=FeatureRegistry.from_dict(json.loads(roles["registry"].read_text(encoding="utf-8")))
-    spec=proposal["spec"];r=spec["ranges"];part=execution_partition(spec);forecast=spec["schema"]=="alpha-feature-batch-v3";keys=["sample_id","trade_date","stock_code"]
+    spec=proposal["spec"];r=spec["ranges"];part=execution_partition(spec);forecast=is_forecast_batch(spec);keys=["sample_id","trade_date","stock_code"]
     days=[d for d in json.loads(roles["calendar"].read_text(encoding="utf-8"))["trade_dates"]
           if part["warmup_start"]<=d<=part["end"]]
     members=pd.read_parquet(roles["membership"])
@@ -59,7 +60,7 @@ def _expected_definitions(proposal,roles,job):
             independent_reproduction=False,holdout_rows_executed=0)
         if forecast:
             n=int(members.trade_date.between(part["start"],part["end"]).sum())
-            expected[candidate["candidate_id"]].update(execution_partition="forecast_features",holdout_rows_executed=n,forecast_rows_executed=n,training_rows_executed=int(members.trade_date.between(r["development_start"],r["development_end"]).sum()),training_rows_output=0,training_selection_sha256=digest(roles[spec["training_selection"]["receipt_role"]]),unseen_holdout_claim=False)
+            expected[candidate["candidate_id"]].update(execution_partition="forecast_features",holdout_rows_executed=n,forecast_rows_executed=n,training_rows_executed=int(members.trade_date.between(r["development_start"],r["development_end"]).sum()),training_rows_output=0,unseen_holdout_claim=False,**forecast_binding(spec,{r["role"]:r["sha256"] for r in proposal["inputs"]}))
     return expected
 
 
@@ -68,12 +69,18 @@ def audit_output(research,experiment):
     compact=experiment["proposal"]["spec"].get("storage_layout")=="shared_index_v1"
     proposal=experiment["proposal"];job=research.root/"worker_jobs"/experiment["id"];folder=job/"alpha_result"
     cfg=json.loads((job/"input.json").read_text(encoding="utf-8"))
-    forecast=proposal["spec"]["schema"]=="alpha-feature-batch-v3";part=execution_partition(proposal["spec"]);forecast_rows=0
+    forecast=is_forecast_batch(proposal["spec"]);part=execution_partition(proposal["spec"]);forecast_rows=0
     if forecast:
         roles=verify_inputs(cfg["project"],proposal["inputs"],proposal["spec"]["budget"]["max_input_bytes"])
-        selection=proposal["spec"]["training_selection"]
-        read_role=lambda field:json.loads(roles[selection[field]].read_text(encoding="utf8"))
-        validate_forecast_selection(proposal["spec"],read_role("receipt_role"),read_role("summary_role"),read_role("library_role"),read_role("source_receipt_role"),input_hashes={k:digest(roles[selection[v]]) for k,v in [("summary_sha256","summary_role"),("library_sha256","library_role"),("source_receipt_sha256","source_receipt_role")]})
+        if proposal["spec"]["schema"]=="alpha-feature-batch-v6":
+            source=proposal["spec"]["forecast_source"]
+            read_role=lambda field:json.loads(roles[source[field]].read_text(encoding="utf8"))
+            validate_forecast_source(proposal["spec"],read_role("input_role"),read_role("audit_role"),
+                read_role("manifest_role"),input_hashes={r["role"]:r["sha256"] for r in proposal["inputs"]})
+        else:
+            selection=proposal["spec"]["training_selection"]
+            read_role=lambda field:json.loads(roles[selection[field]].read_text(encoding="utf8"))
+            validate_forecast_selection(proposal["spec"],read_role("receipt_role"),read_role("summary_role"),read_role("library_role"),read_role("source_receipt_role"),input_hashes={k:digest(roles[selection[v]]) for k,v in [("summary_sha256","summary_role"),("library_sha256","library_role"),("source_receipt_sha256","source_receipt_role")]})
         members=pd.read_parquet(roles["membership"])
         forecast_rows=int(members.trade_date.between(part["start"],part["end"]).sum())
         training_rows=int(members.trade_date.between(max(part["warmup_start"],proposal["spec"]["ranges"]["development_start"]), min(part["end"],proposal["spec"]["ranges"]["development_end"])).sum())
@@ -111,7 +118,7 @@ def audit_output(research,experiment):
             or result.get("evaluation_scope")!="retrospective_time_split"):
         raise ValueError("Feature-only execution must not claim fits/accounts/holdout selection")
     if forecast:
-        if result.get("execution_partition")!="forecast_features" or result.get("forecast_rows_executed")!=forecast_rows or type(result.get("forecast_rows_executed")) is not int or type(result.get("training_rows_executed")) is not int or result["training_rows_executed"]!=training_rows or type(result.get("training_rows_output")) is not int or result["training_rows_output"]!=0 or result.get("unseen_holdout_claim") is not False or result.get("training_selection_sha256")!=digest(roles[proposal["spec"]["training_selection"]["receipt_role"]]):raise ValueError("Forecast output partition/count/selection identity differs")
+        if result.get("execution_partition")!="forecast_features" or result.get("forecast_rows_executed")!=forecast_rows or type(result.get("forecast_rows_executed")) is not int or type(result.get("training_rows_executed")) is not int or result["training_rows_executed"]!=training_rows or type(result.get("training_rows_output")) is not int or result["training_rows_output"]!=0 or result.get("unseen_holdout_claim") is not False or any(result.get(k)!=v for k,v in forecast_binding(proposal["spec"],{r["role"]:r["sha256"] for r in proposal["inputs"]}).items()):raise ValueError("Forecast output partition/count/selection identity differs")
     if compact and result.get("storage_layout")!="shared_index_v1":raise ValueError("Compact result layout differs")
     threads=resources.library_threads
     expected_runtime={"environment_threads":{name:str(threads) for name in (
