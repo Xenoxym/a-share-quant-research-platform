@@ -737,3 +737,112 @@ def test_public_collector_locked_db_read_failure_does_not_change_state_or_owner(
         with ops.store.connection(True) as db:
             db.execute("UPDATE experiments SET status='completed',result=?,error=NULL,updated=? WHERE id=?",
                        (json.dumps(before["result"]),before["updated"],ex["id"]))
+
+
+
+def test_commit_denial_precedes_start_without_refunding_registration(tmp_path, monkeypatch):
+    from src.researchops import resources as module
+
+    ops, session, proposal, _, _ = setup(tmp_path)
+    proposal["resources"] = WorkerResources(max_process_rss_bytes=8 << 30).to_dict()
+    experiment = ops.register(session, proposal)
+    before = ops.store.experiment(experiment["id"])
+    job = ops.root / "worker_jobs" / experiment["id"]
+    files = {p.relative_to(job).as_posix(): p.read_bytes() for p in job.rglob("*") if p.is_file()}
+    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=14 << 30))
+    monkeypatch.setattr(module, "_available_commit_bytes", lambda: int(7.49 * (1 << 30)))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Resource denial must precede Store.start and launch")
+
+    monkeypatch.setattr(ops.store, "start", forbidden)
+    with pytest.raises(RuntimeError, match="available=7.490 GiB, required=9.000 GiB"):
+        ops.execute(session, experiment["id"])
+    assert ops.store.experiment(experiment["id"]) == before
+    assert len(ops.store.get(session["task_id"])["experiments"]) == 1
+    assert not list((ops.root / ".alpha_slots").glob("slot*.json"))
+    assert files == {p.relative_to(job).as_posix(): p.read_bytes() for p in job.rglob("*") if p.is_file()}
+
+
+@pytest.mark.parametrize("offset", [-1, 0, 1])
+def test_commit_reservation_boundary(tmp_path, monkeypatch, offset):
+    from src.researchops import resources as module
+
+    limits = WorkerResources(max_process_rss_bytes=1 << 28, min_available_memory_bytes=1 << 29)
+    required = limits.max_process_rss_bytes + limits.min_available_memory_bytes
+    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=1 << 40))
+    monkeypatch.setattr(module, "_available_commit_bytes", lambda: required + offset)
+    if offset < 0:
+        with pytest.raises(RuntimeError, match="Windows commit headroom"):
+            with reserve(tmp_path, "exp-111111111111", limits):
+                pytest.fail("Insufficient commit must never enter the worker body")
+    else:
+        with reserve(tmp_path, "exp-111111111111", limits):
+            assert len(list((tmp_path / ".alpha_slots").glob("slot*.json"))) == 1
+    assert not list((tmp_path / ".alpha_slots").glob("slot*.json"))
+
+
+def test_commit_conservatively_includes_existing_reservation(tmp_path, monkeypatch):
+    from src.researchops import resources as module
+
+    limits = WorkerResources(max_process_rss_bytes=1 << 28, min_available_memory_bytes=1 << 29)
+    required = limits.max_process_rss_bytes + limits.min_available_memory_bytes
+    monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=1 << 40))
+    monkeypatch.setattr(module, "_available_commit_bytes", lambda: required)
+    with reserve(tmp_path, "exp-111111111111", limits) as first:
+        saved = first.path.read_bytes()
+        with pytest.raises(RuntimeError, match="existing reservations=0.250 GiB"):
+            with reserve(tmp_path, "exp-222222222222", limits):
+                pytest.fail("The first reservation must still be covered")
+        assert first.path.read_bytes() == saved
+        assert len(list((tmp_path / ".alpha_slots").glob("slot*.json"))) == 1
+        monkeypatch.setattr(module, "_available_commit_bytes", lambda: required + limits.max_process_rss_bytes)
+        with reserve(tmp_path, "exp-222222222222", limits):
+            assert len(list((tmp_path / ".alpha_slots").glob("slot*.json"))) == 2
+    assert not list((tmp_path / ".alpha_slots").glob("slot*.json"))
+
+
+def test_commit_probe_skips_nonwindows(monkeypatch):
+    from src.researchops import resources as module
+
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="posix"))
+    assert module._available_commit_bytes() is None
+
+
+def test_windows_commit_probe_reads_available_commit_not_physical(monkeypatch):
+    import ctypes
+    from src.researchops import resources as module
+
+    def query(pointer):
+        status = pointer._obj
+        assert status.dwLength == ctypes.sizeof(status) == 64
+        status.ullTotalPageFile = 20 << 30
+        status.ullAvailPageFile = 7 << 30
+        status.ullAvailPhys = 14 << 30
+        return 1
+
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(ctypes, "WinDLL", lambda *a, **k: SimpleNamespace(GlobalMemoryStatusEx=query), raising=False)
+    assert module._available_commit_bytes() == 7 << 30
+
+
+@pytest.mark.parametrize("fault", ["unavailable", "api_failure", "zero_total", "invalid_headroom"])
+def test_windows_commit_probe_fails_closed(monkeypatch, fault):
+    import ctypes
+    from src.researchops import resources as module
+
+    def query(pointer):
+        status = pointer._obj
+        status.ullTotalPageFile = 0 if fault == "zero_total" else 20 << 30
+        status.ullAvailPageFile = (21 if fault == "invalid_headroom" else 7) << 30
+        return 0 if fault == "api_failure" else 1
+
+    def library(*args, **kwargs):
+        if fault == "unavailable":
+            raise OSError("isolated unavailable Windows memory API")
+        return SimpleNamespace(GlobalMemoryStatusEx=query)
+
+    monkeypatch.setattr(module, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(ctypes, "WinDLL", library, raising=False)
+    with pytest.raises(RuntimeError, match="Windows commit headroom .*; batch remains planned"):
+        module._available_commit_bytes()

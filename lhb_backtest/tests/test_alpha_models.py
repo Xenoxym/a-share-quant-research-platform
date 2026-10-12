@@ -224,3 +224,30 @@ def test_initialization_failure_is_terminal_but_not_a_fake_fit(monkeypatch):
     assert adapter.state=="failed" and adapter.fit_attempts==0
     assert adapter.initialization_attempts==1 and "fixture" in adapter.error
     with pytest.raises(ValueError,match="retried"):adapter.fit(x,y)
+
+
+def test_full_132_explicit_finite_cell_budget():
+    # Registration validation only: no large matrix allocation or market fit.
+    raw_cells = 933284 * 132
+    assert 100000000 < raw_cells < 200000000
+    spec = model_spec("random_forest", max_features=132,
+                      max_matrix_cells=raw_cells)
+    assert ModelSpec.from_dict(spec.to_dict()).to_dict() == spec.to_dict()
+    assert model_spec("random_forest").to_dict()["max_matrix_cells"] == 32000000
+    assert spec.model_id != model_spec("random_forest").model_id
+
+
+@pytest.mark.parametrize("limit", [0, 200000001, float("inf"), 123193488.0, True])
+def test_invalid_expanded_cell_budget_rejected(limit):
+    with pytest.raises(ValueError, match="max_matrix_cells"):
+        model_spec("random_forest", max_matrix_cells=limit)
+
+
+def test_lower_caller_budget_still_rejects_before_fit():
+    x, y = sample(30)
+    adapter = TabularRegressor(model_spec("random_forest", max_matrix_cells=x.size - 1))
+    with pytest.raises(ValueError, match="matrix budget exceeded"):
+        adapter.fit(x, y)
+    assert adapter.fit_attempts == 0
+    assert adapter.initialization_attempts == 0
+    assert adapter.state == "created"

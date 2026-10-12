@@ -1,7 +1,7 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-12T20:20:36.982550+00:00",
-  "current_package": "共同日期和全部候选预测工程已通过；真实预测等待内存预检续跑",
+  "updated_at_utc": "2026-10-12T20:37:28.109173+00:00",
+  "current_package": "共同日期、全64预测及模型容量工程已完成；真实计算等待Windows可承诺内存",
   "task_id": "task-1e87a5d5318b",
   "packages": [
     {
@@ -896,7 +896,15 @@
       "id": "R32FPALL",
       "title": "真实64列预测与132列输入",
       "status": "原计划等待资源续跑",
-      "detail": "task-1e87a5d5318b；0新预测计算/fit/account。物理14.25GiB但commit7.92GiB，数值启动前交接；保留同一计划和预算。",
+      "detail": "task-1e87a5d5318b，原all64-forecast-20261012计划；0预测/fit/account。启动要求空池commit≥9GiB，最近约7.8GiB，保持原预算与截止。",
+      "dependencies": "R32FALL",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R32CAP",
+      "title": "完整模型容量与Windows启动检查",
+      "status": "工程已完成",
+      "detail": "task-16dfd7427637；原始矩阵显式有限上限两亿格，默认3200万不变；commit不足启动前拒绝。108模型加14资源测试、一次独立工程复核。",
       "dependencies": "R32FALL",
       "guide": "CONSTRUCTION_20261012.md"
     }
@@ -932,11 +940,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "共同日期修复87项通过；全候选预测小样本最终51项通过。一次真实辅助诊断因50MB输出预算失败，未重跑；真实64预测尚未启动，132模型账户仍未完成。",
+  "current_result": "共同日期修复87项通过；全候选预测小样本最终51项通过；模型容量及Windows启动检查122项通过。真实64预测未启动，完整132模型账户尚未完成。",
   "near_term": [
-    "先按原all64-forecast-20261012计划收取核查、检查Windowscommit资源；只算全部64预测期，复用训练期。",
-    "构建完整132列，明确修正一亿格配置上限及转换后资源，保持原名单和日期。",
-    "同条件68/132模型和含费账户比较，以收益与逐日回撤选择下一方向。"
+    "Windows可承诺余量≥9GiB后，在原计划截止前续跑全部64预测，复用训练期，不新增重复实验。",
+    "合并完整132列；执行已保存同股票/日期/成熟标签的RF32配对，最多2次训练及4次账户。",
+    "按含费收益、逐日回撤、各年表现和仓位换手选择下一步，RankIC仅作诊断。"
   ],
   "navigation": [
     {
@@ -1478,6 +1486,6 @@
   "real_matrix_plan_saved": true,
   "phase_summary": "已完成4个实际行情模型、10个费用账户情景与64列训练期计算；原11个核心行情进程累计52.1分钟，不等于整个24小时工作时间。大量跨度为准备、源码、核查、发布、失败修复与等待；完整132列新模型尚未做。旧单列诊断错误已定位，技术修复仍未执行。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
-  "counters": "本轮：1次真实Screen失败；0真实预测计算、0新fit/account、费用$0。工程小样本worker不算市场实验。Token精确用量未知。",
-  "recent": "2026-10-12新架构首批施工：日期工程→一次诊断输出失败停止重跑→全列预测与来源合并工程→有限真实预测计划资源交接。无新模型或账户。"
+  "counters": "1次真实Screen失败；0真实预测计算、0新fit/account、费用$0。容量工程108+14项通过。Token账单未知。",
+  "recent": "新架构实际施工：共同日期修复→一次辅助诊断输出失败停止重跑→全列预测与来源合并→有限真实预测资源交接→容量及启动检查→保存配对研究方案。无新模型账户结果。"
 }

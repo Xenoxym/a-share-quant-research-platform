@@ -18,6 +18,36 @@ class GuardBusy(RuntimeError):
     """Transient contention; it is not a numerical experiment failure."""
 
 
+def _available_commit_bytes():
+    """Windows process-available commit headroom; other platforms keep RSS policy."""
+    if os.name != "nt":
+        return None
+    import ctypes
+
+    class MemoryStatusEx(ctypes.Structure):
+        _fields_ = [
+            ("dwLength", ctypes.c_uint32), ("dwMemoryLoad", ctypes.c_uint32),
+            ("ullTotalPhys", ctypes.c_uint64), ("ullAvailPhys", ctypes.c_uint64),
+            ("ullTotalPageFile", ctypes.c_uint64), ("ullAvailPageFile", ctypes.c_uint64),
+            ("ullTotalVirtual", ctypes.c_uint64), ("ullAvailVirtual", ctypes.c_uint64),
+            ("ullAvailExtendedVirtual", ctypes.c_uint64),
+        ]
+
+    status = MemoryStatusEx()
+    status.dwLength = ctypes.sizeof(status)
+    try:
+        query = ctypes.WinDLL("kernel32", use_last_error=True).GlobalMemoryStatusEx
+        query.argtypes = [ctypes.POINTER(MemoryStatusEx)]
+        query.restype = ctypes.c_int
+        ok = query(ctypes.byref(status))
+    except (OSError, AttributeError) as exc:
+        raise RuntimeError("Windows commit headroom unavailable; batch remains planned") from exc
+    if not ok or status.ullTotalPageFile == 0 or status.ullAvailPageFile > status.ullTotalPageFile:
+        raise RuntimeError("Windows commit headroom query failed; batch remains planned")
+    # ullAvailPageFile is available commitment, not unused pagefile disk space.
+    return int(status.ullAvailPageFile)
+
+
 @dataclass(frozen=True)
 class WorkerResources:
     library_threads: int = 2
@@ -231,6 +261,22 @@ def reserve(root, experiment_id, resources):
         free=next((p for p in paths if not p.exists()),None)
         if free is None:
             raise RuntimeError("Both numerical resource slots are reserved; batch remains planned")
+        commit_available = _available_commit_bytes()
+        if commit_available is not None:
+            # Existing allocations already reduce OS headroom. Retain their full
+            # declared reservation too: RSS is not a reliable commit credit.
+            # This conservative launch estimate may deny otherwise viable parallel
+            # work; it is neither a precise allocation model nor a runtime limit.
+            required_commit = capacity + resources.max_process_rss_bytes + resources.min_available_memory_bytes
+            if commit_available < required_commit:
+                gib = 1 << 30
+                raise RuntimeError(
+                    f"Insufficient Windows commit headroom: available={commit_available/gib:.3f} GiB, "
+                    f"required={required_commit/gib:.3f} GiB "
+                    f"(new RSS={resources.max_process_rss_bytes/gib:.3f} GiB, "
+                    f"reserve={resources.min_available_memory_bytes/gib:.3f} GiB, "
+                    f"existing reservations={capacity/gib:.3f} GiB); batch remains planned"
+                )
         token=uuid.uuid4().hex
         record=dict(schema="alpha-resource-reservation-v1",experiment_id=experiment_id,token=token,
                     parent_pid=os.getpid(),parent_created=psutil.Process().create_time(),

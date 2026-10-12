@@ -100,7 +100,9 @@ class ModelSpec:
         _integer(value["threads"], 1, 2, "threads")
         _integer(value["max_train_rows"], 2, 10000000, "max_train_rows")
         _integer(value["max_features"], 1, 4096, "max_features")
-        _integer(value["max_matrix_cells"], 1, 100000000, "max_matrix_cells")
+        # Raw join/input cell allowance; transformed missing flags and memory
+        # copies are covered by the separately declared worker resource budget.
+        _integer(value["max_matrix_cells"], 1, 200000000, "max_matrix_cells")
         doc = {**value, "params": params}
         return cls(json.dumps(doc, sort_keys=True, separators=(",", ":"), allow_nan=False))
 

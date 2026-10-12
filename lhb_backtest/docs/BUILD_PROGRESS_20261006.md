@@ -1192,3 +1192,10 @@ E33X公开收尾：源代码提交[e23f5d6](https://github.com/Xenoxym/a-share-q
 共同日期工程87项通过，两名静态复核接受；一次修正64诊断在保存前超过原50MB输出预算，保留失败且不自动重跑。随后实现全部候选预测协议及原来源/键域合并，复用既有worker和R33逻辑；189项旧回归通过、最终51项通过。真实64预测计划已保存，Windows commit7.92GiB低于声明8GiB上限，启动前交接；132模型账户尚未运行。详见[这批具体做了什么](CONSTRUCTION_20261012.html)。
 
 [项目构成](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+
+## 2026-10-12：完整模型容量与启动资源工程
+
+R32CAP task-16dfd7427637已完成：模型原始矩阵显式预算可至两亿格，默认3200万不变；Windows commit不足在Store.start前拒绝，Linux沿用原策略。108项模型及14项资源检查通过，一次独立工程复核无新增阻断。保存68/132同条件RF32方案，最多2次训练、4次账户，尚未登记或运行。原64预测仍因commit约7.8GiB小于9GiB空池阈值等待；原预算、计划和时限保留，不自动重试或删除样本。
+
+[本轮可读施工报告](CONSTRUCTION_20261012.html) · [项目总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
