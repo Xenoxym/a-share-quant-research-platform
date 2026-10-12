@@ -87,7 +87,48 @@ def test_brief_cli_reads_existing_database_and_does_not_create_missing_one(tmp_p
     assert json.loads(result.stdout)["data"]["task_id"] == task
     missing = tmp_path / "missing"
     args[args.index("--root") + 1] = str(missing)
-    result = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", env=env)
-    assert result.returncode == 1
-    assert not missing.exists()
-    assert json.loads(result.stdout)["ok"] is False
+    for command, identifier in (("brief", task), ("status", "missing-plan")):
+        args[-2:] = [command, identifier]
+        result = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", env=env)
+        assert result.returncode == 1
+        assert not missing.exists()
+        assert json.loads(result.stdout)["ok"] is False
+
+
+
+def test_register_cli_persists_hist_gbdt_once_without_launch_and_rejects_invalid_input(tmp_path):
+    from tests.test_alpha_learn_registration import setup
+    ops, session, proposal, _ = setup(tmp_path)
+    proposal["spec"]["model"].update(family="hist_gbdt", params={})
+    cli = Path(__file__).resolve().parents[1] / "tools/execution.py"
+    file, credentials = tmp_path / "proposal.json", tmp_path / "session.json"
+    args = [sys.executable, str(cli), "--project", str(ops.project), "--root", str(ops.root),
+            "register", "--file", str(file), "--session", str(credentials)]
+    def invoke(document, claim):
+        file.write_text(document, encoding="utf-8-sig")
+        credentials.write_text(json.dumps(claim), encoding="utf-8")
+        return subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
+                              env={**os.environ, "PYTHONUTF8": "1"})
+    document = json.dumps(proposal)
+    first = invoke(document, session)
+    assert first.returncode == 0, first.stdout
+    value = json.loads(first.stdout)["data"]
+    experiments = ops.store.get(session["task_id"])["experiments"]
+    assert len(experiments) == 1 and experiments[0]["status"] == "planned"
+    assert set(value) == {"experiment_id", "task_id", "status", "kind", "budget"}
+    assert value["experiment_id"] == experiments[0]["id"] and value["kind"] == "alpha_learn"
+    assert value["budget"] == {"max_registered_experiments": 4, "registered_experiments": 1, "unregistered_slots": 3}
+    assert session["token"] not in first.stdout and "hypothesis" not in first.stdout
+    assert experiments[0]["proposal"]["planned_model_fits"] == 1
+    job = ops.root / "worker_jobs" / value["experiment_id"]
+    assert (job / "ready.json").is_file() and not (job / "launch.json").exists()
+    assert json.loads(invoke(document, session).stdout)["data"] == value
+    invalid = [(json.dumps(dict(proposal, unexpected=True)), session),
+               (document, dict(session, token="invalid-credential")),
+               ('{"kind":"alpha_learn",' + document[1:], session),
+               ('{"nonfinite":NaN}', session), ('[]', session)]
+    for malformed, claim in invalid:
+        result = invoke(malformed, claim)
+        assert result.returncode == 1 and json.loads(result.stdout)["ok"] is False
+        assert session["token"] not in result.stdout
+    assert ops.store.get(session["task_id"])["experiments"] == experiments

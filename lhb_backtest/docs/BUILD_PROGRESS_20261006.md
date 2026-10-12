@@ -1212,3 +1212,14 @@ R32CAP task-16dfd7427637已完成：模型原始矩阵显式预算可至两亿�
 原阶段实际收尾后接续task-f80028761bc9：固定ridge与hist_gbdt，用同132矩阵，各至多一次fit和一个双情景账户，串行有限两小时阶段。当前只登记准备，后续结果待实跑；不可将旧收益当成新模型结果。
 
 [本批施工与收益结果](CONSTRUCTION_20261012.html) · [项目总览](PROJECT_MAP.html) · [最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整工作包](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+
+## 2026-10-12：两种互补模型和精简登记入口实际完成
+
+任务task-f80028761bc9已完成：Ridge exp-add2e1cf29ea /账户 exp-f53b45b0e521含费年化−12.13%、日回撤46.02%；HGB40 exp-8b78ff65b999 /账户 exp-f20c95ab0422含费3.09%、29.61%。两种各1真实fit和1双情景账户，四阶段共1516.33秒；主Chat从保存净值另算八曲线年化与日回撤一致。Ridge期末含费未解决标记市值7540元保留；没有成功声明。
+
+只修改tools/execution.py和现有CLI测试，新增register独立进程登记，退出后释放准备内存。四项小样本测试通过，一次限定独立工程复核无阻断，真实HGB已用新入口。没有修改SRC或旧公式、账户规则，没有固定双审批。
+
+接续task-3a12d6d9106e：2023–25成熟439424行训练固定HGB40，2026预测105251行；与旧HGB分别从100万零持仓比较2026两个账户/四情景。阶段5400秒、最多1新fit，不重算特征或搜参数。原生小市值无法直接接固定eligible名单，暂不冒充严格匹配基线。全阶段实际结果及限制待运行。
+
+[可读结果](CONSTRUCTION_20261012.html) · [项目构成](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)

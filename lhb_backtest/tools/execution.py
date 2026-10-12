@@ -11,6 +11,21 @@ from src.researchops.service import Research  # noqa: E402
 from src.researchops.workflow import ExecutionPlans  # noqa: E402
 
 
+def _strict_json(path):
+    def object_fields(pairs):
+        value = dict(pairs)
+        if len(value) != len(pairs):
+            raise ValueError("Duplicate JSON keys")
+        return value
+    def reject_constant(value):
+        raise ValueError("Non-finite JSON values")
+    value = json.loads(path.read_text(encoding="utf-8-sig"),
+                       object_pairs_hook=object_fields, parse_constant=reject_constant)
+    if not isinstance(value, dict):
+        raise ValueError("JSON object required")
+    return value
+
+
 def main():
     p = argparse.ArgumentParser(
         description="Run/resume a bounded plan with existing Research workers"
@@ -22,13 +37,21 @@ def main():
     run.add_argument("--file", type=Path, required=True)
     run.add_argument("--session", type=Path, required=True)
     run.add_argument("--steps", type=int, default=40)
+    register = commands.add_parser("register", help="Register one proposal without starting work")
+    register.add_argument("--file", type=Path, required=True)
+    register.add_argument("--session", type=Path, required=True)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
     brief = commands.add_parser("brief", help="Read bounded task facts without running work")
     brief.add_argument("task_id")
     a = p.parse_args()
-    research = Research(a.project, a.root, readonly=a.command != "run")
-    if a.command == "brief":
+    research = Research(a.project, a.root, readonly=a.command not in {"run", "register"})
+    if a.command == "register":
+        ex = research.register(_strict_json(a.session), _strict_json(a.file))
+        value = dict(experiment_id=ex["id"], task_id=ex["task_id"], status=ex["status"],
+                     kind=ex["proposal"].get("kind", "technical"),
+                     budget=research.brief(ex["task_id"])["budget"])
+    elif a.command == "brief":
         value = research.brief(a.task_id)
     elif a.command == "status":
         value = ExecutionPlans(research).status(a.plan_id)
