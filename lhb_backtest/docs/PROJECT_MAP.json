@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-11T14:18:31.056874+00:00",
-  "current_package": "PUB17：发布实际持仓与正式回测；R32：跨信息公式准备",
-  "task_id": "task-bf337107b01a",
+  "updated_at_utc": "2026-10-12T05:59:58.184408+00:00",
+  "current_package": "E33X执行层重构：入口、恢复、审计复用和清理已完成；最终提交CI待检查",
+  "task_id": "task-1b3259f32b64",
   "packages": [
     {
       "id": "R0",
@@ -775,26 +775,114 @@
     {
       "id": "PUB17",
       "title": "公开实际持仓与真实回测结果",
-      "status": "准备精确公开",
-      "detail": "10源码/2测试及正式聚合报告；发布前双复核，发布后实际新HEAD双平台CI。",
+      "status": "已发布；旧CI失败已如实结案",
+      "detail": "fcef6dc已公开R31持仓规则和真实回测；两平台同一项测试的预期拒绝理由过时。原失败保留，后续PUB17F只修这一项断言。",
       "dependencies": "R31,PUB16",
       "guide": "ML_ACTUAL_HOLDING_ACCOUNT_RESULTS_20261011_02.md"
     },
     {
       "id": "R32",
       "title": "完整信息适配与64个跨信息公式",
-      "status": "已建接续任务，尚未执行",
-      "detail": "复用既有DSL；待补68项准备矩阵适配、固定64公式和成熟训练内筛选，本阶段0新模型/账户。",
+      "status": "150小样本检查及模块接入完成；真实时间类型兼容待修",
+      "detail": "真实原数据揭示ns/us存储单位误判，工程测试此前未覆盖。旧完整150检查事实保留，不等于真实容量通过；原数据和旧账户结果没有被修改。",
       "dependencies": "R31",
       "guide": "BUILD_PROGRESS_20261006.md"
     },
     {
       "id": "R33",
       "title": "同模型比较组合信息的价值",
-      "status": "待R32候选与新预算",
-      "detail": "拟原68ridge对68+最多8组合项ridge，最多2fit/4费用账户；还未登记执行，不称已完成。",
-      "dependencies": "R32",
+      "status": "全部64列预测与132列模型对照未完成",
+      "detail": "应优先原68 vs68+ALL64；单列Top10不是必经条件。旧预测草稿只接少数列且部分未完成；132列需调整旧128列预算，123193488单元超过现1亿容量上限，须分块或明确升级容量协议。",
+      "dependencies": "预测期固定全64接线、容量工程与有限模型预算（尚未完成）",
       "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "PUB17F",
+      "title": "修复单项测试并核对真实CI",
+      "status": "实际发布与双平台CI已验收",
+      "detail": "f8b62d5只改一个测试断言；Windows1652通过，Ubuntu1649通过+3跳过，安装包/模板均通过；不改变生产守卫或回测结果。",
+      "dependencies": "PUB17真实失败结案",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R32N",
+      "title": "在真实数据上计算并筛选64个组合特征",
+      "status": "真实失败已如实结案；原尝试不重试",
+      "detail": "运行34.859秒，在完整933284原样本时钟校验失败；0注册/批次/筛选/模型/账户。最高RSS约2.37GiB、最低可承诺约6.75GiB，不是内存不足。所有失败永久保留。",
+      "dependencies": "R32工程、PUB17F实际通过及独立源码复核",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R32T",
+      "title": "修复相同时刻的纳秒/微秒误判",
+      "status": "96项实际工程检查和双复核通过；已接入",
+      "detail": "27精度+3原生输出+21准备+13组装+32时间/目标契约检查，全部通过；一次合成worker、0行情模型/账户。同刻跨存储单位通过、1ns实差拒绝，包括ISO字符串。原数据不改。结果整理目录检查失败保留，复用真实测试后完成独立元数据归档。",
+      "dependencies": "R32N真实失败诊断",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R32NR",
+      "title": "修复后独立真实64组合与训练筛选",
+      "status": "失败已如实结案，旧尝试不重跑",
+      "detail": "63.297秒为外层监督运行总耗时；12.734秒独立只读诊断确认原15:30被准备脚本误写15:00。失败保留；双复核负面结案，0登记/模型/账户。",
+      "dependencies": "R32T实际验收与独立SOURCE",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R32NC",
+      "title": "纠正原决策时间后执行64项组合",
+      "status": "真实64项部分结果已结案；筛选未运行",
+      "detail": "两名实际复核接受后，40.297秒保存部分关闭，完整进程exit0。唯一64项批次保留；原2100.094秒到期未撤销。后继R32S已排队，不重算64。",
+      "dependencies": "R32NR negative RESULT/close",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "PUB18",
+      "title": "公开组合信息与时间精度工程",
+      "status": "提交前失败已如实结案；独立恢复任务排队",
+      "detail": "v5实际两审接受并关闭，完整53.562秒、95次只读Git调用单列；15项暂存保持，0新提交推送/CI。后继PUB18R将分别验证候选原字节与Git规范化字节；旧失败保留。",
+      "dependencies": "R32与R32T已验收工程",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R32S",
+      "title": "复用已完成64项，避免重复完整核查",
+      "status": "真实工程接入完成",
+      "detail": "新元数据阶段下，302原件双复核111.582/142.670秒准时接受；单次收尾61.297/180成功，精确1源码1测试晋级，真实子任务已创建。原3600超时保留；20测试和64特征未重跑。",
+      "dependencies": "R32NC部分结果正式结案",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "PUB18R",
+      "title": "恢复15项已暂存文件的公开发布",
+      "status": "真实发布、双平台CI与独立RESULT已验收并关闭",
+      "detail": "精确15项，未扩大公开数据。HEAD96919d9…、CI38175271350；Windows1717/Ubuntu1714通过3跳过。关闭Owned19.953秒、Job0；旧失败与自动审批拒绝及用户明确授权均保留。下一发布任务PUB19仅规划排队。",
+      "dependencies": "PUB18真实负面结案",
+      "guide": "BUILD_PROGRESS_20261006.md"
+    },
+    {
+      "id": "R32SC",
+      "title": "筛选已有64个组合特征",
+      "status": "实际完成并归档；确认比较区间缺陷",
+      "detail": "154周包含1个未成熟周；56项选中未知Y被淘汰，8项缺输入持现金而通过。347原件与7大输入、双独立RESULT04接受；原名单保存但不支持模型准入。0新模型/账户。",
+      "dependencies": "R32S真实完成与SOURCE双独立复核",
+      "guide": "ML_SCREEN_MATURITY_DISCOVERY_20261011.md"
+    },
+    {
+      "id": "R32SM",
+      "title": "让所有候选用同一组成熟周比较",
+      "status": "真实子任务已排队；尚未实施",
+      "detail": "仍queued，只修所有公式共同可评价日期及缺结果逻辑；153成熟周、原始结果保留。此额外诊断不能代替全部64列的模型增量对照。",
+      "dependencies": "R32SC真实缺陷诊断与完成归档",
+      "guide": "ML_SCREEN_MATURITY_DISCOVERY_20261011.md"
+    },
+    {
+      "id": "E33X",
+      "title": "统一执行入口、恢复与精简留存",
+      "status": "本机实现与修复复测完成；发布CI待检查",
+      "detail": "统一有限计划、原实验恢复、审计复用；165目录约5.36GB清理，1307脚本可恢复归档。实际调用与关键反例通过；首次完整回归的1项Windows路径失败已修并复测。132列科学任务未执行。",
+      "dependencies": "现有Research、SQLite、worker和资源池",
+      "guide": "EXECUTION_REFACTOR_RESULTS_20261012.md"
     }
   ],
   "phase_counts": {
@@ -828,15 +916,38 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "R31已正式验收：复用68特征模型评分，实际持仓100/150保留，0新训练、1登记/2真实费用账户。含费年化1.46%→5.48%，每日回撤27.14%→27.41%，仍不及半仓小市值14.92%/22.28%与60日低波6.45%/15.85%。继续研究，未晋级默认策略。",
+  "current_result": "统一入口接上原Research/worker，实际重复调用新增登记和计算均为0；已删除165个可再生目录约5.36GB，1307旧脚本归档。完整回归1749通过/3跳过/1路径失败；修复后受影响142项通过。两轮合计1752通过/3跳过/0未解决。尚无132列新模型或新收益成果。",
   "near_term": [
-    "PUB17精确公开已验收10个源码文件、2个测试文件、聚合回测报告和导航；只观察这个新提交的真实双平台CI，不重复旧成功检查。",
-    "R32在私有候选目录先补完整68项数据到既有公式系统的严格适配；保留原信息时点、缺失原因及股票/市场不同域。",
-    "固定最多64个有意义的跨信息公式，成熟训练期按家族与冗余筛选，保留每个尝试和负面结果；该批0新模型/账户。",
-    "候选成立后R33另登记有限预算，以相同岭回归分别训练原68项与68+最多8个组合项，最多2模型/4费用账户，最终看含费收益和每日回撤。",
-    "滚动训练、现代表示、序列/股票关系及现金分配规则保留竞争路线；每三研究阶段检查覆盖，避免只调持仓规则。"
+    "整批发布到现有GitHub并检查最终提交Windows/Ubuntu CI。",
+    "科学主线：完成全64列预测期数据及132列矩阵，原68与132列同条件模型/账户比较。",
+    "将单列诊断的共同成熟周和缺失/现金反例修好；不再把单列盈利当作进入多变量模型的固定门槛。"
   ],
   "navigation": [
+    {
+      "title": "执行系统重构：做法、实测、清理和缺口",
+      "md": "EXECUTION_REFACTOR_RESULTS_20261012.md",
+      "html": "EXECUTION_REFACTOR_RESULTS_20261012.html"
+    },
+    {
+      "title": "工程研究与施工方案：来源、架构、验收",
+      "md": "EXECUTION_REFACTOR_PLAN_20261012.md",
+      "html": "EXECUTION_REFACTOR_PLAN_20261012.html"
+    },
+    {
+      "title": "24小时成本复盘：时间、Token与返工怎样减少",
+      "md": "ML_TIME_TOKEN_POSTMORTEM_20261011.md",
+      "html": "ML_TIME_TOKEN_POSTMORTEM_20261011.html"
+    },
+    {
+      "title": "64列、额外单列选股、程序错误与24小时实际工作",
+      "md": "ML_SCREEN_MATURITY_DISCOVERY_20261011.md",
+      "html": "ML_SCREEN_MATURITY_DISCOVERY_20261011.html"
+    },
+    {
+      "title": "64组合特征算出来后，还缺哪些收益验证",
+      "md": "ML_COMBINED_FEATURE_PROGRESS_20261011.md",
+      "html": "ML_COMBINED_FEATURE_PROGRESS_20261011.html"
+    },
     {
       "title": "旧评分进入新账户：16项实际存档验证与持仓规则例子",
       "md": "ML_V2_ACCOUNT_ARCHIVE_20261011.md",
@@ -1015,313 +1126,337 @@
   "evidence": [
     {
       "label": "正式工程汇总",
-      "private_file": "本机证据/E19_engineering_summary_01.json"
+      "private_file": "E19_engineering_summary_01.json"
     },
     {
       "label": "运行测量",
-      "private_file": "本机证据/E19_formal_engineering_measure_01.json"
+      "private_file": "E19_formal_engineering_measure_01.json"
     },
     {
       "label": "修复提交的CI",
-      "private_file": "本机证据/E19_ci_01.json"
+      "private_file": "E19_ci_01.json"
     },
     {
       "label": "完整多年数据整理",
-      "private_file": "本机证据/E19_full_chunks_result_01.json"
+      "private_file": "E19_full_chunks_result_01.json"
     },
     {
       "label": "终态输入验收",
-      "private_file": "本机证据/E19_terminal_input_gate_result_02.json"
+      "private_file": "E19_terminal_input_gate_result_02.json"
     },
     {
       "label": "原作业终态与历史保留",
-      "private_file": "本机证据/E19_terminal_execution_snapshot_01.json"
+      "private_file": "E19_terminal_execution_snapshot_01.json"
     },
     {
       "label": "金额窄诊断与专项检查",
-      "private_file": "本机证据/E19A_software_checks_02.json"
+      "private_file": "E19A_software_checks_02.json"
     },
     {
       "label": "完整原账户重检源码复核",
-      "private_file": "本机证据/E19A_full_reaudit_source_reviews_03.json"
+      "private_file": "E19A_full_reaudit_source_reviews_03.json"
     },
     {
       "label": "当前缓存修复源码复核",
-      "private_file": "本机证据/E19A_selection_fullread_reviews_01.json"
+      "private_file": "E19A_selection_fullread_reviews_01.json"
     },
     {
       "label": "原岭回归完整重检",
-      "private_file": "本机证据/E19A_full_reaudit_05_01.json"
+      "private_file": "E19A_full_reaudit_05_01.json"
     },
     {
       "label": "首项资源与停止确认",
-      "private_file": "本机证据/E19A_reaudit_supervision_05_01.json"
+      "private_file": "E19A_reaudit_supervision_05_01.json"
     },
     "2026-10-09：E19A全12原档案完整修正核查，16方法同名单资金比较；原failed保留。E20私有30手工反例通过；完整结果待公开交付复核。",
     {
       "label": "保存分数单批诊断",
-      "private_file": "本机证据/E19D_diagnostic_acceptance_02.json"
+      "private_file": "E19D_diagnostic_acceptance_02.json"
     },
     {
       "label": "正式序列32检查",
-      "private_file": "本机证据/E20B_software_acceptance_02.json"
+      "private_file": "E20B_software_acceptance_02.json"
     },
     {
       "label": "完整账户报告两平台CI",
-      "private_file": "本机证据/E19_ci_06.json"
+      "private_file": "E19_ci_06.json"
     },
     {
       "label": "目标与存档原35加补3",
-      "private_file": "本机证据/E21_combined_software_acceptance_01.json"
+      "private_file": "E21_combined_software_acceptance_01.json"
     },
     {
       "label": "正式31迁入",
-      "private_file": "本机证据/E21B_software_acceptance_01.json"
+      "private_file": "E21B_software_acceptance_01.json"
     },
     {
       "label": "256公式有限方案",
-      "private_file": "本机证据/E23_task_spec_01.json"
+      "private_file": "E23_task_spec_01.json"
     },
     {
       "label": "真实32公式容量结果双复核",
-      "private_file": "本机证据/E23P_result_reviews_02.json"
+      "private_file": "E23P_result_reviews_02.json"
     },
     {
       "label": "八家族筛选新版执行方案双复核",
-      "private_file": "本机证据/E23F_source_reviews_02.json"
+      "private_file": "E23F_source_reviews_02.json"
     },
     {
       "label": "共享名单代码实际公开提交",
-      "private_file": "本机证据/E23S_publication_01.json"
+      "private_file": "E23S_publication_01.json"
     },
     {
       "label": "首32筛选吞吐里程碑（八家族未完成）",
-      "private_file": "本机证据/E23F_throughput_milestone_01.json"
+      "private_file": "E23F_throughput_milestone_01.json"
     },
     {
       "label": "E23F有限归档与真实子任务",
-      "private_file": "本机证据/E23F_closure_acceptance_02.json"
+      "private_file": "E23F_closure_acceptance_02.json"
     },
     {
       "label": "E23C源码新阶段范围，未执行",
-      "private_file": "本机证据/E23C_source_scope_01.json"
+      "private_file": "E23C_source_scope_01.json"
     },
     {
       "label": "C软件与真实配对结果",
-      "private_file": "本机证据/E23C_result_scope_01.json"
+      "private_file": "E23C_result_scope_01.json"
     },
     {
       "label": "C归档与真实G子任务",
-      "private_file": "本机证据/E23C_closure_acceptance_01.json"
+      "private_file": "E23C_closure_acceptance_01.json"
     },
     {
       "label": "G有限七家族方案",
-      "private_file": "本机证据/E23G_source_scope_01.json"
+      "private_file": "E23G_source_scope_01.json"
     },
     {
       "label": "E23G首批32风险公式完成，下一例筛选已启动",
-      "private_file": "本机证据/E23G_acceptance_02_01.json"
+      "private_file": "research/autonomous_delivery_20261006/E23G_acceptance_02_01.json"
     },
     {
       "label": "G当前已完成7例，后续继续",
-      "private_file": "本机证据/E23G_acceptance_02_07.json"
+      "private_file": "research/autonomous_delivery_20261006/E23G_acceptance_02_07.json"
     },
     {
       "label": "E21C前置候选及原计划编号保留说明",
-      "private_file": "本机证据/E24_stage_identifier_correction_01.json"
+      "private_file": "research/autonomous_delivery_20261006/E24_stage_identifier_correction_01.json"
     },
     {
       "label": "八类完整汇总与真实14作业绑定",
-      "private_file": "本机证据/E23G_complete_training_summary_02.json"
+      "private_file": "research/autonomous_delivery_20261006/E23G_complete_training_summary_02.json"
     },
     {
       "label": "受保护汇总实际通过，0新fit/account",
-      "private_file": "本机证据/E23G_summary_acceptance_01.json"
+      "private_file": "research/autonomous_delivery_20261006/E23G_summary_acceptance_01.json"
     },
     {
       "label": "新阅读与有意义原始特征容量设计",
-      "private_file": "本机证据/E23G_wide_feature_memory_design_01.json"
+      "private_file": "research/autonomous_delivery_20261006/E23G_wide_feature_memory_design_01.json"
     },
     {
       "label": "G原超时收据保留",
-      "private_file": "本机证据/E23G_closure_supervision_01_01.json"
+      "private_file": "E23G_closure_supervision_01_01.json"
     },
     {
       "label": "独立恢复最终接受",
-      "private_file": "本机证据/E23GR_closure_acceptance_01.json"
+      "private_file": "E23GR_closure_acceptance_01.json"
     },
     {
       "label": "恢复实际14项核查与准确后续任务",
-      "private_file": "本机证据/E23GR_adjudication_01.json"
+      "private_file": "E23GR_adjudication_01.json"
     },
     {
       "label": "E23H0静态双审，仅准备",
-      "private_file": "本机证据/E23H0_preliminary_reviews_02.json"
+      "private_file": "E23H0_preliminary_reviews_02.json"
     },
     {
       "label": "R22规模分组与异常换手来源设计",
-      "private_file": "本机证据/R22_SIZE_STYLE_SOURCE_CARD_20261009.md"
+      "private_file": "R22_SIZE_STYLE_SOURCE_CARD_20261009.md"
     },
     {
       "label": "E21C真实工程归档39条件，本机13合成fit",
-      "private_file": "本机证据/E21C_closure_acceptance_01.json"
+      "private_file": "E21C_closure_acceptance_01.json"
     },
     {
       "label": "E23H0实际51条件/4隔离批8合成公式",
-      "private_file": "本机证据/E23H0_closure_acceptance_01.json"
+      "private_file": "E23H0_closure_acceptance_01.json"
     },
     {
       "label": "H部分完成4公式及系统阻断，未成功归档",
-      "private_file": "本机证据/E23H_partial_result_summary_01.json"
+      "private_file": "E23H_partial_result_summary_01.json"
     },
     {
       "label": "E23HR实际接续：原部分阶段正式关闭，六作业启动",
-      "private_file": "本机证据/E23HR_parent_partial_adjudication_01.json"
+      "private_file": "E23HR_parent_partial_adjudication_01.json"
     },
     {
       "label": "HR实际完整20输出与正式接续裁决",
-      "private_file": "本机证据/E23HR_complete_adjudication_01.json"
+      "private_file": "research/autonomous_delivery_20261006/E23HR_complete_adjudication_01.json"
     },
     {
       "label": "E19E实际SOURCE01冻结候选：非执行许可",
-      "private_file": "本机证据/E19E_source_scope_01.json"
+      "private_file": "research/autonomous_delivery_20261006/E19E_source_scope_01.json"
     },
     {
       "label": "分进程SOURCE02实际两份接受与同一登记接续",
-      "private_file": "本机证据/E19E_registration_isolation_reviews_02.json"
+      "private_file": "research/autonomous_delivery_20261006/E19E_registration_isolation_reviews_02.json"
     },
     {
       "label": "实际父任务部分结案",
-      "private_file": "本机证据/E19E_partial_adjudication_01.json"
+      "private_file": "E19E_partial_adjudication_01.json"
     },
     {
       "label": "68项有限资源停止及正式部分结案",
-      "private_file": "本机证据/R23D_partial_adjudication_01.json"
+      "private_file": "research/autonomous_delivery_20261006/R23D_partial_adjudication_01.json"
     },
     {
       "label": "R24T真实启动前资源停止（0fit/0账户、Owned0）",
-      "private_file": "本机证据/R24T_admission_recovery_failure_01.json"
+      "private_file": "research/autonomous_delivery_20261006/R24T_admission_recovery_failure_01.json"
     },
     {
       "label": "R24T新资源SOURCE03待独立复核（未执行）",
-      "private_file": "本机证据/R24T_source_scope_03.json"
+      "private_file": "research/autonomous_delivery_20261006/R24T_source_scope_03.json"
     },
     {
       "label": "开源复用来源/选定源码对照（非收益验收）",
-      "private_file": "本机证据/OSS01_source_review_20261010_01.json"
+      "private_file": "OSS01_source_review_20261010_01.json"
     },
     {
       "label": "R24T真实半批结案与rank后续",
-      "private_file": "本机证据/R24T_partial4_closure_01.json"
+      "private_file": "R24T_partial4_closure_01.json"
     },
     {
       "label": "OSS05实际失败与Owned0",
-      "private_file": "本机证据/OSS05_probe_failure_01.json"
+      "private_file": "OSS05_probe_failure_01.json"
     },
     {
       "label": "OSS05只读发行发现诊断",
-      "private_file": "本机证据/OSS05_environment_discovery_diagnostic_01.json"
+      "private_file": "OSS05_environment_discovery_diagnostic_01.json"
     },
     {
       "label": "OSS05真实失败诊断正式结案",
-      "private_file": "本机证据/OSS05_closure_01.json"
+      "private_file": "OSS05_closure_01.json"
     },
     {
       "label": "OSS06原安装目录口径与限额",
-      "private_file": "本机证据/OSS06_budget_01.json"
+      "private_file": "OSS06_budget_01.json"
     },
     {
       "label": "OSS06_result_reviews_01.json",
-      "private_file": "本机证据/OSS06_result_reviews_01.json"
+      "private_file": "research/autonomous_delivery_20261006/OSS06_result_reviews_01.json"
     },
     {
       "label": "OSS06_closure_01.json",
-      "private_file": "本机证据/OSS06_closure_01.json"
+      "private_file": "research/autonomous_delivery_20261006/OSS06_closure_01.json"
     },
     {
       "label": "OSS07_source_scope_01.json",
-      "private_file": "本机证据/OSS07_source_scope_01.json"
+      "private_file": "research/autonomous_delivery_20261006/OSS07_source_scope_01.json"
     },
     {
       "label": "OSS09_closure_01.json",
-      "private_file": "本机证据/OSS09_closure_01.json"
+      "private_file": "OSS09_closure_01.json"
     },
     {
       "label": "R25R_closure_01.json",
-      "private_file": "本机证据/R25R_closure_01.json"
+      "private_file": "R25R_closure_01.json"
     },
     {
       "label": "R25RR_source_scope_01.json",
-      "private_file": "本机证据/R25RR_source_scope_01.json"
+      "private_file": "R25RR_source_scope_01.json"
     },
     {
       "label": "R25RR_resource_observation_01.json",
-      "private_file": "本机证据/R25RR_resource_observation_01.json"
+      "private_file": "R25RR_resource_observation_01.json"
     },
     {
       "label": "R25RR_closure_01.json",
-      "private_file": "本机证据/R25RR_closure_01.json"
+      "private_file": "R25RR_closure_01.json"
     },
     {
       "label": "R24PF_operation_end_01.json",
-      "private_file": "本机证据/R24PF_operation_end_01.json"
+      "private_file": "R24PF_operation_end_01.json"
     },
     {
       "label": "R24PF_result_scope_01.json",
-      "private_file": "本机证据/R24PF_result_scope_01.json"
+      "private_file": "R24PF_result_scope_01.json"
     },
     {
       "label": "PUB11_closure_01.json",
-      "private_file": "本机证据/PUB11_closure_01.json"
+      "private_file": "PUB11_closure_01.json"
     },
     {
       "label": "R24PF_closure_01.json",
-      "private_file": "本机证据/R24PF_closure_01.json"
+      "private_file": "R24PF_closure_01.json"
     },
     {
       "label": "R24PU_failure_01.json",
-      "private_file": "本机证据/R24PU_failure_01.json"
+      "private_file": "R24PU_failure_01.json"
     },
     {
       "label": "R24PR_source_scope_02.json",
-      "private_file": "本机证据/R24PR_source_scope_02.json"
+      "private_file": "R24PR_source_scope_02.json"
     },
     {
       "label": "R24PR_closure_01.json",
-      "private_file": "本机证据/R24PR_closure_01.json"
+      "private_file": "R24PR_closure_01.json"
     },
     {
       "label": "R24PR_closing_operation_end_01.json",
-      "private_file": "本机证据/R24PR_closing_operation_end_01.json"
+      "private_file": "R24PR_closing_operation_end_01.json"
     },
     {
       "label": "R26_source_scope_01.json",
-      "private_file": "本机证据/R26_source_scope_01.json"
+      "private_file": "R26_source_scope_01.json"
     },
     {
       "label": "R26_source_reviews_02.json",
-      "private_file": "本机证据/R26_source_reviews_02.json"
+      "private_file": "R26_source_reviews_02.json"
     },
     {
       "label": "R26_admission_01.json",
-      "private_file": "本机证据/R26_admission_01.json"
+      "private_file": "R26_admission_01.json"
     },
     {
       "label": "PUB12_publication_01.json",
-      "private_file": "本机证据/PUB12_publication_01.json"
+      "private_file": "PUB12_publication_01.json"
     },
     {
       "label": "PUB12_publication_end_01.json",
-      "private_file": "本机证据/PUB12_publication_end_01.json"
+      "private_file": "PUB12_publication_end_01.json"
     },
     {
       "label": "R30实际监控失败及独立有限归档复核03",
-      "private_file": "本机证据/R30_failure_result_reviews_03.json"
+      "private_file": "research/autonomous_delivery_20261006/R30_failure_result_reviews_03.json"
+    },
+    {
+      "label": "PUB17F实际单文件修复和双平台CI收尾",
+      "private_file": "research/autonomous_delivery_20261006/PUB17F_closure_01.json"
+    },
+    {
+      "label": "R32工程150通过，旧收尾超时如实保留",
+      "private_file": "research/autonomous_delivery_20261006/R32_original_phase_expiry_disposition_03.json"
+    },
+    {
+      "label": "R32工程元数据独立恢复实际完成并创建R32N",
+      "private_file": "research/autonomous_delivery_20261006/R32_metadata_recovery_closure_04.json"
+    },
+    {
+      "label": "20项真实衔接检查及受控进程全部退出",
+      "private_file": "R32S_test_end_01.json"
+    },
+    {
+      "label": "筛选共同区间缺陷，两名实际独立诊断",
+      "private_file": "R32SC_proxy_domain_diagnostic_reviews_01.json"
+    },
+    {
+      "label": "实际归档与真实成熟窗口修复子任务",
+      "private_file": "R32SC_closure_04.json"
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "PUB16已发布并通过实际新HEAD Windows1613、Ubuntu1610+3跳过的软件检查。R31实际44项工程测试→正式两费用账户→独立重建189次持仓选择和897日权益→两名复核重算20条保存曲线→修正3个收尾检查缺口→实际归档并创建R32。旧失败均保留，没有重训或重放旧账户。",
+  "phase_summary": "已完成4个实际行情模型、10个费用账户情景与64列训练期计算；原11个核心行情进程累计52.1分钟，不等于整个24小时工作时间。大量跨度为准备、源码、核查、发布、失败修复与等待；完整132列新模型尚未做。旧单列诊断错误已定位，技术修复仍未执行。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
-  "counters": "当前R31：44项工程测试通过；新行情模型拟合0次、预测0次；正式登记1项、真实费用账户2条已接受。不是全项目累计计数。最大蓝图仍有未完成模块；外部费用$0。",
-  "recent": "实际研究路径：排名目标→36到68信息增量→小MLP均未获预定收益/回撤改善；随后打通评分复用，为组合实验准备。继续保持滚动、表示、信息组、序列关系和有限公式搜索。"
+  "counters": "上一轮24h：4次实际训练/5账户作业×2费用=10情景；64公式批次1/单列诊断1。当前澄清没有新数值运行，本64批新增模型账户仍0，费用$0。",
+  "recent": "2026-10-12：先研究14组外部工程资料，保存方案后实施；一次限定Agent工程复核找出的3个问题修正并测试。执行、清理和本机复测完成，发布检查进行中；没有新模型或收益结论。"
 }

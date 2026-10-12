@@ -87,11 +87,8 @@ def main():
     elif cmd == "create":
         value = r.create(read(args.file), args.actor)
     elif cmd == "claim":
-        if args.session.exists():
-            raise ValueError("session文件已存在；请使用此Worker的新文件名，避免覆盖旧领取凭据")
-        args.session.parent.mkdir(parents=True, exist_ok=True)
-        session = r.store.claim(args.task, args.worker, args.ttl)
-        write_json(args.session, session)
+        from src.researchops.claims import claim_to_file
+        session = claim_to_file(r.store, args.task, args.worker, args.session, args.ttl)
         value = {
             "task_id": args.task,
             "worker": args.worker,

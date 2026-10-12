@@ -83,6 +83,9 @@ class Store:
                 proposal TEXT NOT NULL, status TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL,
                 pid INTEGER, run_id TEXT, result TEXT, error TEXT);
             CREATE UNIQUE INDEX IF NOT EXISTS unique_trial ON experiments(task_id,fingerprint);
+            CREATE TABLE IF NOT EXISTS registration_operations(
+                task_id TEXT NOT NULL, operation_key TEXT NOT NULL, request_hash TEXT NOT NULL,
+                experiment_id TEXT NOT NULL, PRIMARY KEY(task_id,operation_key));
             CREATE TABLE IF NOT EXISTS knowledge(id TEXT PRIMARY KEY, payload TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evidence(id TEXT PRIMARY KEY, task_id TEXT NOT NULL,
                 fingerprint TEXT NOT NULL, payload TEXT NOT NULL, created REAL NOT NULL);
@@ -196,7 +199,7 @@ class Store:
             ]
             return out
 
-    def claim(self, task, worker, ttl=1800):
+    def claim(self, task, worker, ttl=1800, *, persist=None):
         worker = text(worker, "worker", 120)
         if type(ttl) is not int or not 60 <= ttl <= 7200:
             raise ValueError("租约必须为60至7200秒")
@@ -215,7 +218,10 @@ class Store:
             self.event(
                 db, task, worker, "claimed", {"previous_owner": row["owner"], "ttl_seconds": ttl}
             )
-        return {"task_id": task, "worker": worker, "token": token}
+            session = {"task_id": task, "worker": worker, "token": token}
+            if persist is not None:
+                persist(session)  # A failed credential write rolls back the claim.
+        return session
 
     def heartbeat(self, session, ttl=1800):
         if type(ttl) is not int or not 60 <= ttl <= 7200:
@@ -248,6 +254,29 @@ class Store:
             )
         return self.get(row["id"])
 
+    def registration_operation(self, session, key, request_hash):
+        with self.connection() as db:
+            self.owned(db, session)
+            old = db.execute(
+                "SELECT * FROM registration_operations WHERE task_id=? AND operation_key=?",
+                (session["task_id"], key),
+            ).fetchone()
+            if old and old["request_hash"] != request_hash:
+                raise ValueError("Registration operation reused with different intent")
+        return self.experiment(old["experiment_id"]) if old else None
+
+    def _bind_registration(self, db, session, eid):
+        key = session.get("registration_key")
+        if key is None:
+            return
+        request_hash = session.get("registration_hash")
+        if (not isinstance(key, str) or not 1 <= len(key) <= 200
+                or not isinstance(request_hash, str) or len(request_hash) != 64
+                or any(c not in "0123456789abcdef" for c in request_hash)):
+            raise ValueError("Strict registration operation identity required")
+        db.execute("INSERT INTO registration_operations VALUES(?,?,?,?)",
+                   (session["task_id"], key, request_hash, eid))
+
     def register(self, session, proposal, fingerprint, *, channel_budget=None, fit_budget=None):
         if proposal.get("kind") == "alpha_screen":
             declared = proposal.get("spec", {}).get("budget", {}).get("max_task_channel_intents")
@@ -266,11 +295,23 @@ class Store:
         with self.connection(True) as db:
             row = self.owned(db, session)
             spec = json.loads(row["spec"])
+            key = session.get("registration_key")
+            if key is not None:
+                operation = db.execute(
+                    "SELECT * FROM registration_operations WHERE task_id=? AND operation_key=?",
+                    (row["id"], key),
+                ).fetchone()
+                if operation:
+                    if operation["request_hash"] != session.get("registration_hash"):
+                        raise ValueError("Registration operation reused with different intent")
+                    return self.public(db.execute("SELECT * FROM experiments WHERE id=?",
+                                                 (operation["experiment_id"],)).fetchone())
             old = db.execute(
                 "SELECT * FROM experiments WHERE task_id=? AND fingerprint=?",
                 (row["id"], fingerprint),
             ).fetchone()
             if old:
+                self._bind_registration(db, session, old["id"])
                 return self.public(old)
             count = db.execute(
                 "SELECT count(*) FROM experiments WHERE task_id=?", (row["id"],)
@@ -312,6 +353,7 @@ class Store:
                 "INSERT INTO experiments(id,task_id,fingerprint,proposal,status,created,updated) VALUES(?,?,?,?,?,?,?)",
                 (eid, row["id"], fingerprint, encode(proposal), "planned", now, now),
             )
+            self._bind_registration(db, session, eid)
             self.event(
                 db,
                 row["id"],

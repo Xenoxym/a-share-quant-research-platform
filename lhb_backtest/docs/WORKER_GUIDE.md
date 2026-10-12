@@ -1,3 +1,5 @@
+> 2026-10-12：日常执行已切换到[统一计划入口](EXECUTION_GUIDE.md)。本页保留底层API或旧V7兼容流程，不要求普通工程修改进入双复核加AI裁决。
+
 # Worker 入场与接力协议（V7）
 
 **先看现在：** [项目总览、架构和全部工作包](PROJECT_MAP.md)（[网页](PROJECT_MAP.html)）。本页早期“最近结论”和路径示例保留历史；实际状态以总览、任务库和当前交接为准。阶段报告及最终回复固定附总览、[最大蓝图](ML_SYSTEM_BLUEPRINT_20261005.md)、[完整工作包计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.md)、[详细建设记录](BUILD_PROGRESS_20261006.md)，并区分工程验收与策略收益证据。

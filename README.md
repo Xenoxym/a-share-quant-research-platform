@@ -17,3 +17,10 @@
 
 - [项目结构与总体蓝图审查](lhb_backtest/docs/LOCAL_STRUCTURE_REVIEW_20261006.md)
 - [当前建设与接续进度](lhb_backtest/docs/BUILD_PROGRESS_20261006.md)
+
+## 执行系统（2026-10-12）
+
+日常实验使用[统一计划入口](lhb_backtest/docs/EXECUTION_GUIDE.md)：持久进度、原实验恢复、有限预算和绑定证据的审计复用。固定检查由Python执行；关键代码与重要收益结论按范围复核。
+
+- [重构方案、项目架构和14组原始工程来源](lhb_backtest/docs/EXECUTION_REFACTOR_PLAN_20261012.md)
+- [本次实际交付、测试与清理结果](lhb_backtest/docs/EXECUTION_REFACTOR_RESULTS_20261012.md)

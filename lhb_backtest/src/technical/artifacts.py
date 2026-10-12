@@ -1,14 +1,14 @@
 """Content-addressed inputs and atomic, inspectable experiment artifacts."""
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
-import uuid
 
 import numpy as np
 import pandas as pd
@@ -37,10 +37,23 @@ def jsonable(value):
 
 
 def write_json(path: Path, value):
+    path = Path(path)
+    data = json.dumps(jsonable(value), ensure_ascii=False, indent=2, allow_nan=False)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + f".{uuid.uuid4().hex}.tmp")
-    temp.write_text(json.dumps(jsonable(value), ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
-    os.replace(temp, path)
+    temp = None
+    try:
+        # An independent short basename avoids extending an already-long target.
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent, prefix="", suffix="", delete=False
+        ) as stream:
+            temp = Path(stream.name)
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp, path)
+    finally:
+        if temp is not None:
+            temp.unlink(missing_ok=True)
 
 
 def digest(path: Path):

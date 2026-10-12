@@ -137,7 +137,7 @@ def test_shared_two_slots_no_refund_and_release_exact_owner(tmp_path,monkeypatch
     monkeypatch.setattr(psutil,"virtual_memory",lambda:SimpleNamespace(available=1<<40))
     resources=WorkerResources(max_process_rss_bytes=134_217_728,min_available_memory_bytes=268_435_456)
     with reserve(tmp_path,"exp-111111111111",resources),reserve(tmp_path,"exp-222222222222",resources):
-        with pytest.raises(RuntimeError,match="Both"):
+        with pytest.raises(RuntimeError, match="Both"):
             with reserve(tmp_path,"exp-333333333333",resources):pass
         assert len(list((tmp_path/".alpha_slots").glob("slot*.json")))==2
     assert not list((tmp_path/".alpha_slots").glob("slot*.json"))
@@ -352,6 +352,9 @@ def test_parent_observation_and_collector_share_first_writer_guard(completed,mon
             max_process_rss_bytes=ex["proposal"]["resources"]["max_process_rss_bytes"]))
         with ops.store.connection(True) as db:
             db.execute("UPDATE experiments SET status='running',result=NULL WHERE id=?",(ex["id"],))
+            # This test must enter the numerical-audit phase to hold its barrier.
+            # A valid cached audit would intentionally bypass that phase.
+            db.execute("DELETE FROM execution_audits WHERE experiment_id=?", (ex["id"],))
         monkeypatch.setattr(alpha_output_audit,"audit_output",controlled_audit)
         if first=="parent":
             parent()

@@ -24,3 +24,7 @@
 /lhb_backtest/research/structure_audit_*/
 
 /lhb_backtest/research/autonomous_delivery_*/
+
+/lhb_backtest/research/execution_cleanup/
+
+/lhb_backtest/research/execution_refactor_20261012/

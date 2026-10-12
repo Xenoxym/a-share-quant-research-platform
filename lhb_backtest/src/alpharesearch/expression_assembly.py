@@ -54,17 +54,17 @@ def assemble_declared_expression_blocks(membership,items,registry,*,universe_id,
     meta=dict(schema='assembled-feature-matrix-v1',key_columns=KEYS,source_id='registered_expression_output_handoff',version_id=content_id(identity),vintage=VintagePolicy.LATEST_ONLY.value if weak else VintagePolicy.MARKET.value,universe_id=universe_id,membership_id=membership_id,registry_version=new_registry.version_id,source_bindings=bindings,source_provenance=provenance,clock='Conservative original expression decision-time availability',missing='Original score reasons retained',historical_execution_certified=False,independent_reproduction_claimed=False,registered_batch_verified_by_wrapper=False)
     return FeatureAssembly(FeatureBlock(values,missing,units,meta).validate(),new_registry,tuple(bindings))
 def assemble_registered_expression_batch(research,experiment,membership,*,max_rows,max_matrix_cells):
-    """Reaudit completed registered compact development outputs before assembly."""
+    """Verify and reuse the bound audit of completed development outputs."""
     from ..researchops.service import Research
     _require(isinstance(research,Research),'Actual Research DB interface required; pure fixtures cannot authenticate registration')
-    from ..researchops.alpha_output_audit import audit_output
+    from ..researchops.alpha_execution import verify_completed
     from ..researchops.alpha_experiments import verify_inputs
     from .feature_storage import read_shared_index,read_compact_candidate
     actual=research.store.experiment(experiment['id'])
     _require(actual==experiment and actual['status']=='completed' and actual['proposal']['kind']=='alpha_batch' and isinstance(actual.get('result'),dict) and actual['result'].get('verified') is True,'Actual completed registered batch identity required')
     proposal=actual['proposal'];spec=proposal['spec']
     _require(spec['schema']=='alpha-feature-batch-v4' and spec['storage_layout']=='shared_index_v1','Prepared development v4 compact batch required')
-    audit=audit_output(research,actual);_require(audit['verified'] is True and audit['failed_candidates']==0 and audit['completed_candidates']==len(spec['candidates']) and audit['holdout_rows_executed']==0,'Complete development-only registered expression batch audit required')
+    audit=verify_completed(research,actual);_require(audit['verified'] is True and audit['failed_candidates']==0 and audit['completed_candidates']==len(spec['candidates']) and audit['holdout_rows_executed']==0,'Complete development-only registered expression batch audit required')
     folder=research.root/'worker_jobs'/actual['id']/'alpha_result'
     manifest=json.loads((folder/'manifest.json').read_text(encoding='utf8'));_require(digest(folder/'manifest.json')==audit['manifest_hash'],'Audited registered manifest identity differs');verify_artifacts(folder,manifest)
     roles=verify_inputs(research.project,proposal['inputs'],spec['budget']['max_input_bytes']);registry=FeatureRegistry.from_dict(json.loads(roles['registry'].read_text(encoding='utf8')))

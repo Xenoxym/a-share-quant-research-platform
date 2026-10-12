@@ -45,7 +45,7 @@ def diagram(simple):
             if i < len(bands)-1:
                 nodes.append(f'<path d="M350 {y+147} V{y+172}" stroke="#49779b" stroke-width="2" marker-end="url(#arrow-{suffix})"/>')
         nodes.append('<rect x="700" y="36" width="254" height="858" rx="14" fill="#eaf3f9" stroke="#a7c7df"/>')
-        support=["贯穿全流程的支持", "任务与共享进度", "事前登记 / 固定预算", "保存数据和代码版本", "有限进程与资源监督", "失败 / 取消全部保留", "原结果收取与恢复", "本机研究证据留档", "两名只读复核", "选择性GitHub发布"]
+        support=["贯穿全流程的支持", "统一计划入口与共享进度", "事前登记 / 固定预算", "保存数据和代码版本", "有限进程与资源监督", "失败 / 取消全部保留", "原结果收取与恢复", "本机研究证据留档", "按改动范围独立复核", "选择性GitHub发布"]
         for i, line in enumerate(support):
             cls="title" if i==0 else "sub"
             nodes.append(f'<text x="724" y="{76+i*76}" class="{cls}">{esc(line)}</text>')

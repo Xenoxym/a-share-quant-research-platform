@@ -7,6 +7,7 @@ import time
 
 import psutil
 
+from .audit_cache import numerical_audit
 from .resources import WorkerResources, process_alive, reserve, release_terminal_reservation, check_terminal_reservation, _guard, GuardBusy, hidden_console_record
 from ..technical.artifacts import digest, write_json
 
@@ -465,7 +466,7 @@ def _recover_locked(research, experiment, receipt=None):
             if status=="failed":
                 error=receipt["error"]
             else:
-                audit=_protocol(experiment)[3].audit_output(research,experiment)
+                audit=numerical_audit(research,experiment,_protocol(experiment)[3].audit_output)
                 if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn", "alpha_account"}:
                     _write_once(job/"alpha_audit.json",audit,strict_json=True)
                 else:
@@ -494,7 +495,7 @@ def _recover_locked(research, experiment, receipt=None):
 
 
 
-def verify_completed(research, experiment):
+def verify_completed(research, experiment, *, reaudit=False):
     if experiment["status"]!="completed" or not isinstance(experiment.get("result"),dict):
         raise ValueError("Completed alpha execution evidence required")
     audit_output=_protocol(experiment)[3].audit_output
@@ -502,7 +503,7 @@ def verify_completed(research, experiment):
     if launch is None or _alive(launch):
         raise ValueError("Completed worker launch not terminal")
     _receipt(research,experiment,_read_json(job/"receipt.json"))
-    audit=audit_output(research,experiment);saved=_read_json(job/"alpha_audit.json");stored=experiment["result"]
+    audit=numerical_audit(research,experiment,audit_output,force=reaudit);saved=_read_json(job/"alpha_audit.json");stored=experiment["result"]
     if _protocol(experiment)[0] in {"alpha_screen", "alpha_learn", "alpha_account"}:
         from .screen_experiments import same_json
         changed = not same_json(saved, audit) or not same_json({k:stored.get(k) for k in audit}, audit)
