@@ -15,11 +15,11 @@ def setup(*args,**kwargs):
     return result
 
 @contextmanager
-def source_auditor(ops):
+def source_auditor(ops,module_name="alpha_output_audit"):
     prefix='_dependency_test_'+uuid.uuid4().hex
     package=ModuleType(prefix);package.__path__=[str(ops.project)];sys.modules[prefix]=package
     finder=_FrozenFinder(prefix,ops.project);sys.meta_path.insert(0,finder)
-    try:yield importlib.import_module(prefix+'.src.researchops.alpha_output_audit')
+    try:yield importlib.import_module(prefix+'.src.researchops.'+module_name)
     finally:
         sys.meta_path.remove(finder)
         for name in list(sys.modules):
@@ -172,3 +172,59 @@ def test_new_namespace_uses_its_own_package_snapshot(tmp_path):
     with source_auditor(ops) as module:
         policy=audit_dependency_files(ops.project,"alpha_batch",module.audit_output)[1]
         assert policy["policy"]=="whole_src_fallback_v1" and not policy["stale_loaded_source"] and policy["reusable"]
+
+
+def test_real_learning_audit_cache_reuses_across_processes(tmp_path):
+    import subprocess
+    from tests.test_alpha_learn_registration import setup as learning_setup
+    ops,session,proposal,_=learning_setup(tmp_path)
+    proposal["spec"]["schema"]="registered-alpha-learn-v2"
+    proposal["spec"]["budget"]["max_checkpoint_bytes"]=1_000_000
+    ex=ops.register(session,proposal);ex=ops.execute(session,ex["id"])
+    assert ex["status"]=="completed",ex.get("error")
+    # Use the real fixed module name in two fresh interpreters, as production
+    # CLI invocations do. Different namespace names intentionally have distinct
+    # auditor identities and should not be treated as the same callback.
+    code="""import json,sys
+from pathlib import Path
+from src.researchops.service import Research
+from src.researchops.learn_output_audit import audit_output
+from src.researchops.audit_cache import numerical_audit
+from src.researchops.audit_dependencies import audit_dependency_files
+ops=Research(Path.cwd());ex=ops.store.experiment(sys.argv[1])
+policy=audit_dependency_files(ops.project,'alpha_learn',audit_output)[1]
+assert policy['reusable'],policy['unprovable_runtime_state']
+assert numerical_audit(ops,ex,audit_output)['verified']
+with ops.store.connection() as db:
+    stamp=tuple(db.execute('SELECT binding_hash,checked_at FROM execution_audits WHERE experiment_id=?',(ex['id'],)).fetchone())
+print(json.dumps(stamp))
+"""
+    def call():
+        result=subprocess.run([sys.executable,'-c',code,ex['id']],cwd=ops.project,capture_output=True,text=True,encoding='utf-8',timeout=120)
+        assert result.returncode==0,result.stderr+result.stdout
+        return json.loads(result.stdout)
+    assert call()==call(), "Fresh process repeated numbers instead of reusing cache"
+
+
+@pytest.mark.parametrize("mutation",["keyword_default","module_sentinel","module_alias","other_callable"])
+def test_importlib_sentinel_tampering_still_disables_cache(tmp_path,monkeypatch,mutation):
+    from tests.test_alpha_learn_registration import setup as learning_setup
+    ops,_,_,_=learning_setup(tmp_path)
+    with source_auditor(ops,"learn_output_audit") as module:
+        assert audit_dependency_files(ops.project,"alpha_learn",module.audit_output)[1]["reusable"]
+        fn=importlib.util.spec_from_file_location;external=sys.modules[fn.__module__]
+        with monkeypatch.context() as patch:
+            if mutation=="keyword_default":
+                defaults=dict(fn.__kwdefaults__);defaults["submodule_search_locations"]=object()
+                patch.setattr(fn,"__kwdefaults__",defaults)
+            elif mutation=="module_sentinel":patch.setattr(external,"_POPULATE",object())
+            elif mutation=="module_alias":
+                proxy=ModuleType(external.__name__);proxy.__dict__.update(vars(external));proxy._POPULATE=object()
+                patch.setitem(sys.modules,external.__name__,proxy)
+                defaults=dict(fn.__kwdefaults__);defaults["submodule_search_locations"]=proxy._POPULATE
+                patch.setattr(fn,"__kwdefaults__",defaults)
+            else:
+                def unrelated(*,submodule_search_locations=external._POPULATE):pass
+                patch.setattr(module,"unrelated",unrelated,raising=False)
+            policy=audit_dependency_files(ops.project,"alpha_learn",module.audit_output)[1]
+        assert not policy["reusable"] and policy["unprovable_runtime_state"]

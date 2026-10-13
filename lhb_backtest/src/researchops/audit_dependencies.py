@@ -64,6 +64,25 @@ def _runtime_binding(project,files,nodes):
         if inspect.isfunction(value):return ["function",runtime_code_hash(value.__code__)]
         if inspect.isclass(value):return ["class",value.__qualname__]
         raise TypeError("Unprovable declared runtime state")
+    def keyword_defaults(fn):
+        fields=fn.__kwdefaults__
+        if fields is None:return state(None)
+        external=sys.modules.get("_frozen_importlib_external")
+        entries=[]
+        for key,value in fields.items():
+            # Only this exact CPython callable's keyword sentinel has a
+            # stable declared role. Bind its actual globals, not a module
+            # substitute in sys.modules; all other opaque values stay unknown.
+            canonical=(key=="submodule_search_locations" and type(value) is object
+                and external is not None
+                and getattr(getattr(external,"__spec__",None),"origin",None)=="frozen"
+                and fn is getattr(external,"spec_from_file_location",None)
+                and fn.__globals__ is vars(external)
+                and value is fn.__globals__.get("_POPULATE"))
+            encoded=["cpython_frozen_importlib_singleton","_POPULATE"] if canonical else state(value)
+            entries.append([state(key),encoded])
+        return ["dict",sorted(entries,key=lambda x:json.dumps(x[0],sort_keys=True))]
+
     instances=[(name,item) for name,value in nodes.items() for item in (value if isinstance(value,list) else [value])]
     for canonical,loaded in instances:
         source=Path(loaded.__file__).resolve()
@@ -89,7 +108,7 @@ def _runtime_binding(project,files,nodes):
             if any(qualname==declared for qualname,_ in code_objects) and code.co_filename!=str(loaded.__file__):stale=True
             if code.co_filename==str(loaded.__file__) and code_objects.get((getattr(code,"co_qualname",code.co_name),code.co_firstlineno))!=code:stale=True
             entry={"code":runtime_code_hash(value.__code__)}
-            try:entry.update(defaults=state(value.__defaults__),kwdefaults=state(value.__kwdefaults__))
+            try:entry.update(defaults=state(value.__defaults__),kwdefaults=keyword_defaults(value))
             except (TypeError,RecursionError):unknown.append(canonical+"."+key+".defaults")
             functions[key]=entry
         def constant(key,value):
