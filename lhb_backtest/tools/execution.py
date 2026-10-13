@@ -48,6 +48,13 @@ def main():
     matrix.add_argument("--matrix",required=True)
     matrix.add_argument("--template",type=Path,required=True)
     matrix.add_argument("--output",type=Path,required=True)
+    expressions=commands.add_parser("expression-matrix",help="Save all completed expression partitions as a learning matrix; no formula or fit")
+    expressions.add_argument("--development",required=True)
+    expressions.add_argument("--forecast",required=True)
+    expressions.add_argument("--output",required=True)
+    expressions.add_argument("--max-rows",type=int,required=True)
+    expressions.add_argument("--max-cells",type=int,required=True)
+    expressions.add_argument("--max-bytes",type=int,required=True)
     backup=commands.add_parser("backup-learning",help="Copy one completed learning evidence bundle; no model loading")
     backup.add_argument("--learning",required=True)
     backup.add_argument("--output",type=Path,required=True)
@@ -80,6 +87,10 @@ def main():
             output.parent.mkdir(parents=True,exist_ok=True)
             write_json(output,value);action="created"
         value=dict(path=str(output),action=action,proposal_id=content_id(value),model_fits=0,predict_calls=0,registered_experiments=0)
+    elif a.command=="expression-matrix":
+        from src.researchops.matrix_materialization import matrix_from_registered_expressions
+        value=matrix_from_registered_expressions(research,a.development,a.forecast,a.output,
+            max_rows=a.max_rows,max_matrix_cells=a.max_cells,max_output_bytes=a.max_bytes)
     elif a.command=="backup-learning":
         from src.researchops.backup import backup_learning_experiment
         value=backup_learning_experiment(research,a.learning,a.output,max_bytes=a.max_bytes)

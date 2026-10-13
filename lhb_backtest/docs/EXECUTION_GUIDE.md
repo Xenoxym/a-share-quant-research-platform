@@ -149,3 +149,16 @@ account_step = {"id": "account", "needs": ["learn"],
 `verify-backup --folder <副本目录>`只验证副本，不初始化研究库、不读取原绝对路径、不反序列化模型、不启动worker。它输出有效载荷bytes和完整目录directory_bytes。只有选定学习实验的文件被复制；整个市场、其他实验和账户快照没有一起备份。元数据库仍有旧绝对路径及历史记录，不支持直接激活迁移后的库。默认同盘本机副本不能代替异盘灾备，资料不得公开上传。
 
 本批实际结果见[接续施工报告](FOUNDATION_CONTINUATION_20261013.html)。
+
+
+## 已完成的公式分区写成学习矩阵
+
+```powershell
+..\.venv\Scripts\python.exe tools/execution.py expression-matrix --development exp-开发批次编号 --forecast exp-预测批次编号 --output research/new-matrix --max-rows 1000000 --max-cells 150000000 --max-bytes 2147483648
+```
+
+编号须替换为真实已完成的v4开发批次和同一producer的v6预测批次。这只是参数形式示例，行数、单元格、字节上限由实际研究预算决定。入口读取原prepared base与全部预先声明的候选输出，保留完整股票日期键、时钟和缺失原因；不读取标签，不筛选单项收益，不重算公式、训练或登记。
+
+输出是原有学习入口认识的五文件矩阵。随后把这个目录交给learning-proposal或v3计划的learning_from_matrix，再接account_from_learning。已存在的目标目录拒绝覆盖；成功后直接复用原矩阵继续计划。写入失败的部分目录保留，没有有效receipt，不自动重试。预算包括Windows换行后的实际receipt字节。
+
+这补了“已完成公式→矩阵文件”的程序接口；公式生成、计算、矩阵保存还没有合并成一份持久计划自动派生。当前保存与合并仍在内存中，只有完整小样本通过，不能把这组默认上限当作大规模内存保证。
