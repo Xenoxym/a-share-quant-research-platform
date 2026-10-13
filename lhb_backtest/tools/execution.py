@@ -48,11 +48,21 @@ def main():
     matrix.add_argument("--matrix",required=True)
     matrix.add_argument("--template",type=Path,required=True)
     matrix.add_argument("--output",type=Path,required=True)
+    backup=commands.add_parser("backup-learning",help="Copy one completed learning evidence bundle; no model loading")
+    backup.add_argument("--learning",required=True)
+    backup.add_argument("--output",type=Path,required=True)
+    backup.add_argument("--max-bytes",type=int,required=True)
+    offline=commands.add_parser("verify-backup",help="Verify copied bytes offline; never activate workers")
+    offline.add_argument("--folder",type=Path,required=True)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
     brief = commands.add_parser("brief", help="Read bounded task facts without running work")
     brief.add_argument("task_id")
     a = p.parse_args()
+    if a.command=="verify-backup":
+        from src.researchops.backup import verify_learning_backup
+        print(json.dumps({"ok":True,"data":verify_learning_backup(a.folder)},ensure_ascii=False))
+        return 0
     research = Research(a.project, a.root, readonly=a.command not in {"run", "register"})
     if a.command in {"account-proposal","learning-proposal"}:
         from src.researchops.account_proposal import account_from_learning
@@ -70,6 +80,9 @@ def main():
             output.parent.mkdir(parents=True,exist_ok=True)
             write_json(output,value);action="created"
         value=dict(path=str(output),action=action,proposal_id=content_id(value),model_fits=0,predict_calls=0,registered_experiments=0)
+    elif a.command=="backup-learning":
+        from src.researchops.backup import backup_learning_experiment
+        value=backup_learning_experiment(research,a.learning,a.output,max_bytes=a.max_bytes)
     elif a.command == "register":
         ex = research.register(_strict_json(a.session), _strict_json(a.file))
         value = dict(experiment_id=ex["id"], task_id=ex["task_id"], status=ex["status"],

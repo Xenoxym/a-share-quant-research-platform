@@ -131,3 +131,21 @@ account_step = {"id": "account", "needs": ["learn"],
 模板是公共alpha_learn提案。矩阵目录含assembly_values.parquet、assembly_missing.parquet、definition.json、registry.json、receipt.json。程序只替换这五项输入，保留标签／决策文件、特征选择、日期、模型、目标及全部预算。它核对内容／收据／元数据，不解码全部特征值、不登记、不训练。下一步仍用原register命令进行完整键、成熟标签和因果检查；这不是自动生成研究方案或完整特征DAG。输出相同可复用，不同拒绝覆盖。
 
 内建数值审计现按实际本地import闭包绑定当前源实现，无关UI／计划源码变化不重做数值审计。源包启动时记录内容快照，相关源文件运行中改变需用新进程；属性、函数默认值及声明状态有确定性绑定，无法证明的状态不读写缓存。未知核查器／动态导入仍保守退回全src。原输入、冻结代码、产物与账户快照的核查保持。[本轮实际验证和缺口](FOUNDATION_CONSTRUCTION_20261013.html)。
+
+## 已存矩阵直接进入有限计划（v3）
+
+`execution-plan-v3`保留v1/v2全部已有步骤，新增固定适配步骤：
+
+```json
+{"id":"learn","needs":[],"learning_from_matrix":{"matrix_folder":"research/my-matrix","template":{}}}
+```
+
+这里的空template只是说明位置，实际必须填完整公共alpha_learn提案，不可直接运行这个片段。学习之后可接原account_from_learning步骤，并在needs中引用learn。矩阵目录使用原五文件规范，模板保留决策／标签、日期、特征、模型和预算。预算检查先于构建；中断恢复先查原登记，不重新构建已登记提案。v1/v2计划定义与预算保持原状；同一持久计划不可改模板或目录。
+
+## 学习证据备份与离线核对
+
+`backup-learning --learning <实验编号> --output research/backups/<目录> --max-bytes <整数>`复制一份已完成v2/v3学习的输入、冻结源码、模型／预测／日志和SQLite快照。现成SQLite在线备份生成独立文件，不修改原库。字节帽包含最终清单和完成标记；拒绝覆盖，失败副本保留且没有完成标记。
+
+`verify-backup --folder <副本目录>`只验证副本，不初始化研究库、不读取原绝对路径、不反序列化模型、不启动worker。它输出有效载荷bytes和完整目录directory_bytes。只有选定学习实验的文件被复制；整个市场、其他实验和账户快照没有一起备份。元数据库仍有旧绝对路径及历史记录，不支持直接激活迁移后的库。默认同盘本机副本不能代替异盘灾备，资料不得公开上传。
+
+本批实际结果见[接续施工报告](FOUNDATION_CONTINUATION_20261013.html)。

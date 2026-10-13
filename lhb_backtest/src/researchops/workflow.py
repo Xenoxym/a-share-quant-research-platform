@@ -23,7 +23,7 @@ def validate_plan(value):
     if not isinstance(value, dict) or set(value) != required:
         raise ValueError("Strict execution plan fields required")
     if (
-        value["schema"] not in {"execution-plan-v1","execution-plan-v2"}
+        value["schema"] not in {"execution-plan-v1","execution-plan-v2","execution-plan-v3"}
         or not isinstance(value["id"], str)
         or not NAME.fullmatch(value["id"])
     ):
@@ -40,7 +40,8 @@ def validate_plan(value):
     seen = set()
     for step in steps:
         forms=({"id","needs","proposal"},{"id","needs","experiment_id"})
-        if value["schema"]=="execution-plan-v2":forms += ({"id","needs","account_from_learning"},)
+        if value["schema"] in {"execution-plan-v2","execution-plan-v3"}:forms += ({"id","needs","account_from_learning"},)
+        if value["schema"]=="execution-plan-v3":forms += ({"id","needs","learning_from_matrix"},)
         if not isinstance(step, dict) or set(step) not in forms:
             raise ValueError("Step needs exactly one proposal or experiment reference")
         if not isinstance(step["id"], str) or not NAME.fullmatch(step["id"]) or step["id"] in seen:
@@ -60,6 +61,13 @@ def validate_plan(value):
                 raise ValueError("Account derivation needs an explicit earlier learning dependency and template")
             from .account_proposal import validate_account_template
             validate_account_template(adapter["template"])
+        if "learning_from_matrix" in step:
+            adapter=step["learning_from_matrix"]
+            if (not isinstance(adapter,dict) or set(adapter)!={"matrix_folder","template"}
+                    or not isinstance(adapter["matrix_folder"],str) or not adapter["matrix_folder"].strip()):
+                raise ValueError("Learning derivation needs a fixed matrix folder and public template")
+            from .learning_proposal import validate_learning_template
+            validate_learning_template(adapter["template"])
         seen.add(step["id"])
     return json.loads(encode(value))
 
@@ -243,6 +251,9 @@ class ExecutionPlans:
                             adapter=step["account_from_learning"]
                             producer=state[adapter["learning_step"]]["experiment_id"]
                             request={"account_from_learning":adapter,"learning_experiment_id":producer}
+                        elif "learning_from_matrix" in step:
+                            adapter=step["learning_from_matrix"]
+                            request={"learning_from_matrix":adapter}
                         else:
                             request=step["proposal"]
                         request_hash = content_id(request)
@@ -256,6 +267,9 @@ class ExecutionPlans:
                             if "account_from_learning" in step:
                                 from .account_proposal import account_from_learning
                                 proposal=account_from_learning(self.research,producer,adapter["template"])
+                            elif "learning_from_matrix" in step:
+                                from .learning_proposal import learning_from_matrix
+                                proposal=learning_from_matrix(self.research,adapter["matrix_folder"],adapter["template"])
                             else:
                                 proposal=step["proposal"]
                             registered = self.research.register(

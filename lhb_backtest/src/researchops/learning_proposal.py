@@ -18,8 +18,8 @@ MATRIX_FILES={"assembly_values":"assembly_values.parquet","assembly_missing":"as
 PUBLIC_FIELDS={"kind","hypothesis","expected_observation","falsification","spec","inputs","resources","timeout_seconds"}
 
 
-def learning_from_matrix(research,matrix_folder,template):
-    """Replace only the five matrix references; preserve fixed research choices."""
+def validate_learning_template(template):
+    """Validate fixed public choices without reading source files."""
     if (not isinstance(template,dict) or not PUBLIC_FIELDS-{"resources","timeout_seconds"}<=set(template)
             or set(template)-PUBLIC_FIELDS or template["kind"]!="alpha_learn"):
         raise ValueError("Public learning proposal template required")
@@ -27,7 +27,14 @@ def learning_from_matrix(research,matrix_folder,template):
     inputs=template["inputs"]
     if not isinstance(inputs,list) or len(inputs)!=len(ROLES) or any(not isinstance(x,dict) for x in inputs) or {x.get("role") for x in inputs}!=ROLES:
         raise ValueError("Exactly seven distinct learning input roles required")
-    if not isinstance(matrix_folder,str):raise ValueError("Portable project-relative matrix folder required")
+    return spec,doc
+
+
+def learning_from_matrix(research,matrix_folder,template):
+    """Replace only the five matrix references; preserve fixed research choices."""
+    spec,doc=validate_learning_template(template)
+    inputs=template["inputs"]
+    if not isinstance(matrix_folder,str) or not matrix_folder.strip():raise ValueError("Portable project-relative matrix folder required")
     paths={role:_path(research.project,matrix_folder+"/"+name) for role,name in MATRIX_FILES.items()}
     size=sum(p.stat().st_size for p in paths.values())+sum(x.get("bytes",0) for x in inputs if x["role"] not in MATRIX_FILES)
     if size>doc["budget"]["max_input_bytes"]:raise ValueError("Frozen input byte budget exceeded")

@@ -110,4 +110,18 @@ account_step = {&quot;id&quot;: &quot;account&quot;, &quot;needs&quot;: [&quot;l
 </code></pre>
 <p>把该步骤放入v2有限计划，前面的learn步骤仍须声明真实提案或已登记实验、任务与原预算。程序自动绑定真实预测及学习收据，保留模板其他声明；中断恢复先查持久登记操作，不再次生成或登记。没有更改v1计划，也不能用此功能跳过有限预算或失败。</p>
 <p><a href="EXECUTION_EFFICIENCY_20261012.html">本次改动及验证边界</a></p>
+<h2>保存的矩阵自动绑定学习模板</h2>
+<pre><code class="language-powershell">..\.venv\Scripts\python.exe tools/execution.py learning-proposal --matrix research/my-matrix --template research/my-learning-template.json --output research/my-learning.json
+</code></pre>
+<p>模板是公共alpha_learn提案。矩阵目录含assembly_values.parquet、assembly_missing.parquet、definition.json、registry.json、receipt.json。程序只替换这五项输入，保留标签／决策文件、特征选择、日期、模型、目标及全部预算。它核对内容／收据／元数据，不解码全部特征值、不登记、不训练。下一步仍用原register命令进行完整键、成熟标签和因果检查；这不是自动生成研究方案或完整特征DAG。输出相同可复用，不同拒绝覆盖。</p>
+<p>内建数值审计现按实际本地import闭包绑定当前源实现，无关UI／计划源码变化不重做数值审计。源包启动时记录内容快照，相关源文件运行中改变需用新进程；属性、函数默认值及声明状态有确定性绑定，无法证明的状态不读写缓存。未知核查器／动态导入仍保守退回全src。原输入、冻结代码、产物与账户快照的核查保持。<a href="FOUNDATION_CONSTRUCTION_20261013.html">本轮实际验证和缺口</a>。</p>
+<h2>已存矩阵直接进入有限计划（v3）</h2>
+<p><code>execution-plan-v3</code>保留v1/v2全部已有步骤，新增固定适配步骤：</p>
+<pre><code class="language-json">{&quot;id&quot;:&quot;learn&quot;,&quot;needs&quot;:[],&quot;learning_from_matrix&quot;:{&quot;matrix_folder&quot;:&quot;research/my-matrix&quot;,&quot;template&quot;:{}}}
+</code></pre>
+<p>这里的空template只是说明位置，实际必须填完整公共alpha_learn提案，不可直接运行这个片段。学习之后可接原account_from_learning步骤，并在needs中引用learn。矩阵目录使用原五文件规范，模板保留决策／标签、日期、特征、模型和预算。预算检查先于构建；中断恢复先查原登记，不重新构建已登记提案。v1/v2计划定义与预算保持原状；同一持久计划不可改模板或目录。</p>
+<h2>学习证据备份与离线核对</h2>
+<p><code>backup-learning --learning &lt;实验编号&gt; --output research/backups/&lt;目录&gt; --max-bytes &lt;整数&gt;</code>复制一份已完成v2/v3学习的输入、冻结源码、模型／预测／日志和SQLite快照。现成SQLite在线备份生成独立文件，不修改原库。字节帽包含最终清单和完成标记；拒绝覆盖，失败副本保留且没有完成标记。</p>
+<p><code>verify-backup --folder &lt;副本目录&gt;</code>只验证副本，不初始化研究库、不读取原绝对路径、不反序列化模型、不启动worker。它输出有效载荷bytes和完整目录directory_bytes。只有选定学习实验的文件被复制；整个市场、其他实验和账户快照没有一起备份。元数据库仍有旧绝对路径及历史记录，不支持直接激活迁移后的库。默认同盘本机副本不能代替异盘灾备，资料不得公开上传。</p>
+<p>本批实际结果见<a href="FOUNDATION_CONTINUATION_20261013.html">接续施工报告</a>。</p>
 </main></html>

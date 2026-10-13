@@ -182,11 +182,10 @@ def test_changes_during_audit_never_first_collect_completed(tmp_path,monkeypatch
     assert not (ops.root/"worker_jobs"/ex["id"]/"alpha_audit.json").exists()
 
 
-def test_registered_fitted_learning_scores_bind_account_without_refit(tmp_path,monkeypatch):
+def learning_proposal_for_account(ops,folder):
     from .test_alpha_learning import example
     from src.alpharesearch.learning import LearningSpec
     from src.researchops.screen_experiments import assembly_reference
-    ops,s,p,folder=setup(tmp_path)
     spec,model,decisions,assembly,labels=example()
     for old,day,entry,end in [("2024-01-08","2024-01-05","2024-01-08","2024-01-15"),("2024-01-09","2024-01-12","2024-01-15","2024-01-22")]:
         mask=decisions.trade_date.eq(old)
@@ -206,6 +205,12 @@ def test_registered_fitted_learning_scores_bind_account_without_refit(tmp_path,m
     proposal=dict(kind="alpha_learn",hypothesis="Synthetic software actual-fit bridge",expected_observation="Reuse persisted original model output",falsification="Any refit/source mismatch",
         inputs=[dict(role=r,path=x.relative_to(ops.project).as_posix(),sha256=digest(x),bytes=x.stat().st_size) for r,x in paths.items()],timeout_seconds=60,
         spec=dict(schema="registered-alpha-learn-v1",learning=spec.to_dict(),model=model.to_dict(),budget=dict(max_input_bytes=1000000,max_task_fit_intents=1)))
+    return proposal
+
+
+def test_registered_fitted_learning_scores_bind_account_without_refit(tmp_path,monkeypatch):
+    ops,s,p,folder=setup(tmp_path)
+    proposal=learning_proposal_for_account(ops,folder)
     learn=ops.register(s,proposal);completed=ops.execute(s,learn["id"]);assert completed["status"]=="completed",completed.get("error")
     source=ops.root/"worker_jobs"/learn["id"]/"learn_result"
     for role,name in (("predictions","predictions.parquet"),("learning_receipt","learning_receipt.json")):
