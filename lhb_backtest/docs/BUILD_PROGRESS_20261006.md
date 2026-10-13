@@ -1244,3 +1244,13 @@ R33ATOM公开d21cfb8完整CI成功，Windows1811/Ubuntu1808+3跳过。R33REP真�
 已整理并接续task-1f886b28bf84：较长2023—2026原HGB模型897日，同固定150缓冲，0新fit/predict，一个账户两情景。不搜索缓冲门槛。
 
 [可读结果](CONSTRUCTION_20261012.html) · [项目构成](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+## 2026-10-13：长窗口缓冲完成，MLP已登记未启动
+
+固定150缓冲较长897日0fit/predict完成：含费年化3.09%→5.22%、DD29.61%→29.92%；zero17.28%→18.24%、DD23.97%→23.81%。期末未解决0，独立重算NAV/总收益/年化/DD一致，执行及首次核查370.48秒。没有跨时段一致风险改善；阶段整理后接续task-413d8081b5c7，现有MLP8隐藏/10轮/固定132近期/相同150账户，最多1fit。exp-e880b2716ef8 planned；内存预检8.5<12GiB，尚未启动、0fit/预测，原预算/输入保留。
+
+兼容修复3164cfc精确10文件公开，实际CI38327616234双平台成功：Windows1830/483.56秒；Ubuntu1827+3跳过/361.75秒。没有重跑旧核查/模型。另继续只读核对Alpha158形状特征与已有特征、日线时间/单位边界，优先避免重复。
+
+[可读结果](CONSTRUCTION_20261012.html) · [项目构成](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+另完成三形状配置准备：body/range、upper/lower wick比例，现有DSL无SRC修改；六种手算/缺失/未来时间反例及共同价格尺度不变性通过。没有新增独立行情信息，真实历史batch/135列训练仍未做；不将配置准备称为新Alpha成功。
