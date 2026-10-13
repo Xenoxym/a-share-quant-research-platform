@@ -278,4 +278,7 @@ margin:18px 0;padding:8px 20px;background:#f2f6fc}
 <p>此前额外时钟检查单位误判、内存登记取消、预算/接口错误和一次50MB诊断失败均保留，不能算作科研成果；没有自动重跑这些旧阶段。两种模型阶段新增两次拟合；训练窗口阶段再新增一次拟合、两个账户作业四情景。连同132森林，此前累计新增四次真实拟合、五个账户作业十情景。三对照阶段又新增三次拟合、三个账户六情景；合计七次真实拟合、八个账户作业十六情景；两项缓冲再增加两个账户四情景，总计七次拟合、十个账户作业二十情景。旧68与近期132基线继续复用。已登记但未启动的MLP不计为新fit。工程反例及CI不算新模型或账户研究。</p>
 <p>原施工与容量代码已公开，完整CI通过：<a href="https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38303926893">首批CI</a>、<a href="https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38305546518">容量与资源CI</a>。新登记命令与前批结果已公开；临时文件修复及147项相关回归已完成并发布至d21cfb8，<a href="https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38323501697">新提交CI</a>已通过；不上传模型、原始数据、研究库或会话凭据。</p>
 <p><a href="PROJECT_MAP.html">当前项目构成</a> · <a href="ML_SYSTEM_BLUEPRINT_20261005.html">整体蓝图</a> · <a href="CODEX_PROJECT_DELIVERY_PLAN_20261005.html">完整施工计划</a> · <a href="BUILD_PROGRESS_20261006.md">逐阶段建设记录</a></p>
+<h2>后续：优先改内存准入与步骤接线</h2>
+<p>用户指出RSS上限不等于实际需求，本轮已改单worker监控试运行，不再要求先空出11GiB上限＋1GiB余量。启动与运行仍保留余量，commit下降、RSS越限或OOM保留失败，不自动重跑。完整132列大训练实测峰值约7.8–10.4GiB，账户多数2–3GiB；不是所有任务都只需4GiB。</p>
+<p>新增已完成学习→固定账户提案生成与plan-v2派生步骤。实际HGB配置已生成并逐字段核对，与原四项输入、费用、快照、持仓及预算一致，0新fit/predict/账户。三种形状历史批次、矩阵列投影和新MLP仍未做。本批反例与限定复核完成，最终213项相关回归通过（461.25秒）；精确源码发布和CI收尾进行中。细节与人话解释见<a href="EXECUTION_EFFICIENCY_20261012.html">内存与自动接线报告</a>。</p>
 </main></html>

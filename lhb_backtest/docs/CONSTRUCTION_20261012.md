@@ -164,3 +164,10 @@
 原施工与容量代码已公开，完整CI通过：[首批CI](https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38303926893)、[容量与资源CI](https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38305546518)。新登记命令与前批结果已公开；临时文件修复及147项相关回归已完成并发布至d21cfb8，[新提交CI](https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38323501697)已通过；不上传模型、原始数据、研究库或会话凭据。
 
 [当前项目构成](PROJECT_MAP.html) · [整体蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [完整施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [逐阶段建设记录](BUILD_PROGRESS_20261006.md)
+
+
+## 后续：优先改内存准入与步骤接线
+
+用户指出RSS上限不等于实际需求，本轮已改单worker监控试运行，不再要求先空出11GiB上限＋1GiB余量。启动与运行仍保留余量，commit下降、RSS越限或OOM保留失败，不自动重跑。完整132列大训练实测峰值约7.8–10.4GiB，账户多数2–3GiB；不是所有任务都只需4GiB。
+
+新增已完成学习→固定账户提案生成与plan-v2派生步骤。实际HGB配置已生成并逐字段核对，与原四项输入、费用、快照、持仓及预算一致，0新fit/predict/账户。三种形状历史批次、矩阵列投影和新MLP仍未做。本批反例与限定复核完成，最终213项相关回归通过（461.25秒）；精确源码发布和CI收尾进行中。细节与人话解释见[内存与自动接线报告](EXECUTION_EFFICIENCY_20261012.html)。

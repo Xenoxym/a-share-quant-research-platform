@@ -12,6 +12,7 @@ from src.researchops.alpha_experiments import verify_completed
 from src.researchops.alpha_execution import cancel_reason
 from src.researchops.alpha_output_audit import audit_output
 from src.researchops.alpha_worker import _watchdog
+from src.researchops import alpha_execution
 from src.researchops.resources import WorkerResources, process_alive, reserve, release_terminal_reservation
 from src.technical.artifacts import digest, write_json
 from tests.test_alpha_batch_registration import setup
@@ -750,13 +751,13 @@ def test_commit_denial_precedes_start_without_refunding_registration(tmp_path, m
     job = ops.root / "worker_jobs" / experiment["id"]
     files = {p.relative_to(job).as_posix(): p.read_bytes() for p in job.rglob("*") if p.is_file()}
     monkeypatch.setattr(psutil, "virtual_memory", lambda: SimpleNamespace(available=14 << 30))
-    monkeypatch.setattr(module, "_available_commit_bytes", lambda: int(7.49 * (1 << 30)))
+    monkeypatch.setattr(module, "_available_commit_bytes", lambda: int(1.249 * (1 << 30)))
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Resource denial must precede Store.start and launch")
 
     monkeypatch.setattr(ops.store, "start", forbidden)
-    with pytest.raises(RuntimeError, match="available=7.490 GiB, required=9.000 GiB"):
+    with pytest.raises(RuntimeError, match="required startup floor=1.250 GiB"):
         ops.execute(session, experiment["id"])
     assert ops.store.experiment(experiment["id"]) == before
     assert len(ops.store.get(session["task_id"])["experiments"]) == 1
@@ -846,3 +847,84 @@ def test_windows_commit_probe_fails_closed(monkeypatch, fault):
     monkeypatch.setattr(ctypes, "WinDLL", library, raising=False)
     with pytest.raises(RuntimeError, match="Windows commit headroom .*; batch remains planned"):
         module._available_commit_bytes()
+
+
+@pytest.mark.parametrize("physical,commit,mode", [(14, 8, "monitored_trial"), (8, 14, "monitored_trial"), (14, 14, "fully_reserved")])
+def test_single_worker_ceiling_is_not_startup_allocation(tmp_path, monkeypatch, physical, commit, mode):
+    from src.researchops import resources as module
+    limits=WorkerResources(max_process_rss_bytes=11 << 30)
+    monkeypatch.setattr(psutil,"virtual_memory",lambda:SimpleNamespace(available=physical << 30))
+    monkeypatch.setattr(module,"_available_commit_bytes",lambda:commit << 30)
+    with reserve(tmp_path,"exp-111111111111",limits) as held:
+        assert held.admission["mode"]==mode
+        assert held.record["max_process_rss_bytes"]==11 << 30
+        with pytest.raises(RuntimeError,match="parallel reservations"):
+            with reserve(tmp_path,"exp-222222222222",limits):
+                pytest.fail("Underfunded simultaneous workers must not start")
+    assert not list((tmp_path/".alpha_slots").glob("slot*.json"))
+
+
+@pytest.mark.parametrize("channel",["physical","commit"])
+@pytest.mark.parametrize("offset",[-1,0,1])
+def test_monitored_trial_bootstrap_floor(tmp_path, monkeypatch, channel, offset):
+    from src.researchops import resources as module
+    limits=WorkerResources(max_process_rss_bytes=11 << 30)
+    floor=(1 << 30)+(1 << 28)
+    value=floor+offset
+    monkeypatch.setattr(psutil,"virtual_memory",lambda:SimpleNamespace(available=value if channel=="physical" else 14 << 30))
+    monkeypatch.setattr(module,"_available_commit_bytes",lambda:value if channel=="commit" else 14 << 30)
+    if offset<0:
+        with pytest.raises(RuntimeError,match="startup floor"):
+            with reserve(tmp_path,"exp-111111111111",limits):pytest.fail("Below startup floor")
+    else:
+        with reserve(tmp_path,"exp-111111111111",limits) as held:
+            assert held.admission["mode"]=="monitored_trial"
+    assert not list((tmp_path/".alpha_slots").glob("slot*.json"))
+
+
+@pytest.mark.parametrize("rss,physical,commit,error",[(3,5,5,"RSS"),(1,.5,5,"Available-memory"),(1,5,.5,"available-commit"),(2,1,1,None),(1,5,None,None)])
+def test_memory_stop_has_three_distinct_conditions(rss,physical,commit,error):
+    from src.researchops.resources import check_memory_limits
+    limits=WorkerResources()
+    values=[int(rss*(1 << 30)),int(physical*(1 << 30)),None if commit is None else int(commit*(1 << 30))]
+    if error:
+        with pytest.raises(MemoryError,match=error):check_memory_limits(limits,*values)
+    else:check_memory_limits(limits,*values)
+
+
+def test_small_worker_really_completes_below_declared_rss_ceiling(tmp_path, monkeypatch):
+    from src.researchops import resources as module
+    ops,session,proposal,_,_=setup(tmp_path)
+    proposal["resources"]=WorkerResources(max_process_rss_bytes=11 << 30).to_dict()
+    monkeypatch.setattr(psutil,"virtual_memory",lambda:SimpleNamespace(available=14 << 30))
+    monkeypatch.setattr(module,"_available_commit_bytes",lambda:8 << 30)
+    monkeypatch.setattr(alpha_execution,"_available_commit_bytes",lambda:8 << 30)
+    ex=ops.register(session,proposal)
+    result=ops.execute(session,ex["id"])
+    assert result["status"]=="completed" and result["result"]["verified"]
+    job=ops.root/"worker_jobs"/ex["id"]
+    stats=json.loads((job/"execution_stats.json").read_text(encoding="utf-8"))
+    assert stats["memory_admission"]["mode"]=="monitored_trial"
+    assert stats["minimum_available_commit_bytes"]==8 << 30
+    values=pd.read_parquet(job/"alpha_result/relative_close_rank/values.parquet")
+    assert values.score.tolist()==[.75]*4
+    with pytest.raises(ValueError,match="already started"):ops.execute(session,ex["id"])
+    assert not list((ops.root/".alpha_slots").glob("slot*.json"))
+
+
+def test_commit_drop_stops_real_worker_and_preserves_failed_attempt(tmp_path, monkeypatch):
+    from src.researchops import resources as module
+    ops,session,proposal,_,_=setup(tmp_path)
+    monkeypatch.setattr(module,"_available_commit_bytes",lambda:8 << 30)
+    monkeypatch.setattr(alpha_execution,"_available_commit_bytes",lambda:1 << 29)
+    ex=ops.register(session,proposal)
+    with pytest.raises(MemoryError,match="available-commit reserve"):
+        ops.execute(session,ex["id"])
+    saved=ops.store.experiment(ex["id"])
+    assert saved["status"]=="failed" and "available-commit reserve" in saved["error"]
+    job=ops.root/"worker_jobs"/ex["id"]
+    assert (job/"supervision_failure.json").exists()
+    assert json.loads((job/"execution_stats.json").read_text(encoding="utf-8"))["minimum_available_commit_bytes"]==1 << 29
+    with pytest.raises(ValueError,match="already started"):ops.execute(session,ex["id"])
+    assert len(ops.store.get(session["task_id"])["experiments"])==1
+    assert not list((ops.root/".alpha_slots").glob("slot*.json"))

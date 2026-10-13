@@ -178,6 +178,7 @@ class Reservation:
     token: str
     record: dict
     retain_on_exit: bool = False
+    admission: dict | None = None
 
     def bind(self, proc):
         created=psutil.Process(proc.pid).create_time()
@@ -256,34 +257,43 @@ def reserve(root, experiment_id, resources):
             except psutil.NoSuchProcess:
                 pass
         available=psutil.virtual_memory().available
-        if available+owned_rss-capacity-resources.max_process_rss_bytes<resources.min_available_memory_bytes:
-            raise RuntimeError("Insufficient unreserved available memory; batch remains planned")
         free=next((p for p in paths if not p.exists()),None)
         if free is None:
             raise RuntimeError("Both numerical resource slots are reserved; batch remains planned")
         commit_available = _available_commit_bytes()
-        if commit_available is not None:
-            # Existing allocations already reduce OS headroom. Retain their full
-            # declared reservation too: RSS is not a reliable commit credit.
-            # This conservative launch estimate may deny otherwise viable parallel
-            # work; it is neither a precise allocation model nor a runtime limit.
-            required_commit = capacity + resources.max_process_rss_bytes + resources.min_available_memory_bytes
-            if commit_available < required_commit:
-                gib = 1 << 30
+        required_physical = capacity + resources.max_process_rss_bytes + resources.min_available_memory_bytes - owned_rss
+        required_commit = capacity + resources.max_process_rss_bytes + resources.min_available_memory_bytes
+        covered = available >= required_physical and (commit_available is None or commit_available >= required_commit)
+        mode = "fully_reserved"
+        if not covered:
+            # A ceiling is not an allocation forecast. Allow only one monitored
+            # trial, keeping the declared runtime reserve plus a bootstrap margin.
+            # Other workers still require their full conservative reservations.
+            if used:
                 raise RuntimeError(
-                    f"Insufficient Windows commit headroom: available={commit_available/gib:.3f} GiB, "
-                    f"required={required_commit/gib:.3f} GiB "
-                    f"(new RSS={resources.max_process_rss_bytes/gib:.3f} GiB, "
-                    f"reserve={resources.min_available_memory_bytes/gib:.3f} GiB, "
-                    f"existing reservations={capacity/gib:.3f} GiB); batch remains planned"
-                )
+                    "Insufficient headroom for parallel reservations "
+                    f"(existing reservations={capacity/(1 << 30):.3f} GiB); batch remains planned")
+            startup_floor = resources.min_available_memory_bytes + min(1 << 28, resources.max_process_rss_bytes)
+            if available < startup_floor:
+                raise RuntimeError("Insufficient available-memory startup floor; batch remains planned")
+            if commit_available is not None and commit_available < startup_floor:
+                raise RuntimeError(
+                    f"Insufficient Windows commit headroom: available={commit_available/(1 << 30):.3f} GiB, "
+                    f"required startup floor={startup_floor/(1 << 30):.3f} GiB; batch remains planned")
+            mode = "monitored_trial"
+        admission = dict(schema="memory-admission-v2", mode=mode,
+            available_physical_bytes=available, available_commit_bytes=commit_available,
+            declared_rss_ceiling_bytes=resources.max_process_rss_bytes,
+            full_reservation_physical_bytes=required_physical,
+            full_reservation_commit_bytes=required_commit,
+            runtime_reserve_bytes=resources.min_available_memory_bytes)
         token=uuid.uuid4().hex
         record=dict(schema="alpha-resource-reservation-v1",experiment_id=experiment_id,token=token,
                     parent_pid=os.getpid(),parent_created=psutil.Process().create_time(),
                     child_pid=None,child_created=None,child_chain=[],launching=False,
                     max_process_rss_bytes=resources.max_process_rss_bytes)
         write_json(free,record)
-    reservation=Reservation(pool,free,token,record)
+    reservation=Reservation(pool,free,token,record,admission=admission)
     try:
         yield reservation
     finally:
@@ -338,3 +348,13 @@ def hidden_console_record(child, parent_pid, *, windows, system_root):
             or not math.isfinite(created) or created <= 0):
         raise ValueError("Hidden console identity requires exact PID and creation time")
     return dict(pid=child.pid, created=created, role="console_host")
+
+
+def check_memory_limits(resources, rss, available_physical, available_commit):
+    """Sampled stop conditions; no claim of an OS-hard allocation guarantee."""
+    if rss > resources.max_process_rss_bytes:
+        raise MemoryError("Sampled worker RSS limit exceeded")
+    if available_physical < resources.min_available_memory_bytes:
+        raise MemoryError("Available-memory reserve crossed")
+    if available_commit is not None and available_commit < resources.min_available_memory_bytes:
+        raise MemoryError("Windows available-commit reserve crossed")

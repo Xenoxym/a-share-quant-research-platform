@@ -81,7 +81,7 @@ margin:18px 0;padding:8px 20px;background:#f2f6fc}
 原数据、快照、worker_jobs、runs、ml_runs、虚拟环境、发布Git、失败证据和旧阶段脚本不属于自动删除候选。旧脚本退出默认执行入口；其冻结引用未全部查清之前不作永久删除。
 已通过的测试临时产物可删，正式运行证据不能当“缓存”清理。</p>
 <h2>当前能力的边界</h2>
-<p>计划首版是预先写好的提案和实验引用；没有结果占位符、自动生成下一份提案、自动搜索、任意Shell和新的并行调度。数值步骤串行执行，已有两槽资源池继续生效。需要动态训练→预测→账户提案时，通过专用适配器构建下一份计划，不能声称通用DAG已实现。</p>
+<p>v1计划支持预先写好的提案和实验引用；v2只新增一种已完成学习→固定账户模板的派生步骤（见下）。没有任意结果占位符、自动搜索、任意Shell和新的并行调度。数值步骤串行执行，已有两槽资源池继续生效。需要动态训练→预测→账户提案时，通过专用适配器构建下一份计划，不能声称通用DAG已实现。</p>
 <p>相关：<a href="EXECUTION_REFACTOR_PLAN_20261012.md">施工方案和外部来源</a> · <a href="WORKER_GUIDE.md">底层API</a> · <a href="CONTROLLER_GUIDE.md">旧总控</a></p>
 <h2>先看一个任务的短摘要</h2>
 <p>从lhb_backtest运行：</p>
@@ -96,4 +96,18 @@ margin:18px 0;padding:8px 20px;background:#f2f6fc}
 <p>2026-10-12，相关四项小样本测试通过，一次限定独立静态工程复核未发现阻断；真实132列浅层提升树已通过这个入口登记和执行。当前仍由主Chat根据结果构建下一份提案，没有新增自动研究主管或审批链。</p>
 <p>2026-10-12另修复JSON写入与输出监控的约定：短临时文件使用明确保留名字，监控兼容新旧原子写入；正式文件丢失、权限和链接错误仍拒绝。真实writer反例及执行计划/账户登记/批次执行相关回归147通过、2链接权限跳过；一次限定独立静态工程复核无阻断。只作用于新冻结代码，旧完成结果不重算。完整结果及新提交CI状态见<a href="CONSTRUCTION_20261012.html">施工报告</a>。</p>
 <p>2026-10-13，保存预测复用仅额外兼容已核实的JSON临时名迁移（空前后缀→<code>.j-</code>/<code>.tmp</code>）；原两侧源码身份与其余整模块语义保持检查。96项相关反例/小账户通过；不重训或改旧收据。研究结果见<a href="CONSTRUCTION_20261012.html">施工报告</a>。</p>
+<h2>单任务内存尝试启动</h2>
+<p>RSS上限是运行停止线，不是预估占用。若没有其他数值预约，可在“原最低余量＋至多256MiB启动空间”满足时尝试，不再要求先空出整个RSS上限。并行仍要求完整保守预约。运行中约0.2秒检查RSS、物理与Windows可承诺余量，越线停止保留失败，不自动重跑；瞬时OOM仍可能发生。原冻结资源字段和预算不改。观测记录新增memory_admission与minimum_available_commit_bytes。Windows读数为进程可承诺余量，可能小于全系统余量。</p>
+<h2>学习结果自动接到账户模板</h2>
+<p><code>account-proposal --learning &lt;完成学习ID&gt; --template &lt;公共v2/v3账户提案JSON&gt; --output &lt;项目内文件&gt;</code> 只验证已完成学习证据和输入、生成提案，不登记、拟合或预测。输出已存在且相同则复用，不同则拒绝覆盖。完整账户覆盖和快照仍在后续登记验证。</p>
+<p>有限计划的<code>schema=execution-plan-v2</code>允许下面的步骤；learn须是前面的已完成学习步骤，且列入needs：</p>
+<pre><code class="language-python">import json
+from pathlib import Path
+
+template = json.loads(Path(&quot;research/model_capacity_20261012/buffer150-account-proposal.json&quot;).read_text(encoding=&quot;utf-8&quot;))
+account_step = {&quot;id&quot;: &quot;account&quot;, &quot;needs&quot;: [&quot;learn&quot;],
+                &quot;account_from_learning&quot;: {&quot;learning_step&quot;: &quot;learn&quot;, &quot;template&quot;: template}}
+</code></pre>
+<p>把该步骤放入v2有限计划，前面的learn步骤仍须声明真实提案或已登记实验、任务与原预算。程序自动绑定真实预测及学习收据，保留模板其他声明；中断恢复先查持久登记操作，不再次生成或登记。没有更改v1计划，也不能用此功能跳过有限预算或失败。</p>
+<p><a href="EXECUTION_EFFICIENCY_20261012.html">本次改动及验证边界</a></p>
 </main></html>

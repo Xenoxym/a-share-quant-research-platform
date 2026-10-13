@@ -40,13 +40,31 @@ def main():
     register = commands.add_parser("register", help="Register one proposal without starting work")
     register.add_argument("--file", type=Path, required=True)
     register.add_argument("--session", type=Path, required=True)
+    derive=commands.add_parser("account-proposal",help="Build a saved-score account proposal; no fit or registration")
+    derive.add_argument("--learning",required=True)
+    derive.add_argument("--template",type=Path,required=True)
+    derive.add_argument("--output",type=Path,required=True)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
     brief = commands.add_parser("brief", help="Read bounded task facts without running work")
     brief.add_argument("task_id")
     a = p.parse_args()
     research = Research(a.project, a.root, readonly=a.command not in {"run", "register"})
-    if a.command == "register":
+    if a.command=="account-proposal":
+        from src.researchops.account_proposal import account_from_learning
+        from src.technical.artifacts import write_json,content_id
+        output=a.output.resolve()
+        if not output.is_relative_to(research.project) or any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in (a.output,*a.output.parents)):
+            raise ValueError("Proposal output must be an ordinary project path")
+        value=account_from_learning(research,a.learning,_strict_json(a.template))
+        if output.exists():
+            if _strict_json(output)!=value:raise ValueError("Existing proposal differs; refusing overwrite")
+            action="reused"
+        else:
+            output.parent.mkdir(parents=True,exist_ok=True)
+            write_json(output,value);action="created"
+        value=dict(path=str(output),action=action,proposal_id=content_id(value),model_fits=0,predict_calls=0,registered_experiments=0)
+    elif a.command == "register":
         ex = research.register(_strict_json(a.session), _strict_json(a.file))
         value = dict(experiment_id=ex["id"], task_id=ex["task_id"], status=ex["status"],
                      kind=ex["proposal"].get("kind", "technical"),

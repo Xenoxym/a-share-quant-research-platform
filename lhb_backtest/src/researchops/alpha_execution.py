@@ -8,7 +8,7 @@ import time
 import psutil
 
 from .audit_cache import numerical_audit
-from .resources import WorkerResources, process_alive, reserve, release_terminal_reservation, check_terminal_reservation, _guard, GuardBusy, hidden_console_record
+from .resources import WorkerResources, process_alive, reserve, release_terminal_reservation, check_terminal_reservation, _guard, GuardBusy, hidden_console_record, _available_commit_bytes, check_memory_limits
 from ..technical.artifacts import digest, write_json
 
 def _protocol(experiment):
@@ -287,9 +287,10 @@ def execute(research, session, eid):
     # Resource denial occurs before Store.start, so no running job is stranded.
     with reserve(research.root,eid,resources) as reservation:
         research.store.start(session,eid)
-        proc=None;began=time.monotonic();last=began;peak=0;samples=0;minimum=None
+        proc=None;began=time.monotonic();last=began;peak=0;samples=0;minimum=None;minimum_commit=None
         try:
             minimum=psutil.virtual_memory().available
+            minimum_commit=reservation.admission["available_commit_bytes"]
             research.store.heartbeat(session)
             with (job/"execution.log").open("x",encoding="utf-8") as log:
                 env=dict(os.environ,PYTHONUTF8="1",PYTHONIOENCODING="utf-8",
@@ -329,8 +330,10 @@ def execute(research, session, eid):
                     rss=_sample(launch)
                     available=psutil.virtual_memory().available
                     peak=max(peak,rss);minimum=min(minimum,available);samples+=1
-                    if rss>resources.max_process_rss_bytes:raise MemoryError("Sampled worker RSS limit exceeded")
-                    if available<resources.min_available_memory_bytes:raise MemoryError("Available-memory reserve crossed")
+                    commit_available=_available_commit_bytes()
+                    if commit_available is not None:
+                        minimum_commit=commit_available if minimum_commit is None else min(minimum_commit,commit_available)
+                    check_memory_limits(resources,rss,available,commit_available)
                     if time.monotonic()-last>15:
                         try:research.store.heartbeat(session)
                         except ValueError:pass  # a new owner can collect this exact job
@@ -343,7 +346,8 @@ def execute(research, session, eid):
                 time.sleep(.02)
             stats=dict(schema="alpha-worker-observation-v1",experiment_id=eid,launch=launch,
                        elapsed_seconds=time.monotonic()-began,peak_sampled_rss_bytes=peak,
-                       minimum_available_memory_bytes=minimum,samples=samples,sample_interval_seconds=.2,
+                       minimum_available_memory_bytes=minimum,minimum_available_commit_bytes=minimum_commit,
+                       memory_admission=reservation.admission,samples=samples,sample_interval_seconds=.2,
                        child_exit_code=proc.returncode,parent_observed_to_exit=True,
                        policy="sampled_soft_stop; not an OS hard sandbox")
             try:
@@ -395,7 +399,8 @@ def execute(research, session, eid):
                     _record_observation(job,dict(schema="alpha-worker-observation-v1",
                         experiment_id=eid,launch=_read_json(job/"launch.json") if (job/"launch.json").exists() else None,
                         elapsed_seconds=time.monotonic()-began,peak_sampled_rss_bytes=peak,
-                        minimum_available_memory_bytes=minimum,samples=samples,sample_interval_seconds=.2,
+                        minimum_available_memory_bytes=minimum,minimum_available_commit_bytes=minimum_commit,
+                       memory_admission=reservation.admission,samples=samples,sample_interval_seconds=.2,
                         child_exit_code=proc.returncode,parent_observed_to_exit=not stop_uncertain,
                         stop_cause=cause,policy="sampled_soft_stop; not an OS hard sandbox"))
             except Exception as observation_error:

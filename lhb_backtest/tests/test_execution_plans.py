@@ -415,3 +415,37 @@ def test_atomic_json_failed_replace_preserves_original_and_removes_temp(tmp_path
     with pytest.raises(OSError, match="replace failed"):
         write_json(path, {"new": True})
     assert path.read_bytes() == original and list(tmp_path.iterdir()) == [path]
+
+
+def test_derived_registration_survives_interruption_without_rebuilding(research,monkeypatch):
+    # Coordination fixture uses the existing tiny native-account executor. The
+    # real saved-learning identity builder is tested separately, with no fits.
+    from src.researchops import account_proposal
+    from tests.test_account_proposal import example_template
+    ops,session,proposal=research
+    source=ops.register(session,proposal);source=ops.execute(session,source['id'])
+    template=example_template(ops)
+    plan=plan_for(session,[dict(id='learn',needs=[],experiment_id=source['id']),
+        dict(id='account',needs=['learn'],account_from_learning=dict(learning_step='learn',template=template))])
+    plan['schema']='execution-plan-v2'
+    derived=copy.deepcopy(proposal);derived['spec']['strategy']['top_k']+=1
+    calls=[]
+    def build(research,eid,value):
+        assert eid==source['id'] and value==template
+        calls.append(eid);return derived
+    monkeypatch.setattr(account_proposal,'account_from_learning',build)
+    plans=ExecutionPlans(ops);original=plans._save
+    def crash(*args,**kwargs):
+        if args[2]=='account' and kwargs.get('status')=='registered':raise SystemExit('registered before checkpoint')
+        return original(*args,**kwargs)
+    monkeypatch.setattr(plans,'_save',crash)
+    with pytest.raises(SystemExit):plans.run(session,plan)
+    assert calls==[source['id']]
+    assert len(ops.store.get(session['task_id'])['experiments'])==2
+    monkeypatch.setattr(plans,'_save',original)
+    monkeypatch.setattr(account_proposal,'account_from_learning',lambda *a:pytest.fail('registered derivation must not rebuild'))
+    final=plans.run(session,plan)
+    assert final['completed'] and final['starts']==1
+    again=plans.run(session,plan)
+    assert again['completed'] and again['starts']==1
+    assert len(ops.store.get(session['task_id'])['experiments'])==2

@@ -1,7 +1,7 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-13T00:49:30.701539+00:00",
-  "current_package": "小型MLP已登记，等待可承诺内存；特征接入调查和发布收尾",
+  "updated_at_utc": "2026-10-13T03:10:58.092603+00:00",
+  "current_package": "内存试运行和学习→账户接线已验证，准备公开源码CI",
   "task_id": "task-413d8081b5c7",
   "packages": [
     {
@@ -967,10 +967,26 @@
     {
       "id": "R35MLP",
       "title": "与树互补的固定小型神经网络",
-      "status": "已登记，内存预检未启动",
-      "detail": "task-413d8081b5c7/exp-e880b2716ef8；132列/8隐藏单元/10轮/1fit上限/900秒worker；现可承诺8.5<12GiB，0fit/0predict，不复制新实验。",
+      "status": "原实验planned，尚未训练；本轮优先执行效率改造",
+      "detail": "exp-e880b2716ef8原输入／预算保留，0fit/0predict。新单worker策略不再以12GiB全额要求阻断；内存下降/OOM仍保留失败。",
       "dependencies": "R34REUSE,R34FULL,已保存132矩阵",
       "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R36MEM",
+      "title": "内存上限与启动条件分开",
+      "status": "已实现并验证；213项相关回归通过，待源码CI",
+      "detail": "单任务无其他预约时可低于RSS上限试运行；启动最低余量+最多256MiB，运行检查RSS/物理/commit，失败不重试。",
+      "dependencies": "既有资源池、R32CAP与用户新授权",
+      "guide": "EXECUTION_EFFICIENCY_20261012.md"
+    },
+    {
+      "id": "R36PIPE",
+      "title": "已完成学习自动生成账户提案",
+      "status": "已实现、实际HGB提案已核对；213项回归通过，待源码CI",
+      "detail": "v2/v3固定模板绑定真实预测／收据；plan-v2派生账户，登记中断不重建。未新算历史账户。",
+      "dependencies": "原身份复用、统一执行入口",
+      "guide": "EXECUTION_EFFICIENCY_20261012.md"
     }
   ],
   "phase_counts": {
@@ -1004,13 +1020,18 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "2026缓冲−1.65%/DD22.86%；较长时期年化5.22%/DD29.92%，原3.09%/29.61%，风险改善不统一。MLP0fit。",
+  "current_result": "213项受影响回归通过/461.25秒，一次限定工程复核无阻断；真实HGB自动生成0新fit/account。准备精确发布，CI结果未冒充已完成。",
   "near_term": [
-    "内存条件满足后继续原MLP实验；当前0fit，实际结果未产生。",
-    "三项日内实体/上下影线比例配置和六手算反例已通过；下一步真实v4/v6批次，绑定full132基底，不按单列盈利删候选。",
-    "保持正式共同名单小市值对照、其他数据/模型与表达搜索方向；不只沿着树/16列推进。"
+    "完成本批回归和精确源码发布／CI；然后使用原已登记MLP，不因旧12GiB门槛要求再次清理。",
+    "优化准备资料的按列／分块读取前，先测瓶颈和依赖；不靠删除核验来降低内存。",
+    "保持共同名单小市值、其他数据／模型、表达搜索和未见验证；既有64列无需为换模型重复计算。"
   ],
   "navigation": [
+    {
+      "title": "内存与自动接线：实际改动",
+      "md": "EXECUTION_EFFICIENCY_20261012.md",
+      "html": "EXECUTION_EFFICIENCY_20261012.html"
+    },
     {
       "title": "接下来怎样用Codex：一个主Chat、持续规划、按需协作",
       "md": "CODEX_PROJECT_WORKFLOW.md",
@@ -1551,5 +1572,5 @@
   "phase_summary": "3目标对照和2缓冲账户完成；模型换成MLP的固定实验已登记未启动。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
   "counters": "完整132施工之后实际7fit、10账户作业/20情景；MLPplanned不算fit，费用$0、Token未知。",
-  "recent": "64预测→132矩阵→森林/岭/提升树账户→近期训练→真实writer修复与双平台CI→3项固定对照→真实登记profile→精确复用兼容→2026缓冲账户。 → 长窗口缓冲未一致降风险 → MLP已登记/内存预检未启动 → 三形状配置/手算通过。"
+  "recent": "本轮确认132列933284行2020-01-03至2026-09-11存档。修改单worker内存准入与commit运行保护；实现账户提案生成和v2有限步骤。实际HGB配置生成0fit/0predict/0登记；未启动新大模型。"
 }

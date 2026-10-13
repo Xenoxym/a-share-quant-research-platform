@@ -1254,3 +1254,14 @@ R33ATOM公开d21cfb8完整CI成功，Windows1811/Ubuntu1808+3跳过。R33REP真�
 [可读结果](CONSTRUCTION_20261012.html) · [项目构成](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
 
 另完成三形状配置准备：body/range、upper/lower wick比例，现有DSL无SRC修改；六种手算/缺失/未来时间反例及共同价格尺度不变性通过。没有新增独立行情信息，真实历史batch/135列训练仍未做；不将配置准备称为新Alpha成功。
+
+
+## 2026-10-12（用户时区）：内存试运行与程序化账户接线
+
+RSS上限从单worker全额准入门槛改为运行保护线；无其他预约时满足最低余量+至多256MiB允许试运行，欠额并行仍拒绝。运行约0.2秒监控commit及已有RSS/物理保留，真实小worker不足满额完成和commit下降中止均通过。原模型输入、收据、预算不改。
+
+现有CLI新增account-proposal，v2有限计划新增明确account_from_learning。真实HGB来源exp-46ef3522a2aa自动生成配置已独立核对四输入/费用/快照/150缓冲/预算，0fit/0predict/0登记；协调中断反例验证登记后恢复不重建。一次限定静态复核无阻断，相关回归正在运行。尚无新行情训练或账户收益。
+
+[本批报告](EXECUTION_EFFICIENCY_20261012.html) · [总览](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
+
+本批最终相关回归213项通过，461.25秒；一次限定独立工程复核未发现阻断。初次新增测试导入／目录准备错误已修正并保留原失败日志。准备精确18文件公开源码及CI，不上传数据、模型、数据库或凭据。

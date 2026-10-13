@@ -23,7 +23,7 @@ def validate_plan(value):
     if not isinstance(value, dict) or set(value) != required:
         raise ValueError("Strict execution plan fields required")
     if (
-        value["schema"] != "execution-plan-v1"
+        value["schema"] not in {"execution-plan-v1","execution-plan-v2"}
         or not isinstance(value["id"], str)
         or not NAME.fullmatch(value["id"])
     ):
@@ -39,10 +39,9 @@ def validate_plan(value):
         raise ValueError("A plan needs 1..40 ordered steps")
     seen = set()
     for step in steps:
-        if not isinstance(step, dict) or set(step) not in (
-            {"id", "needs", "proposal"},
-            {"id", "needs", "experiment_id"},
-        ):
+        forms=({"id","needs","proposal"},{"id","needs","experiment_id"})
+        if value["schema"]=="execution-plan-v2":forms += ({"id","needs","account_from_learning"},)
+        if not isinstance(step, dict) or set(step) not in forms:
             raise ValueError("Step needs exactly one proposal or experiment reference")
         if not isinstance(step["id"], str) or not NAME.fullmatch(step["id"]) or step["id"] in seen:
             raise ValueError("Unique valid step names required")
@@ -55,6 +54,12 @@ def validate_plan(value):
             not isinstance(step["experiment_id"], str) or not NAME.fullmatch(step["experiment_id"])
         ):
             raise ValueError("Valid experiment reference required")
+        if "account_from_learning" in step:
+            adapter=step["account_from_learning"]
+            if not isinstance(adapter,dict) or set(adapter)!={"learning_step","template"} or adapter["learning_step"] not in needs:
+                raise ValueError("Account derivation needs an explicit earlier learning dependency and template")
+            from .account_proposal import validate_account_template
+            validate_account_template(adapter["template"])
         seen.add(step["id"])
     return json.loads(encode(value))
 
@@ -234,7 +239,13 @@ class ExecutionPlans:
                         raise ValueError("Dependency has not completed verification")
                     if not eid:
                         operation = f"plan:{plan['id']}:{step['id']}"
-                        request_hash = content_id(step["proposal"])
+                        if "account_from_learning" in step:
+                            adapter=step["account_from_learning"]
+                            producer=state[adapter["learning_step"]]["experiment_id"]
+                            request={"account_from_learning":adapter,"learning_experiment_id":producer}
+                        else:
+                            request=step["proposal"]
+                        request_hash = content_id(request)
                         registered = self.store.registration_operation(
                             session, operation, request_hash
                         )
@@ -242,13 +253,18 @@ class ExecutionPlans:
                             eid = registered["id"]
                         else:
                             self._budget(session, plan, step["id"])
+                            if "account_from_learning" in step:
+                                from .account_proposal import account_from_learning
+                                proposal=account_from_learning(self.research,producer,adapter["template"])
+                            else:
+                                proposal=step["proposal"]
                             registered = self.research.register(
                                 dict(
                                     session,
                                     registration_key=operation,
                                     registration_hash=request_hash,
                                 ),
-                                step["proposal"],
+                                proposal,
                             )
                             eid = registered["id"]
                         self._save(session, plan["id"], step["id"], eid=eid, status="registered")
