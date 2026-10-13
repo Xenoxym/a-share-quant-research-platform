@@ -120,3 +120,14 @@ account_step = {"id": "account", "needs": ["learn"],
 把该步骤放入v2有限计划，前面的learn步骤仍须声明真实提案或已登记实验、任务与原预算。程序自动绑定真实预测及学习收据，保留模板其他声明；中断恢复先查持久登记操作，不再次生成或登记。没有更改v1计划，也不能用此功能跳过有限预算或失败。
 
 [本次改动及验证边界](EXECUTION_EFFICIENCY_20261012.html)
+
+
+## 保存的矩阵自动绑定学习模板
+
+```powershell
+..\.venv\Scripts\python.exe tools/execution.py learning-proposal --matrix research/my-matrix --template research/my-learning-template.json --output research/my-learning.json
+```
+
+模板是公共alpha_learn提案。矩阵目录含assembly_values.parquet、assembly_missing.parquet、definition.json、registry.json、receipt.json。程序只替换这五项输入，保留标签／决策文件、特征选择、日期、模型、目标及全部预算。它核对内容／收据／元数据，不解码全部特征值、不登记、不训练。下一步仍用原register命令进行完整键、成熟标签和因果检查；这不是自动生成研究方案或完整特征DAG。输出相同可复用，不同拒绝覆盖。
+
+内建数值审计现按实际本地import闭包绑定当前源实现，无关UI／计划源码变化不重做数值审计。源包启动时记录内容快照，相关源文件运行中改变需用新进程；属性、函数默认值及声明状态有确定性绑定，无法证明的状态不读写缓存。未知核查器／动态导入仍保守退回全src。原输入、冻结代码、产物与账户快照的核查保持。[本轮实际验证和缺口](FOUNDATION_CONSTRUCTION_20261013.html)。

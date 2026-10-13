@@ -1,7 +1,7 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-13T03:39:57.349805+00:00",
-  "current_package": "内存试运行与学习→账户自动接线已交付，双平台CI通过",
+  "updated_at_utc": "2026-10-13T06:01:32.073441+00:00",
+  "current_package": "基础设施按需读取／审计范围／矩阵提案已实现；其余研究仍待推进",
   "task_id": "task-413d8081b5c7",
   "packages": [
     {
@@ -987,6 +987,30 @@
       "detail": "v2/v3固定模板绑定真实预测／收据；plan-v2派生账户，登记中断不重建。未新算历史账户。",
       "dependencies": "原身份复用、统一执行入口",
       "guide": "EXECUTION_EFFICIENCY_20261012.md"
+    },
+    {
+      "id": "R37READ",
+      "title": "训练只读需要的列和日期",
+      "status": "小样本工程通过；真实准备资源中止",
+      "detail": "9个新旧等价／反例通过，全源键和跨期训练标签身份保留；分块和大样本完成测量仍缺。",
+      "guide": "FOUNDATION_CONSTRUCTION_20261013.md",
+      "dependencies": "R36MEM,R36PIPE"
+    },
+    {
+      "id": "R37CACHE",
+      "title": "无关修改不重做数值审计",
+      "status": "限定工程复核和35相关测试通过",
+      "detail": "相关import闭包及载入函数／属性／常量绑定；源包快照只检查相关文件，未知状态不复用。",
+      "guide": "FOUNDATION_CONSTRUCTION_20261013.md",
+      "dependencies": "R36MEM,R36PIPE"
+    },
+    {
+      "id": "R37MAT",
+      "title": "保存矩阵自动绑定学习模板",
+      "status": "7例通过；真实132提案生成完成",
+      "detail": "五矩阵引用以外原条件不变；只准备提案，不注册／fit；完整特征DAG尚缺。",
+      "guide": "FOUNDATION_CONSTRUCTION_20261013.md",
+      "dependencies": "R36MEM,R36PIPE"
     }
   ],
   "phase_counts": {
@@ -1020,13 +1044,20 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "213项相关回归通过；修复诊断兼容后完整CI Windows1861／Ubuntu1858＋3跳过均成功。真实HGB自动生成提案0新fit/account；本轮未训练MLP。",
+  "current_result": "本轮基础设施：学习输入9项反例通过；缓存／执行计划35项通过，一次限定工程复核接受；矩阵→固定学习提案7例通过，真实132列配置与原提案一致3.05秒，0行情fit／预测／账户／新登记。完整准备两次均触及Windows可承诺余量保留线，原预算已计入，没有认证为成功。\n\n另一路已记录工作（不计为本轮产物）：本轮数据获取：4股三年小时11,576根、2股近期5分钟576根，另9行因子；232项相关回归通过，四份完成收据均有来源价量差异且默认禁止研究读取。原MLP仍未启动、0新模型/账户、费用$0。\n\n此前工程结果：213项相关回归通过；修复诊断兼容后完整CI Windows1861／Ubuntu1858＋3跳过均成功。真实HGB自动生成提案0新fit/account；本轮未训练MLP。",
   "near_term": [
-    "优先测量并改进完整矩阵按列／分块读取，降低所有后续模型实验的准备开销。",
-    "明确审计的实际代码依赖再缩小缓存失效范围；不取消输入／结果验证。",
-    "后续用原已登记MLP及新v2账户接线继续；既有64列复用，保留共同名单小市值与广泛特征／模型／组合探索。"
+    "完成本轮公开源码完整CI；分块读取与其他入口的峰值降低仍待建设。",
+    "将矩阵→学习提案接入有限计划，复用现有表达式组装和学习→账户步骤。",
+    "完整准备已用完两次有限预算；新的试点需要实际内存改善或明确降低峰值的改动，不能盲试。",
+    "逐步完成模型／公式扩展和同名单小市值、真正未见时期、稳健性验证；原MLP登记和预算保留。",
+    "盘中数据本轮止于小样本：后续先对真实差异日期做授权第二来源核对，再决定可采用字段/用途与是否批量。"
   ],
   "navigation": [
+    {
+      "title": "五项缺口首批施工：实际改动、结果和未完成",
+      "md": "FOUNDATION_CONSTRUCTION_20261013.md",
+      "html": "FOUNDATION_CONSTRUCTION_20261013.html"
+    },
     {
       "title": "内存与自动接线：实际改动",
       "md": "EXECUTION_EFFICIENCY_20261012.md",
@@ -1569,7 +1600,7 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "3目标对照和2缓冲账户完成；模型换成MLP的固定实验已登记未启动。",
+  "phase_summary": "本轮基础设施：学习输入9项反例通过；缓存／执行计划35项通过，一次限定工程复核接受；矩阵→固定学习提案7例通过，真实132列配置与原提案一致3.05秒，0行情fit／预测／账户／新登记。完整准备两次均触及Windows可承诺余量保留线，原预算已计入，没有认证为成功。尚缺全量准备完成、公式→矩阵动态接线、序列／图／自适应搜索、前瞻封存／恢复演练和同条件收益稳健性。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
   "counters": "完整132施工之后实际7fit、10账户作业/20情景；MLPplanned不算fit，费用$0、Token未知。",
   "recent": "本轮确认132列933284行2020-01-03至2026-09-11存档。修改单worker内存准入与commit运行保护；实现账户提案生成和v2有限步骤。实际HGB配置生成0fit/0predict/0登记；未启动新大模型。"

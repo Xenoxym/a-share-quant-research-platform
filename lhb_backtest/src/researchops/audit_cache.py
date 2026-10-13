@@ -4,15 +4,14 @@ This saves mathematical recomputation, not content verification. Cache entries
 live in the existing SQLite store; historical receipts are never rewritten.
 """
 
-import hashlib
 import importlib.metadata
 import json
-import marshal
 import sys
 import time
 
 from ..technical.artifacts import content_id, digest
 from .store import encode
+from .audit_dependencies import runtime_code_hash
 
 FOLDERS = {
     "alpha_batch": "alpha_result",
@@ -39,7 +38,7 @@ def _files(folder):
     return files
 
 
-def _binding(research, experiment):
+def _binding(research, experiment, *, auditor=None):
     proposal = experiment["proposal"]
     job = research.root / "worker_jobs" / experiment["id"]
     paths = _files(job / "code") + _files(job / FOLDERS[proposal["kind"]])
@@ -63,10 +62,11 @@ def _binding(research, experiment):
         cfg = json.loads((job / "input.json").read_text(encoding="utf-8"))
         paths.extend(_files(native_folder(cfg)))
         paths.extend(_files(research.root / "snapshots" / proposal["spec"]["snapshot_id"]))
-    # Changes to any current Python audit dependency conservatively invalidate.
-    paths.extend(
-        p for p in (research.project / "src").rglob("*.py") if "__pycache__" not in p.parts
-    )
+    from .audit_dependencies import audit_dependency_files
+    dependencies,dependency_policy=audit_dependency_files(research.project,proposal["kind"],auditor)
+    if dependency_policy.get("stale_loaded_source"):
+        raise ValueError("Loaded audit source changed; use a fresh process")
+    paths.extend(dependencies)
     audit_tool = research.project / "tools/verify_technical.py"
     if audit_tool.exists():
         paths.append(audit_tool)
@@ -93,12 +93,19 @@ def _binding(research, experiment):
         except importlib.metadata.PackageNotFoundError:
             versions[name] = None
     return {
-        "schema": "numerical-audit-binding-v1",
+        "schema": "numerical-audit-binding-v2",
+        "current_code_dependencies":dependency_policy,
         "experiment_id": experiment["id"],
         "proposal": proposal,
         "files": files,
         "environment": versions,
     }
+
+
+def _auditor_identity(auditor):
+    code=getattr(auditor,"__code__",None)
+    return dict(module=auditor.__module__,name=auditor.__qualname__,
+                code_hash=runtime_code_hash(code) if code is not None else None)
 
 
 def numerical_audit(research, experiment, auditor, *, force=False):
@@ -111,15 +118,8 @@ def numerical_audit(research, experiment, auditor, *, force=False):
                 experiment_id TEXT PRIMARY KEY, binding_hash TEXT NOT NULL,
                 audit TEXT NOT NULL, checked_at REAL NOT NULL)""")
         exists = True
-    before = _binding(research, experiment)
-    runtime_code = getattr(auditor, "__code__", None)
-    before["auditor"] = dict(
-        module=auditor.__module__,
-        name=auditor.__qualname__,
-        code_hash=hashlib.sha256(marshal.dumps(runtime_code)).hexdigest()
-        if runtime_code is not None
-        else None,
-    )
+    before = _binding(research, experiment,auditor=auditor)
+    before["auditor"] = _auditor_identity(auditor)
     key = content_id(before)
     row = None
     if exists:
@@ -127,20 +127,21 @@ def numerical_audit(research, experiment, auditor, *, force=False):
             row = db.execute(
                 "SELECT * FROM execution_audits WHERE experiment_id=?", (experiment["id"],)
             ).fetchone()
-    if not force and row and row["binding_hash"] == key:
-        after = _binding(research, experiment)
-        after["auditor"] = before["auditor"]
+    reusable=before["current_code_dependencies"].get("reusable",False)
+    if reusable and not force and row and row["binding_hash"] == key:
+        after = _binding(research, experiment,auditor=auditor)
+        after["auditor"] = _auditor_identity(auditor)
         if after != before:
             raise ValueError("Audit evidence changed during cached verification")
         return json.loads(row["audit"])
     audit = auditor(research, experiment)
     if not isinstance(audit, dict) or audit.get("verified") is not True:
         raise ValueError("Only a verified numerical audit may be cached")
-    after = _binding(research, experiment)
-    after["auditor"] = before["auditor"]
+    after = _binding(research, experiment,auditor=auditor)
+    after["auditor"] = _auditor_identity(auditor)
     if after != before:
         raise ValueError("Audit evidence changed during numerical validation")
-    if research.store.readonly:
+    if research.store.readonly or not reusable:
         return audit
     with research.store.connection(True) as db:
         db.execute(

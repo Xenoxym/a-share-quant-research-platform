@@ -329,8 +329,8 @@ def test_cache_hit_rejects_mutation_after_first_binding(tmp_path, monkeypatch):
     original = audit_cache._binding
     calls = []
 
-    def mutate_after_binding(*args):
-        value = original(*args)
+    def mutate_after_binding(*args, **kwargs):
+        value = original(*args, **kwargs)
         calls.append(1)
         if len(calls) == 1:
             output.write_text("mutated after first digest")

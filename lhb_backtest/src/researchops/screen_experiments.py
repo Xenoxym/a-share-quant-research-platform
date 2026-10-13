@@ -44,12 +44,14 @@ def protocol(value):
     return spec, dict(schema=value["schema"], screen=spec.to_dict(), budget=budget)
 
 
-def assembly_reference(assembly, artifacts):
+def assembly_reference(assembly, artifacts, *, source_rows=None):
     """Bind supplied files/declarations, without granting materialization authenticity."""
+    rows=len(assembly.block.values) if source_rows is None else source_rows
+    if type(rows) is not int or rows < len(assembly.block.values):raise ValueError("Verified full source row count required")
     payload = dict(schema="screen-assembly-reference-v1", artifacts=artifacts,
         registry_version=assembly.registry.version_id,
         assembly_version=assembly.block.metadata["version_id"],
-        source_bindings=list(assembly.source_bindings), rows=len(assembly.block.values),
+        source_bindings=list(assembly.source_bindings), rows=rows,
         upstream_execution_certified=False)
     return dict(payload, reference_id=content_id(payload))
 

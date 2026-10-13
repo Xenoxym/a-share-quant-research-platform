@@ -56,12 +56,11 @@ def inspect_inputs(project, proposal, *, include_data=False, _runner=None, _capt
     bindings = meta.get("source_bindings")
     if not isinstance(bindings, list) or not bindings:
         raise ValueError("Explicit learning assembly source bindings required")
-    block = FeatureBlock(pd.read_parquet(roles["assembly_values"]), pd.read_parquet(roles["assembly_missing"]), units, meta)
-    assembly = FeatureAssembly(block, registry, tuple(bindings))
+    from .learning_inputs import read_learning_inputs
+    decisions,assembly,labels,source_rows=read_learning_inputs(roles,spec,registry,units,meta)
     hashes = {role: digest(roles[role]) for role in ("assembly_values", "assembly_missing", "assembly_definition")}
-    if not same_json(json.loads(roles["assembly_receipt"].read_text(encoding="utf-8")), assembly_reference(assembly, hashes)):
+    if not same_json(json.loads(roles["assembly_receipt"].read_text(encoding="utf-8")), assembly_reference(assembly, hashes,source_rows=source_rows)):
         raise ValueError("Learning assembly reference differs from files/declarations")
-    decisions, labels = pd.read_parquet(roles["decisions"]), pd.read_parquet(roles["labels"])
     if _runner is None:
         prepared = _prepare(spec, model, decisions, assembly, labels)
         base = prepared[-1]

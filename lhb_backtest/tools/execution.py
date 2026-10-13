@@ -44,19 +44,25 @@ def main():
     derive.add_argument("--learning",required=True)
     derive.add_argument("--template",type=Path,required=True)
     derive.add_argument("--output",type=Path,required=True)
+    matrix=commands.add_parser("learning-proposal",help="Bind a saved matrix to a fixed learning template; no fit or registration")
+    matrix.add_argument("--matrix",required=True)
+    matrix.add_argument("--template",type=Path,required=True)
+    matrix.add_argument("--output",type=Path,required=True)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
     brief = commands.add_parser("brief", help="Read bounded task facts without running work")
     brief.add_argument("task_id")
     a = p.parse_args()
     research = Research(a.project, a.root, readonly=a.command not in {"run", "register"})
-    if a.command=="account-proposal":
+    if a.command in {"account-proposal","learning-proposal"}:
         from src.researchops.account_proposal import account_from_learning
+        from src.researchops.learning_proposal import learning_from_matrix
         from src.technical.artifacts import write_json,content_id
         output=a.output.resolve()
         if not output.is_relative_to(research.project) or any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in (a.output,*a.output.parents)):
             raise ValueError("Proposal output must be an ordinary project path")
-        value=account_from_learning(research,a.learning,_strict_json(a.template))
+        value=(account_from_learning(research,a.learning,_strict_json(a.template)) if a.command=="account-proposal"
+               else learning_from_matrix(research,a.matrix,_strict_json(a.template)))
         if output.exists():
             if _strict_json(output)!=value:raise ValueError("Existing proposal differs; refusing overwrite")
             action="reused"
