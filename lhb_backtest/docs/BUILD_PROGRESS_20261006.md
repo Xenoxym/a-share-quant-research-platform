@@ -1265,3 +1265,5 @@ RSS上限从单worker全额准入门槛改为运行保护线；无其他预约�
 [本批报告](EXECUTION_EFFICIENCY_20261012.html) · [总览](PROJECT_MAP.html) · [蓝图](ML_SYSTEM_BLUEPRINT_20261005.html) · [施工计划](CODEX_PROJECT_DELIVERY_PLAN_20261005.html) · [建设记录](BUILD_PROGRESS_20261006.md)
 
 本批最终相关回归213项通过，461.25秒；一次限定独立工程复核未发现阻断。初次新增测试导入／目录准备错误已修正并保留原失败日志。准备精确18文件公开源码及CI，不上传数据、模型、数据库或凭据。
+
+本批公开初版9d93aeb，两平台各1项旧诊断文字兼容失败（行为和预算保留正常），已保留日志并改1行前缀。2项定向检查通过8.10秒；修复提交beb22e6的[实际CI](https://github.com/Xenoxym/a-share-quant-research-platform/actions/runs/38341613885)Windows1861／608.37秒、Ubuntu1858＋3跳过／371.85秒，打包及模板成功。清理4个已通过测试临时目录149719329字节，原失败日志保留。下一步优先列／分块读取与明确审计依赖；原MLP仍planned、0fit，不把工程完成算成研究收益。

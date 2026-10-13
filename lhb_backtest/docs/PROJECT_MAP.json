@@ -1,7 +1,7 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-13T03:10:58.092603+00:00",
-  "current_package": "内存试运行和学习→账户接线已验证，准备公开源码CI",
+  "updated_at_utc": "2026-10-13T03:39:57.349805+00:00",
+  "current_package": "内存试运行与学习→账户自动接线已交付，双平台CI通过",
   "task_id": "task-413d8081b5c7",
   "packages": [
     {
@@ -975,7 +975,7 @@
     {
       "id": "R36MEM",
       "title": "内存上限与启动条件分开",
-      "status": "已实现并验证；213项相关回归通过，待源码CI",
+      "status": "已交付；213项相关回归和双平台完整CI通过",
       "detail": "单任务无其他预约时可低于RSS上限试运行；启动最低余量+最多256MiB，运行检查RSS/物理/commit，失败不重试。",
       "dependencies": "既有资源池、R32CAP与用户新授权",
       "guide": "EXECUTION_EFFICIENCY_20261012.md"
@@ -983,7 +983,7 @@
     {
       "id": "R36PIPE",
       "title": "已完成学习自动生成账户提案",
-      "status": "已实现、实际HGB提案已核对；213项回归通过，待源码CI",
+      "status": "已交付；213项相关回归和双平台完整CI通过",
       "detail": "v2/v3固定模板绑定真实预测／收据；plan-v2派生账户，登记中断不重建。未新算历史账户。",
       "dependencies": "原身份复用、统一执行入口",
       "guide": "EXECUTION_EFFICIENCY_20261012.md"
@@ -1020,11 +1020,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "213项受影响回归通过/461.25秒，一次限定工程复核无阻断；真实HGB自动生成0新fit/account。准备精确发布，CI结果未冒充已完成。",
+  "current_result": "213项相关回归通过；修复诊断兼容后完整CI Windows1861／Ubuntu1858＋3跳过均成功。真实HGB自动生成提案0新fit/account；本轮未训练MLP。",
   "near_term": [
-    "完成本批回归和精确源码发布／CI；然后使用原已登记MLP，不因旧12GiB门槛要求再次清理。",
-    "优化准备资料的按列／分块读取前，先测瓶颈和依赖；不靠删除核验来降低内存。",
-    "保持共同名单小市值、其他数据／模型、表达搜索和未见验证；既有64列无需为换模型重复计算。"
+    "优先测量并改进完整矩阵按列／分块读取，降低所有后续模型实验的准备开销。",
+    "明确审计的实际代码依赖再缩小缓存失效范围；不取消输入／结果验证。",
+    "后续用原已登记MLP及新v2账户接线继续；既有64列复用，保留共同名单小市值与广泛特征／模型／组合探索。"
   ],
   "navigation": [
     {
