@@ -24,6 +24,48 @@ def _files(files):
                  "Archived source role content changed")
 
 
+def _tempname_only_compatible(producer_text, consumer_text):
+    """One directed writer-name migration; all other module semantics match.
+
+    This never replaces the declared source hashes. Both original texts are
+    still independently checked against their archived identities.
+    """
+    import ast
+
+    def normalized(text, expected):
+        tree = ast.parse(text)
+        funcs = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "write_json"]
+        if len(funcs) != 1:
+            return None
+        calls = [n for n in ast.walk(funcs[0]) if isinstance(n, ast.Call)
+                 and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name)
+                 and n.func.value.id == "tempfile" and n.func.attr == "NamedTemporaryFile"]
+        if len(calls) != 1:
+            return None
+        options = [k for k in calls[0].keywords if k.arg in ("prefix", "suffix")]
+        if [k.arg for k in options] != ["prefix", "suffix"]:
+            return None
+        for option, value in zip(options, expected):
+            if not (isinstance(option.value, ast.Constant) and type(option.value.value) is str
+                    and option.value.value == value):
+                return None
+            option.value.value = ""
+        return ast.dump(tree, include_attributes=False)
+
+    try:
+        old = normalized(producer_text, ("", ""))
+        new = normalized(consumer_text, (".j-", ".tmp"))
+        return old is not None and old == new
+    except (SyntaxError, ValueError, TypeError):
+        return False
+
+
+def _shared_compatible(name, producer, consumer):
+    return producer["sha256"] == consumer["sha256"] or (
+        name == "src/technical/artifacts.py"
+        and _tempname_only_compatible(producer["text"], consumer["text"]))
+
+
 def validate_reuse_identity(identity, learning):
     _require(isinstance(identity, dict) and identity.get("schema") == "completed-learning-identity-v1"
              and identity.get("verification_mode") == MODE
@@ -86,6 +128,6 @@ def validate_reuse_bundle(bundle, learning, portfolio):
     # Keep input serialization/time/value definitions compatible while permitting
     # independent producer and consumer algorithms. No stored receipt is rewritten.
     _require(SHARED <= set(identity["producer_files"]) & set(files)
-             and all(identity["producer_files"][n]["sha256"] == files[n]["sha256"] for n in SHARED),
+             and all(_shared_compatible(n, identity["producer_files"][n], files[n]) for n in SHARED),
              "Producer/consumer shared data contract differs")
     return files

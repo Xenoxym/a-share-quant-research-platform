@@ -1,8 +1,8 @@
 {
   "schema": "human-project-map-v1",
-  "updated_at_utc": "2026-10-12T23:33:30.558800+00:00",
-  "current_package": "近期训练匹配账户已完成；修复正常JSON改名被监控误判",
-  "task_id": "task-9c2313cbe2ef",
+  "updated_at_utc": "2026-10-13T00:30:13.800663+00:00",
+  "current_package": "固定150持仓缓冲：2026已完成，2023—2026较长时期验证运行中",
+  "task_id": "task-1f886b28bf84",
   "packages": [
     {
       "id": "R0",
@@ -935,9 +935,33 @@
     {
       "id": "R33ATOM",
       "title": "修复真实JSON临时文件与输出监控不一致",
-      "status": "147回归通过，准备发布/CI",
-      "detail": "task-9c2313cbe2ef；两个源码位置及真实writer反例，147通过/2链接权限跳过、549.05秒；一次限定独立工程复核无阻断。无新科研fit或账户。",
+      "status": "已发布，双平台完整CI通过",
+      "detail": "d21cfb8；CI38323501697 Windows1811/Ubuntu1808通过+3跳过。原相关147通过+2权限跳过；旧完成账户不重算。",
       "dependencies": "已完成数值阶段；0c95e51 CI",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R33REP",
+      "title": "同近期模型的68列消融与两种目标表示",
+      "status": "已完成，目标变换未改善账户",
+      "detail": "3fit/3账户6情景，439424成熟/105251预测/169日严格一致；68−8.63%/26.93%，132zscore−7.29%/28.68%，132rank−7.88%/28.09%，原132centered−4.69%/24.96%。",
+      "dependencies": "R33TIME、保存132矩阵、R33ATOM本机147回归",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R34REUSE",
+      "title": "只改临时名字时复用原模型预测",
+      "status": "工程与2026缓冲账户已完成，待发布",
+      "detail": "仅允许writer精确有向迁移，原身份不变；96相关测试50.93秒/一次限定独立工程复核。0fit缓冲含费−1.65%/22.86%，静态−4.69%/24.96%，未成功。",
+      "dependencies": "R33REP,R33ATOM,既有holding_policy",
+      "guide": "CONSTRUCTION_20261012.md"
+    },
+    {
+      "id": "R34FULL",
+      "title": "固定缓冲在较长已见时期的验证",
+      "status": "已登记，账户运行中",
+      "detail": "task-1f886b28bf84；复用原HGB完整550711预测，原897日，0fit/predict、一个账户两情景；不搜索150门槛。",
+      "dependencies": "R34REUSE,已完成原HGB账户",
       "guide": "CONSTRUCTION_20261012.md"
     }
   ],
@@ -972,11 +996,11 @@
     "corrected_auditor_model_scenarios": 24,
     "qualified_account_scenarios": 32
   },
-  "current_result": "近期训练2026含费总收益−4.69%/DD24.96%，旧训练−13.20%/27.24%；同169日，未年化。没有策略成功声明。",
+  "current_result": "三目标对照均未超过132centered；2026固定150缓冲含费−1.65%/DD22.86%，比原−4.69%/24.96%改善但仍亏损。",
   "near_term": [
-    "完成短临时名契约修复的精确文件发布与新提交双系统CI；不重算旧数值。",
-    "固定近期HGB40做68列centered消融及132列zscore/rank目标对照；已预先固定，最多3fit、3账户/6情景。",
-    "按同169日含费总收益/日回撤与未解决估值判断；已见2026不叫全新测试。"
+    "完成原897日的固定缓冲对照，依据年化/日回撤/成本决定是否值得扩大。",
+    "精确发布临时名兼容例外及测试，检查新提交完整CI一次。",
+    "依据官方MLP/鲁棒线性实现选择一次互补模型探针；Alpha158/高维表达与其他数据方向保持开放。"
   ],
   "navigation": [
     {
@@ -1516,8 +1540,8 @@
     }
   ],
   "real_matrix_plan_saved": true,
-  "phase_summary": "已得到四种账户结果和一次近期训练比较；仍没有严格同名单小市值优势证据。当前限定修复执行竞态。",
+  "phase_summary": "以实际账户判断特征/目标/持仓规则；不重训旧模型或做警告抑制工程。",
   "phase_counts_scope": "E19 original historical experiment matrix; not cumulative counts of subsequent E19S/R23C/R24T or OSS engineering",
-  "counters": "累计新fit4、账户作业5/情景10；旧68复用。工程反例不算科研fit。费用$0，Token未知。",
-  "recent": "64预测→132输入→森林負结果→岭回归/提升树→独立登记→近期训练匹配账户→真实writer竞态修复。"
+  "counters": "完整132施工之后累计新增7fit、9账户作业/18情景；另1长窗口缓冲已登记。原68及旧/近期HGB预测复用，费用$0、Token未知。",
+  "recent": "64预测→132矩阵→森林/岭/提升树账户→近期训练→真实writer修复与双平台CI→3项固定对照→真实登记profile→精确复用兼容→2026缓冲账户。"
 }
