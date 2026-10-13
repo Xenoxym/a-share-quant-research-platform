@@ -275,7 +275,7 @@ def reserve(root, experiment_id, resources):
                     f"(existing reservations={capacity/(1 << 30):.3f} GiB); batch remains planned")
             startup_floor = resources.min_available_memory_bytes + min(1 << 28, resources.max_process_rss_bytes)
             if available < startup_floor:
-                raise RuntimeError("Insufficient available-memory startup floor; batch remains planned")
+                raise RuntimeError("Insufficient unreserved available-memory startup floor; batch remains planned")
             if commit_available is not None and commit_available < startup_floor:
                 raise RuntimeError(
                     f"Insufficient Windows commit headroom: available={commit_available/(1 << 30):.3f} GiB, "
