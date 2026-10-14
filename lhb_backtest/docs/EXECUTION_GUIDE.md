@@ -169,3 +169,8 @@ account_step = {"id": "account", "needs": ["learn"],
 `execution-plan-v4`沿用原Store、有限starts和deadline；新增`forecast_from_batch`和`learning_from_expressions`步骤，后者声明原开发/预测步骤、目标matrix_folder、固定学习template和max_rows/max_matrix_cells/max_output_bytes。其余步骤继续使用已有proposal和account_from_learning。完整可运行的小样本见`tests/test_expression_execution_plan.py`；不是新增一套调度系统。登记前恢复只接受与原批次实际内容一致的完整矩阵，部分目录保留且拒绝覆盖；登记后的恢复使用原operation和实验。
 
 同一CLI新增`learning-diagnostics`、`comparison-index`、`backup-plan`、`verify-plan-backup`、`seal-predictions`、`verify-seal`。参数与人话说明见[本轮基础设施](FOUNDATION_EXECUTION_20261014.html)。诊断与副本核对不登记、不fit、不predict、不回测；预测封存没有backdate参数，历史预测整体拒绝补封。备份只支持已完成alpha链的证据检查，不激活搬迁运行；原始输入及副本都留本机。
+
+
+### 未拟合规则与已有训练分数（2026-10-14）
+
+`learning-diagnostics --include-train`读取原training_trace的train_score，绑定原输出清单；不拟合、不预测、不补造验证期。`fixed-rule-scores`与`fixed-rule-account-proposal`提供独立固定规则来源，registered-alpha-account-v4沿用原账户规则及可选holding_policy，计入真实账户意向但模型拟合0。具体参数、输入定义和可比边界见[本轮验收](FOUNDATION_ACCEPTANCE_20261014.html)。

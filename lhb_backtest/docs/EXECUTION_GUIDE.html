@@ -130,4 +130,9 @@ account_step = {&quot;id&quot;: &quot;account&quot;, &quot;needs&quot;: [&quot;l
 <p>编号须替换为真实已完成的v4开发批次和同一producer的v6预测批次。这只是参数形式示例，行数、单元格、字节上限由实际研究预算决定。入口读取原prepared base与全部预先声明的候选输出，保留完整股票日期键、时钟和缺失原因；不读取标签，不筛选单项收益，不重算公式、训练或登记。</p>
 <p>输出是原有学习入口认识的五文件矩阵。随后把这个目录交给learning-proposal或v3计划的learning_from_matrix，再接account_from_learning。已存在的目标目录拒绝覆盖；成功后直接复用原矩阵继续计划。写入失败的部分目录保留，没有有效receipt，不自动重试。预算包括Windows换行后的实际receipt字节。</p>
 <p>这补了“已完成公式→矩阵文件”的程序接口；公式生成、计算、矩阵保存还没有合并成一份持久计划自动派生。当前保存与合并仍在内存中，只有完整小样本通过，不能把这组默认上限当作大规模内存保证。</p>
+<h2>2026-10-14：公式整链、只读诊断与离线证据</h2>
+<p><code>execution-plan-v4</code>沿用原Store、有限starts和deadline；新增<code>forecast_from_batch</code>和<code>learning_from_expressions</code>步骤，后者声明原开发/预测步骤、目标matrix_folder、固定学习template和max_rows/max_matrix_cells/max_output_bytes。其余步骤继续使用已有proposal和account_from_learning。完整可运行的小样本见<code>tests/test_expression_execution_plan.py</code>；不是新增一套调度系统。登记前恢复只接受与原批次实际内容一致的完整矩阵，部分目录保留且拒绝覆盖；登记后的恢复使用原operation和实验。</p>
+<p>同一CLI新增<code>learning-diagnostics</code>、<code>comparison-index</code>、<code>backup-plan</code>、<code>verify-plan-backup</code>、<code>seal-predictions</code>、<code>verify-seal</code>。参数与人话说明见<a href="FOUNDATION_EXECUTION_20261014.html">本轮基础设施</a>。诊断与副本核对不登记、不fit、不predict、不回测；预测封存没有backdate参数，历史预测整体拒绝补封。备份只支持已完成alpha链的证据检查，不激活搬迁运行；原始输入及副本都留本机。</p>
+<h3>未拟合规则与已有训练分数（2026-10-14）</h3>
+<p><code>learning-diagnostics --include-train</code>读取原training_trace的train_score，绑定原输出清单；不拟合、不预测、不补造验证期。<code>fixed-rule-scores</code>与<code>fixed-rule-account-proposal</code>提供独立固定规则来源，registered-alpha-account-v4沿用原账户规则及可选holding_policy，计入真实账户意向但模型拟合0。具体参数、输入定义和可比边界见<a href="FOUNDATION_ACCEPTANCE_20261014.html">本轮验收</a>。</p>
 </main></html>
