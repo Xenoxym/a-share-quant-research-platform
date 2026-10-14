@@ -10,7 +10,7 @@ from .alpha_experiments import verify_inputs
 from .alpha_execution import verify_completed
 from .account_experiments import native_folder
 from .backup import _ordinary
-from ..alpharesearch.learning import KEYS,LABELS,_fingerprint
+from ..alpharesearch.learning import KEYS,CLOCKS,LABELS,_fingerprint
 from ..alpharesearch.split_diagnostics import diagnose_splits
 from ..technical.artifacts import content_id,digest,write_json
 
@@ -28,8 +28,9 @@ def write_result_report(research,output,value,*,max_bytes):
     return dict(path=str(path),report_id=content_id(value),model_fits=0,predict_calls=0,account_backtests=0)
 
 
-def diagnose_registered_learning(research,experiment_id,*,max_rows,segments=None):
+def diagnose_registered_learning(research,experiment_id,*,max_rows,segments=None,include_train=False):
     if type(max_rows) is not int or max_rows<1:raise ValueError('Finite diagnostic rows required')
+    if type(include_train) is not bool:raise ValueError('Explicit include_train flag required')
     identity=verify_completed_learning_identity(research,experiment_id)
     ex=research.store.experiment(experiment_id);settings=ex['proposal']['spec']['learning']
     folder=research.root/'worker_jobs'/experiment_id/'learn_result'
@@ -54,14 +55,45 @@ def diagnose_registered_learning(research,experiment_id,*,max_rows,segments=None
     if segments is None:
         segments=[dict(name='test',start=settings['predict_start'],end=settings['predict_end'],
             role='post_fit_retrospective',used_for_selection=True)]
+    artifact_path=folder/'training_artifact_receipt.json';trace_path=folder/'training_trace.parquet'
+    artifact=json.loads(artifact_path.read_text(encoding='utf-8')) if artifact_path.is_file() else {}
+    available=artifact.get('train_scores_saved') is True and trace_path.is_file()
+    train_status='not_requested' if not include_train else 'not_saved'
+    training_error=None;trace_hash=None
+    if include_train and available:
+        manifest_path=folder/'manifest.json'
+        if digest(manifest_path)!=identity['output_manifest_hash']:raise ValueError('Training trace output manifest differs')
+        manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+        for name in ['training_trace.parquet','training_artifact_receipt.json']:
+            if digest(folder/name)!=manifest['artifacts'].get(name):raise ValueError('Saved training artifact differs')
+        footer=pq.ParquetFile(trace_path);needed=KEYS+CLOCKS+['raw_target_return','label_start','label_end','label_known_at','target_reason','target_return_used','weight_used','train_score']
+        if not set(needed)<=set(footer.schema.names):raise ValueError('Legacy trace lacks raw targets/clocks; explicit legacy adapter required')
+        if footer.metadata.num_rows+len(scores)>max_rows:raise ValueError('Combined train/test diagnostic row cap exceeded before loading')
+        if footer.metadata.num_rows!=artifact['rows'] or artifact['rows']!=source['mature_training_rows']:
+            raise ValueError('Saved training trace mature row count differs')
+        trace=pd.read_parquet(trace_path,columns=needed)
+        if not trace.target_reason.eq('present').all():raise ValueError('Saved training trace has unusable mature targets')
+        training_scores=trace[KEYS+CLOCKS].copy();training_scores['score']=trace.train_score
+        training_labels=trace[KEYS+['label_start','label_end','label_known_at']].copy()
+        training_labels['target_return']=trace.raw_target_return;training_labels['label_observed']=True
+        scores=pd.concat([training_scores,scores[KEYS+CLOCKS+['score']]],ignore_index=True)
+        labels=pd.concat([training_labels[KEYS+LABELS],labels],ignore_index=True)
+        if not any(part['name']=='train' for part in segments):
+            segments=[dict(name='train',start=settings['train_start'],end=settings['train_end'],role='in_sample_replay',used_for_selection=True)]+segments
+        from sklearn.metrics import mean_squared_error
+        training_error=dict(weighted_residual_mse=float(mean_squared_error(trace.target_return_used,trace.train_score,sample_weight=trace.weight_used)),
+            target='actual saved target_return_used, with actual row weights; regularization and optimizer scaling excluded',account_backtest=False)
+        trace_hash=manifest['artifacts']['training_trace.parquet'];train_status='included_actual_saved_fit_scores'
     report=diagnose_splits(scores,labels,segments,fit_cutoff=settings['fit_cutoff'],
         as_of=datetime.now(timezone.utc).isoformat(),max_rows=max_rows,score_target=target)
     if (digest(pred)!=identity['predictions_sha256'] or digest(folder/'learning_receipt.json')!=identity['learning_receipt_sha256']
             or research.store.experiment(experiment_id)!=ex):
         raise ValueError('Completed source changed during diagnostics')
+    if trace_hash is not None and digest(trace_path)!=trace_hash:raise ValueError('Training trace changed during diagnostics')
     verify_inputs(research.project,ex['proposal']['inputs'],ex['proposal']['spec']['budget']['max_input_bytes'])
     return dict(schema='registered-score-diagnostics-v1',experiment_id=experiment_id,
         completed_learning_identity=identity['identity_id'],diagnostics=report,
+        saved_train_scores_available=available,training_diagnostic_status=train_status,training_residual=training_error,
         selection_history='Retrospective research; not a claim of previously unseen data')
 
 

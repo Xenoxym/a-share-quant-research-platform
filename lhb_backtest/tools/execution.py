@@ -63,6 +63,7 @@ def main():
     offline.add_argument("--folder",type=Path,required=True)
     diagnosis=commands.add_parser("learning-diagnostics",help="Read saved post-fit scores; missing train/validation remain explicit")
     diagnosis.add_argument("--learning",required=True)
+    diagnosis.add_argument("--include-train",action="store_true",help="Read actual saved training scores, no model loading or prediction")
     diagnosis.add_argument("--max-rows",type=int,required=True)
     diagnosis.add_argument("--output",type=Path,required=True)
     diagnosis.add_argument("--max-bytes",type=int,required=True)
@@ -86,6 +87,12 @@ def main():
     plan_copy.add_argument("--max-bytes",type=int,required=True)
     plan_check=commands.add_parser("verify-plan-backup",help="Verify a complete selected plan offline; never activate workers")
     plan_check.add_argument("--folder",type=Path,required=True)
+    rules=commands.add_parser('fixed-rule-scores',help='Build unfitted rule scores from declared inputs; no fit or registration')
+    rules.add_argument('--inputs',required=True);rules.add_argument('--spec',type=Path,required=True)
+    rules.add_argument('--output',required=True);rules.add_argument('--max-rows',type=int,required=True)
+    rules.add_argument('--max-input-bytes',type=int,required=True);rules.add_argument('--max-output-bytes',type=int,required=True)
+    rule_account=commands.add_parser('fixed-rule-account-proposal',help='Bind actual unfitted scores and preserve template account/holding rules')
+    rule_account.add_argument('--scores',required=True);rule_account.add_argument('--template',type=Path,required=True);rule_account.add_argument('--output',type=Path,required=True)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
     brief = commands.add_parser("brief", help="Read bounded task facts without running work")
@@ -104,14 +111,17 @@ def main():
         print(json.dumps({"ok":True,"data":verify_prediction_seal(a.folder,max_bytes=a.max_bytes,max_rows=a.max_rows)},ensure_ascii=False))
         return 0
     research = Research(a.project, a.root, readonly=a.command not in {"run", "register"})
-    if a.command in {"account-proposal","learning-proposal"}:
+    if a.command in {"account-proposal","learning-proposal","fixed-rule-account-proposal"}:
         from src.researchops.account_proposal import account_from_learning
         from src.researchops.learning_proposal import learning_from_matrix
         from src.technical.artifacts import write_json,content_id
         output=a.output.resolve()
         if not output.is_relative_to(research.project) or any(p.is_symlink() or (hasattr(p,"is_junction") and p.is_junction()) for p in (a.output,*a.output.parents)):
             raise ValueError("Proposal output must be an ordinary project path")
-        value=(account_from_learning(research,a.learning,_strict_json(a.template)) if a.command=="account-proposal"
+        if a.command=='fixed-rule-account-proposal':
+            from src.researchops.fixed_rule_proposal import account_from_fixed_rules
+            value=account_from_fixed_rules(research,a.scores,_strict_json(a.template))
+        else:value=(account_from_learning(research,a.learning,_strict_json(a.template)) if a.command=="account-proposal"
                else learning_from_matrix(research,a.matrix,_strict_json(a.template)))
         if output.exists():
             if _strict_json(output)!=value:raise ValueError("Existing proposal differs; refusing overwrite")
@@ -120,6 +130,9 @@ def main():
             output.parent.mkdir(parents=True,exist_ok=True)
             write_json(output,value);action="created"
         value=dict(path=str(output),action=action,proposal_id=content_id(value),model_fits=0,predict_calls=0,registered_experiments=0)
+    elif a.command=='fixed-rule-scores':
+        from src.researchops.fixed_rule_proposal import save_fixed_rule_scores
+        value=save_fixed_rule_scores(research,a.inputs,_strict_json(a.spec),a.output,max_rows=a.max_rows,max_input_bytes=a.max_input_bytes,max_output_bytes=a.max_output_bytes)
     elif a.command=="expression-matrix":
         from src.researchops.matrix_materialization import matrix_from_registered_expressions
         value=matrix_from_registered_expressions(research,a.development,a.forecast,a.output,
@@ -132,7 +145,7 @@ def main():
         value=backup_plan_evidence(research,a.plan,a.output,max_bytes=a.max_bytes)
     elif a.command in {"learning-diagnostics","comparison-index"}:
         from src.researchops.result_tools import diagnose_registered_learning,account_comparison_index,write_result_report
-        report=(diagnose_registered_learning(research,a.learning,max_rows=a.max_rows) if a.command=="learning-diagnostics"
+        report=(diagnose_registered_learning(research,a.learning,max_rows=a.max_rows,include_train=a.include_train) if a.command=="learning-diagnostics"
             else account_comparison_index(research,a.accounts))
         value=write_result_report(research,a.output,report,max_bytes=a.max_bytes)
     elif a.command=="seal-predictions":

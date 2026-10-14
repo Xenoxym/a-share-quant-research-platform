@@ -79,7 +79,7 @@ def compute(job):
     try:
         identity=score_reuse_identity(cfg)
         kwargs={} if identity is None else dict(reuse_identity=identity)
-        if cfg['spec']['schema']=='registered-alpha-account-v3':
+        if 'holding_policy' in cfg['spec']:
             from ..alpharesearch.holding_policy import ActualHoldingPolicy
             kwargs['holding_policy']=ActualHoldingPolicy.from_dict(cfg['spec']['holding_policy'])
         prepared=prepare_score_account(*data,**kwargs)

@@ -23,7 +23,7 @@ def count(proposal):
         if type(proposal.get("planned_accounts")) is not int or proposal["planned_accounts"]!=len(scenarios):
             raise ValueError("Strict persisted account count required")
         scope=proposal.get("spec",{}).get("score_source",{}).get("kind")
-        if scope not in {"registered_learning","synthetic_stub"}: raise ValueError("Explicit score source kind required")
+        if scope not in {"registered_learning","synthetic_stub","fixed_rule"}: raise ValueError("Explicit score source kind required")
         return (0,len(scenarios)) if scope=="synthetic_stub" else (len(scenarios),0)
     if kind is None: return len(scenarios),0
     raise ValueError("Unsupported mixed executor in account-budget task")

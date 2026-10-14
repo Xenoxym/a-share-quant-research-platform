@@ -15,6 +15,7 @@ from .resources import WorkerResources
 from .screen_experiments import same_json
 from .store import text
 from ..alpharesearch.learning import LearningResult
+from ..alpharesearch.fixed_rules import FixedRuleResult,validate_fixed_rule_result
 from ..alpharesearch.portfolio import ScorePortfolioSpec, build_score_portfolio
 from ..alpharesearch.account import _account_spec, SNAPSHOT_FILES
 from ..technical.contracts import ResearchSpec
@@ -23,9 +24,9 @@ ROLES={"predictions","learning_receipt","references","calendar"}
 
 def protocol(value):
     fields={"schema","portfolio","account","scenarios","snapshot_id","snapshot_manifest_hash","score_source","budget"}
-    dynamic=isinstance(value,dict) and value.get('schema')=='registered-alpha-account-v3'
+    dynamic=isinstance(value,dict) and (value.get('schema')=='registered-alpha-account-v3' or (value.get('schema')=='registered-alpha-account-v4' and 'holding_policy' in value))
     if dynamic:fields |= {'holding_policy'}
-    if not isinstance(value,dict) or set(value)!=fields or value['schema'] not in {'registered-alpha-account-v1','registered-alpha-account-v2','registered-alpha-account-v3'}:
+    if not isinstance(value,dict) or set(value)!=fields or value['schema'] not in {'registered-alpha-account-v1','registered-alpha-account-v2','registered-alpha-account-v3','registered-alpha-account-v4'}:
         raise ValueError("Strict scored-account protocol required")
     policy=ScorePortfolioSpec.from_dict(value["portfolio"])
     spec=_account_spec(ResearchSpec.from_dict(value["account"]),policy.to_dict())
@@ -48,7 +49,13 @@ def protocol(value):
         if (set(source)!=fields or not re.fullmatch(r"exp-[a-f0-9]{12}",str(source["experiment_id"]))
                 or (value["schema"] in {"registered-alpha-account-v2","registered-alpha-account-v3"} and source["verification_mode"]!="reuse_completed_identity_v1")):
             raise ValueError("Registered learning identity required")
+    elif source.get('kind')=='fixed_rule':
+        if (value['schema']!='registered-alpha-account-v4' or set(source)!={'kind','rule_id'}
+                or not re.fullmatch(r'[a-f0-9]{64}',str(source.get('rule_id')))):
+            raise ValueError('Explicit fixed-rule identity requires account v4')
     else: raise ValueError("Unsupported score provenance")
+    if value['schema']=='registered-alpha-account-v4' and source['kind']!='fixed_rule':
+        raise ValueError('Account v4 requires a genuine unfitted fixed-rule source')
     if value["schema"] in {"registered-alpha-account-v2","registered-alpha-account-v3"} and source["kind"]!="registered_learning":
         raise ValueError("Score reuse v2 requires completed registered learning")
     b=value["budget"]
@@ -63,8 +70,12 @@ def protocol(value):
 def inspect_inputs(project,proposal,root,*,include_data=False):
     policy,spec,doc=protocol(proposal["spec"])
     paths=verify_inputs(project,proposal["inputs"],doc["budget"]["max_input_bytes"])
-    if set(paths)!=ROLES: raise ValueError("Exactly four scored input roles required")
-    result=LearningResult(pd.read_parquet(paths["predictions"]),json.loads(paths["learning_receipt"].read_text(encoding="utf-8")))
+    if set(paths)!=(ROLES|{"rule_inputs"} if doc["score_source"]["kind"]=="fixed_rule" else ROLES): raise ValueError("Exact scored input roles required")
+    scores=pd.read_parquet(paths['predictions']);receipt=json.loads(paths['learning_receipt'].read_text(encoding='utf-8'))
+    if doc['score_source']['kind']=='fixed_rule':
+        result=FixedRuleResult(scores,receipt,pd.read_parquet(paths['rule_inputs']))
+        if receipt.get('rule_id')!=doc['score_source']['rule_id']:raise ValueError('Fixed-rule score source differs')
+    else:result=LearningResult(scores,receipt)
     refs=pd.read_parquet(paths["references"]); calendar=json.loads(paths["calendar"].read_text(encoding="utf-8"))
     portfolio=build_score_portfolio(result,refs,calendar,policy)
     snapshot=Path(root)/"snapshots"/doc["snapshot_id"]
@@ -78,15 +89,22 @@ def inspect_inputs(project,proposal,root,*,include_data=False):
         if Path(name).name!=name or "\\" in name or (snapshot/name).is_symlink(): raise ValueError("Unsafe snapshot artifact")
     verify_artifacts(snapshot,sm)
     if digest(paths["calendar"])!=digest(snapshot/"calendar.json"): raise ValueError("Score calendar differs from snapshot")
-    info=dict(prediction_rows=len(result.predictions),fit_id=result.receipt["fit_id"],prediction_id=result.receipt["prediction_id"],
+    info=dict(prediction_rows=len(result.predictions),fit_id=result.receipt.get("fit_id"),prediction_id=result.receipt["prediction_id"],
         portfolio_id=policy.portfolio_id,portfolio_receipt_id=content_id(portfolio.receipt),
         score_provenance=doc["score_source"]["kind"],numeric_model_reproduction=False)
+    if doc['score_source']['kind']=='fixed_rule':info['rule_id']=result.receipt['rule_id']
     if include_data: info["data"]=(result,refs,calendar,policy,snapshot,spec)
     return policy,spec,info
 
 def upstream(research,proposal):
     source=proposal["spec"]["score_source"]
     if source["kind"]=="synthetic_stub": return dict(kind="synthetic_stub",actual_model_fits=0)
+    if source['kind']=='fixed_rule':
+        paths=verify_inputs(research.project,proposal['inputs'],proposal['spec']['budget']['max_input_bytes'])
+        result=FixedRuleResult(pd.read_parquet(paths['predictions']),json.loads(paths['learning_receipt'].read_text(encoding='utf-8')),pd.read_parquet(paths['rule_inputs']))
+        receipt=validate_fixed_rule_result(result,max_rows=ScorePortfolioSpec.from_dict(proposal['spec']['portfolio']).to_dict()['max_prediction_rows'])
+        if receipt['rule_id']!=source['rule_id']:raise ValueError('Fixed-rule upstream identity differs')
+        return dict(kind='fixed_rule',rule_id=receipt['rule_id'],source_receipt_sha256=digest(paths['learning_receipt']),rule_inputs_sha256=digest(paths['rule_inputs']),actual_model_fits=0,numeric_model_reproduction=False)
     from .alpha_execution import verify_completed
     ex=research.store.experiment(source["experiment_id"])
     if ex["proposal"].get("kind")!="alpha_learn" or ex["status"]!="completed": raise ValueError("Completed registered learning required")

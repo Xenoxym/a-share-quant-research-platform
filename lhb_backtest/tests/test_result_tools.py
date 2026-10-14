@@ -81,3 +81,47 @@ def test_reports_are_bounded_project_research_files_without_overwrite(tmp_path):
     assert result['model_fits']==0
     with pytest.raises(ValueError,match='Existing'):tools.write_result_report(research,'research/good.json',{},max_bytes=100)
     with pytest.raises(ValueError,match='escaped'):tools.write_result_report(research,'outside.json',{},max_bytes=100)
+
+
+
+def test_saved_training_scores_are_used_without_fitting_or_predicting(tmp_path,monkeypatch):
+    from src.alpharesearch.learning import KEYS,CLOCKS,LABELS
+    from src.alpharesearch.models import TabularRegressor
+    from src.alpharesearch import checkpoints
+    from src.technical.artifacts import write_json
+    def forbidden(*a,**k):pytest.fail('Saved-score diagnostics must never fit, predict, or load a model')
+    monkeypatch.setattr(TabularRegressor,'fit',forbidden);monkeypatch.setattr(TabularRegressor,'predict',forbidden)
+    monkeypatch.setattr(checkpoints,'load_checkpoint',forbidden)
+    project=tmp_path;root=project/'data/technical';eid='exp-'+'b'*12
+    folder=root/'worker_jobs'/eid/'learn_result';folder.mkdir(parents=True)
+    scores,labels,_=example();train=scores.trade_date.eq('2024-01-02')
+    scores.loc[~train].to_parquet(folder/'predictions.parquet',index=False)
+    path=project/'data/labels.parquet';labels.to_parquet(path,index=False)
+    trace=scores.loc[train,KEYS+CLOCKS].reset_index(drop=True)
+    original=labels.loc[train].reset_index(drop=True)
+    for key in ['label_start','label_end','label_known_at']:trace[key]=original[key]
+    trace['raw_target_return']=original.target_return;trace['train_score']=original.target_return
+    trace['target_return_used']=original.target_return;trace['weight_used']=1.;trace['target_reason']='present'
+    trace_path=folder/'training_trace.parquet';trace.to_parquet(trace_path,index=False)
+    write_json(folder/'training_artifact_receipt.json',dict(train_scores_saved=True,rows=3))
+    write_json(folder/'learning_receipt.json',dict(schema='causal-learning-receipt-v2',mature_training_rows=3))
+    manifest=folder/'manifest.json';write_json(manifest,dict(artifacts={n:digest(folder/n) for n in ['training_trace.parquet','training_artifact_receipt.json']}))
+    identity=dict(identity_id='test-only',predictions_sha256=digest(folder/'predictions.parquet'),learning_receipt_sha256=digest(folder/'learning_receipt.json'),output_manifest_hash=digest(manifest))
+    ex=dict(proposal=dict(spec=dict(learning=dict(train_start='2024-01-02',train_end='2024-01-02',fit_cutoff='2024-01-08T00:00:00Z',predict_start='2024-01-09',predict_end='2024-01-16'),budget=dict(max_input_bytes=1000000)),
+        inputs=[dict(role='labels',path='data/labels.parquet',sha256=digest(path),bytes=path.stat().st_size)]))
+    research=SimpleNamespace(project=project,root=root,store=SimpleNamespace(experiment=lambda _:deepcopy(ex)))
+    monkeypatch.setattr(tools,'verify_completed_learning_identity',lambda *a:identity)
+    report=tools.diagnose_registered_learning(research,eid,max_rows=9,include_train=True)
+    assert report['diagnostics']['missing_splits']==['validation']
+    assert report['saved_train_scores_available'] and report['training_diagnostic_status']=='included_actual_saved_fit_scores'
+    assert report['training_residual']['weighted_residual_mse']==0.
+    assert report['diagnostics']['segments'][0]['role']=='in_sample_replay'
+    original_read=pd.read_parquet
+    with monkeypatch.context() as m:
+        def read(target,*a,**k):
+            if target==trace_path:pytest.fail('Training trace loaded before combined row-cap check')
+            return original_read(target,*a,**k)
+        m.setattr(pd,'read_parquet',read)
+        with pytest.raises(ValueError,match='before loading'):tools.diagnose_registered_learning(research,eid,max_rows=8,include_train=True)
+    trace.loc[0,'train_score']=999.;trace.to_parquet(trace_path,index=False)
+    with pytest.raises(ValueError,match='artifact differs'):tools.diagnose_registered_learning(research,eid,max_rows=9,include_train=True)

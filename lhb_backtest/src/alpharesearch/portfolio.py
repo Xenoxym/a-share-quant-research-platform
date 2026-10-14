@@ -9,6 +9,7 @@ import pandas as pd
 from .contracts import required_id, timestamp, timestamps
 from .learning import CLOCKS, KEYS, LearningResult, _day, _fingerprint, _keys
 from .models import ModelSpec
+from .fixed_rules import FixedRuleResult, validate_fixed_rule_result
 from .registry import implementation_hashes
 from ..technical.artifacts import content_id
 from ..technical.signals import MAIN_BOARD, decision_dates
@@ -121,29 +122,7 @@ def _target_metadata(source, fit):
             or settings["target"] != "execution_window_return_decimal"):
         raise ValueError("Native training target units/mature scope are inconsistent")
 
-def build_score_portfolio(result, references, calendar, spec):
-    """Validate the whole source score table, then explicitly select account dates.
-
-    References are caller-verified, decision-time eligibility and raw closing data.
-    Hash consistency is not source authentication. This function makes no trades.
-    """
-    if not isinstance(result, LearningResult) or not isinstance(spec, ScorePortfolioSpec):
-        raise ValueError("LearningResult and validated ScorePortfolioSpec required")
-    spec = ScorePortfolioSpec.from_dict(spec.to_dict())
-    cfg = spec.to_dict()
-    score, source = result.predictions, result.receipt
-    if not isinstance(source, dict):
-        raise ValueError("Learning receipt must be a mapping")
-    if not isinstance(score, pd.DataFrame) or not isinstance(references, pd.DataFrame):
-        raise ValueError("Scores and reference data must be DataFrames")
-    if max(len(score), len(references)) > cfg["max_prediction_rows"]:
-        raise ValueError("Declared prediction row cap exceeded")
-    _keys(score, "Scores")
-    _keys(references, "Reference data")
-    if set(score) != set(KEYS + CLOCKS + ["score", "fit_id", "prediction_id"]):
-        raise ValueError("Unexpected source score columns")
-    if set(references) != set(KEYS + REFERENCES):
-        raise ValueError("Strict reference/eligibility columns required")
+def _validated_learning_score_source(score,source):
     if source.get("schema") not in {"causal-learning-receipt-v2", "causal-learning-receipt-v3"} or source.get("account_results") is not False:
         raise ValueError("Causal learning receipt required")
     if source.get("prediction_rows") != len(score) or source.get("prediction_outputs") != _fingerprint(score):
@@ -192,6 +171,39 @@ def build_score_portfolio(result, references, calendar, spec):
     if (not score.fit_id.eq(source["fit_id"]).all()
             or not score.prediction_id.eq(prediction_id).all()):
         raise ValueError("Score rows belong to different fit/prediction receipts")
+    return fit_identity,prediction_id
+
+
+def build_score_portfolio(result, references, calendar, spec):
+    """Validate the whole source score table, then explicitly select account dates.
+
+    References are caller-verified, decision-time eligibility and raw closing data.
+    Hash consistency is not source authentication. This function makes no trades.
+    """
+    if not isinstance(result, (LearningResult,FixedRuleResult)) or not isinstance(spec, ScorePortfolioSpec):
+        raise ValueError("LearningResult and validated ScorePortfolioSpec required")
+    spec = ScorePortfolioSpec.from_dict(spec.to_dict())
+    cfg = spec.to_dict()
+    score, source = result.predictions, result.receipt
+    if not isinstance(source, dict):
+        raise ValueError("Learning receipt must be a mapping")
+    if not isinstance(score, pd.DataFrame) or not isinstance(references, pd.DataFrame):
+        raise ValueError("Scores and reference data must be DataFrames")
+    if max(len(score), len(references)) > cfg["max_prediction_rows"]:
+        raise ValueError("Declared prediction row cap exceeded")
+    _keys(score, "Scores")
+    _keys(references, "Reference data")
+    if set(score) != set(KEYS + CLOCKS + ["score", "rule_id" if type(result) is FixedRuleResult else "fit_id", "prediction_id"]):
+        raise ValueError("Unexpected source score columns")
+    if set(references) != set(KEYS + REFERENCES):
+        raise ValueError("Strict reference/eligibility columns required")
+    fixed=type(result) is FixedRuleResult
+    if fixed:
+        validate_fixed_rule_result(result,max_rows=cfg['max_prediction_rows'])
+        context={'settings':{'universe_id':source['universe_id']}}
+        prediction_id=source['prediction_id']
+    else:
+        context,prediction_id=_validated_learning_score_source(score,source)
     if (not pd.api.types.is_numeric_dtype(score.score.dtype)
             or pd.api.types.is_complex_dtype(score.score.dtype)
             or not np.isfinite(score.score.to_numpy(dtype=float)).all()):
@@ -221,8 +233,8 @@ def build_score_portfolio(result, references, calendar, spec):
         joined[key] = timestamps(joined[key]).astype("datetime64[ns, UTC]")
     if not joined.decision_at.dt.tz_convert("Asia/Shanghai").dt.strftime("%Y-%m-%d").eq(joined.trade_date).all():
         raise ValueError("Prediction decision clock and local date differ")
-    cutoff = pd.Timestamp(fit_identity["settings"]["fit_cutoff"])
-    if (joined.decision_at.le(cutoff) | joined.execution_at.le(joined.decision_at)
+    cutoff = None if fixed else pd.Timestamp(context["settings"]["fit_cutoff"])
+    if (((False if fixed else joined.decision_at.le(cutoff))) | joined.execution_at.le(joined.decision_at)
             | joined.target_end_at.le(joined.execution_at)
             | joined.eligibility_known_at.gt(joined.decision_at)).any():
         raise ValueError("Score/eligibility/fit timing is inconsistent")
@@ -279,11 +291,11 @@ def build_score_portfolio(result, references, calendar, spec):
     horizons["target_aligned"] = aligned.to_numpy()
     receipt = dict(
         schema="score-portfolio-receipt-v1", portfolio_id=spec.portfolio_id,
-        spec=cfg, source_fit_id=source["fit_id"], source_prediction_id=prediction_id,
-        source_learning_receipt_id=content_id(source),
+        spec=cfg, source_fit_id=source.get("fit_id"), source_prediction_id=prediction_id,
+        source_learning_receipt_id=None if fixed else content_id(source),
         source_score_outputs=source["prediction_outputs"], reference_inputs=_fingerprint(references),
         calendar_id=content_id(calendar), schedule_id=content_id(schedule),
-        scored_universe_id=fit_identity["settings"]["universe_id"],
+        scored_universe_id=context["settings"]["universe_id"],
         account_eligible_membership=_fingerprint(rows.loc[eligible, KEYS].reset_index(drop=True)),
         source_scored_rows=len(score), account_decision_rows=len(rows),
         scored_rows_not_account_dates=len(score) - len(rows),
@@ -304,4 +316,5 @@ def build_score_portfolio(result, references, calendar, spec):
     )
     # This is an independent copy, so later edits cannot alter archived receipt metadata.
     receipt = json.loads(json.dumps(receipt, allow_nan=False))
+    if fixed:receipt.update(source_kind='fixed_rule',source_rule_id=source['rule_id'],source_rule_receipt_id=content_id(source))
     return ScorePortfolio(decisions, schedule, receipt)

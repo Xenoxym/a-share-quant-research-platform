@@ -21,16 +21,20 @@ def verify_registered_holding_policy(cfg, native):
     """Bind archived policy to the registered experiment, not only to itself."""
     schema=cfg['spec']['schema']
     receipt=read(native/'alpha_account_receipt.json')
-    if schema=='registered-alpha-account-v3':
-        if (receipt.get('schema')!='score-account-input-receipt-v3'
+    if schema=='registered-alpha-account-v3' or (schema=='registered-alpha-account-v4' and 'holding_policy' in cfg['spec']):
+        if (receipt.get('schema')!=('score-account-input-receipt-v4' if schema.endswith('v4') else 'score-account-input-receipt-v3')
                 or not (native/'alpha_holding_policy.json').is_file()
                 or not same_json(read(native/'alpha_holding_policy.json'),cfg['spec']['holding_policy'])
                 or receipt.get('holding_policy_id')!=content_id(cfg['spec']['holding_policy'])):
-            raise ValueError('Native actual holding policy differs from registered v3 policy')
-    elif schema in {'registered-alpha-account-v1','registered-alpha-account-v2'}:
-        expected='score-account-input-receipt-v1' if schema.endswith('v1') else 'score-account-input-receipt-v2'
+            raise ValueError('Native actual holding policy differs from registered v3 policy' if schema.endswith('v3') else 'Native actual holding policy differs from registered v4 policy')
+        if schema.endswith('v4') and (receipt.get('score_source_kind')!='fixed_rule' or receipt.get('source_rule_id')!=cfg['spec']['score_source']['rule_id'] or not (native/'alpha_rule_inputs.parquet').is_file()):
+            raise ValueError('Fixed dynamic rule provenance differs')
+    elif schema in {'registered-alpha-account-v1','registered-alpha-account-v2','registered-alpha-account-v4'}:
+        expected='score-account-input-receipt-v2' if schema.endswith('v2') else 'score-account-input-receipt-v1'
         if receipt.get('schema')!=expected or (native/'alpha_holding_policy.json').exists():
             raise ValueError('Registered legacy account contains incompatible dynamic policy')
+        if schema.endswith('v4') and (receipt.get('score_source_kind')!='fixed_rule' or receipt.get('source_rule_id')!=cfg['spec']['score_source']['rule_id'] or not (native/'alpha_rule_inputs.parquet').is_file()):
+            raise ValueError('Registered fixed-rule input provenance differs')
     else:
         raise ValueError('Unknown registered account policy version')
 
@@ -57,7 +61,9 @@ def audit_frozen(cfg,job):
             or nm["snapshot_manifest_sha256"]!=cfg["spec"]["snapshot_manifest_hash"] or nm["code_hash"]!=content_id(code_inventory())
             ):
         raise ValueError("Native run spec/source/scenarios differ")
-    for role,name in (("predictions","alpha_predictions.parquet"),("learning_receipt","alpha_learning_receipt.json"),("references","alpha_references.parquet")):
+    archived_roles=[('predictions','alpha_predictions.parquet'),('learning_receipt','alpha_learning_receipt.json'),('references','alpha_references.parquet')]
+    if cfg['spec']['score_source']['kind']=='fixed_rule':archived_roles.append(('rule_inputs','alpha_rule_inputs.parquet'))
+    for role,name in archived_roles:
         paths=verify_inputs(cfg["project"],cfg["inputs"],cfg["spec"]["budget"]["max_input_bytes"])
         if role.endswith("receipt"):
             if not same_json(read(paths[role]),read(native/name)):raise ValueError("Archived source receipt differs")

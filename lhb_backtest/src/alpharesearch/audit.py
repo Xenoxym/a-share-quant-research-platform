@@ -8,6 +8,7 @@ import pandas as pd
 
 from .contracts import timestamp, timestamps
 from .learning import CLOCKS, KEYS, LearningResult, _fingerprint, _keys
+from .fixed_rules import FixedRuleResult,validate_fixed_rule_result
 from .portfolio import ScorePortfolio, ScorePortfolioSpec
 from .models import ModelSpec
 from ..technical.artifacts import content_id
@@ -84,54 +85,60 @@ def _audit_target_metadata(source, fit):
 
 def audit_score_portfolio(result, references, calendar, portfolio):
     """Rebuild schedule/ranks/weights without calling the portfolio builder."""
-    _require(isinstance(result, LearningResult) and isinstance(portfolio, ScorePortfolio),
+    _require(isinstance(result, (LearningResult,FixedRuleResult)) and isinstance(portfolio, ScorePortfolio),
              "Typed learning and portfolio outputs required")
     cfg = ScorePortfolioSpec.from_dict(portfolio.receipt["spec"]).to_dict()
     score, source, receipt = result.predictions, result.receipt, portfolio.receipt
     _keys(score, "Audit scores")
     _keys(references, "Audit references")
-    _require(source.get("schema") in {"causal-learning-receipt-v2", "causal-learning-receipt-v3"}
-             and source.get("prediction_outputs") == _fingerprint(score)
-             and source.get("prediction_membership") == _fingerprint(score[KEYS + CLOCKS])
-             and source.get("prediction_rows") == len(score)
-             and source.get("prediction_inputs", {}).get("rows") == len(score)
-             and source.get("prediction_missing", {}).get("rows") == len(score),
-             "Learning score provenance differs")
-    fit = source.get("fit_identity", {})
-    _audit_target_metadata(source, fit)
-    fitted = source.get("fitted_model", {})
-    excluded = fit.get("excluded_train_empty", [])
-    retained = [key for key in fit["settings"]["features"] if key not in excluded]
-    expected_prediction = content_id(dict(fit_id=source["fit_id"], protocol_id=source["protocol_id"],
-        prediction_inputs=source["prediction_inputs"], prediction_missing=source["prediction_missing"],
-        prediction_membership=source["prediction_membership"]))
-    _require(fit.get("schema") in {"causal-fit-identity-v1", "causal-fit-identity-v2"}
-             and source.get("account_results") is False
-             and fitted.get("schema")=="fitted-tabular-model-v1"
-             and fitted.get("training_rows")==source.get("mature_training_rows")==fit["training_content"]["rows"]
-             and fit["training_missing"]["rows"]==source["mature_training_rows"]
-             and fitted.get("fit_attempts")==1 and fitted.get("account_results") is False
-             and fitted.get("environment")==fit.get("environment")
-             and _model_code_hashes(fitted.get("implementation_hashes")).get("src/alpharesearch/models.py")
-                ==fit["implementation_hashes"].get("src/alpharesearch/models.py")
-             and isinstance(excluded, list) and len(set(excluded))==len(excluded)
-             and all(key in fit["settings"]["features"] for key in excluded),
-             "Learning mature-row/model metadata differs from bound fit")
-    _require(source["fit_id"]==content_id(fit) and source["prediction_id"]==expected_prediction
-             and source["excluded_train_empty"]==excluded and source["retained_features"]==retained
-             and fitted["feature_names"]==retained and fitted["transformed_features"]==2*len(retained)
-             and fitted["model_id"]==source["model_id"]==fit["model_id"]==ModelSpec.from_dict(fitted["spec"]).model_id
-             and timestamp(source["latest_training_label_known_at"])<=timestamp(fit["settings"]["fit_cutoff"]),
-             "Learning fit/prediction metadata identity differs")
+    fixed=type(result) is FixedRuleResult
+    if fixed:
+        validate_fixed_rule_result(result,max_rows=cfg['max_prediction_rows'])
+        _require(receipt.get('source_kind')=='fixed_rule' and receipt.get('source_rule_id')==source['rule_id']
+                 and receipt.get('source_fit_id') is None,'Fixed-rule account source differs')
+    else:
+        _require(source.get("schema") in {"causal-learning-receipt-v2", "causal-learning-receipt-v3"}
+                 and source.get("prediction_outputs") == _fingerprint(score)
+                 and source.get("prediction_membership") == _fingerprint(score[KEYS + CLOCKS])
+                 and source.get("prediction_rows") == len(score)
+                 and source.get("prediction_inputs", {}).get("rows") == len(score)
+                 and source.get("prediction_missing", {}).get("rows") == len(score),
+                 "Learning score provenance differs")
+        fit = source.get("fit_identity", {})
+        _audit_target_metadata(source, fit)
+        fitted = source.get("fitted_model", {})
+        excluded = fit.get("excluded_train_empty", [])
+        retained = [key for key in fit["settings"]["features"] if key not in excluded]
+        expected_prediction = content_id(dict(fit_id=source["fit_id"], protocol_id=source["protocol_id"],
+            prediction_inputs=source["prediction_inputs"], prediction_missing=source["prediction_missing"],
+            prediction_membership=source["prediction_membership"]))
+        _require(fit.get("schema") in {"causal-fit-identity-v1", "causal-fit-identity-v2"}
+                 and source.get("account_results") is False
+                 and fitted.get("schema")=="fitted-tabular-model-v1"
+                 and fitted.get("training_rows")==source.get("mature_training_rows")==fit["training_content"]["rows"]
+                 and fit["training_missing"]["rows"]==source["mature_training_rows"]
+                 and fitted.get("fit_attempts")==1 and fitted.get("account_results") is False
+                 and fitted.get("environment")==fit.get("environment")
+                 and _model_code_hashes(fitted.get("implementation_hashes")).get("src/alpharesearch/models.py")
+                    ==fit["implementation_hashes"].get("src/alpharesearch/models.py")
+                 and isinstance(excluded, list) and len(set(excluded))==len(excluded)
+                 and all(key in fit["settings"]["features"] for key in excluded),
+                 "Learning mature-row/model metadata differs from bound fit")
+        _require(source["fit_id"]==content_id(fit) and source["prediction_id"]==expected_prediction
+                 and source["excluded_train_empty"]==excluded and source["retained_features"]==retained
+                 and fitted["feature_names"]==retained and fitted["transformed_features"]==2*len(retained)
+                 and fitted["model_id"]==source["model_id"]==fit["model_id"]==ModelSpec.from_dict(fitted["spec"]).model_id
+                 and timestamp(source["latest_training_label_known_at"])<=timestamp(fit["settings"]["fit_cutoff"]),
+                 "Learning fit/prediction metadata identity differs")
     _require(receipt.get("schema") == "score-portfolio-receipt-v1"
-             and receipt.get("source_learning_receipt_id") == content_id(source)
+             and receipt.get("source_rule_receipt_id" if fixed else "source_learning_receipt_id") == content_id(source)
              and receipt.get("source_score_outputs") == _fingerprint(score)
              and receipt.get("reference_inputs") == _fingerprint(references)
              and receipt.get("calendar_id") == content_id(calendar)
-             and receipt.get("source_fit_id") == source["fit_id"]
+             and receipt.get("source_fit_id") == source.get("fit_id")
              and receipt.get("source_prediction_id") == source["prediction_id"],
              "Portfolio source provenance differs")
-    _require(score.fit_id.eq(source["fit_id"]).all()
+    _require(score["rule_id" if fixed else "fit_id"].eq(source["rule_id" if fixed else "fit_id"]).all()
              and score.prediction_id.eq(source["prediction_id"]).all()
              and np.isfinite(score.score.astype(float)).all(), "Invalid source score identity")
     _require(len(references) == len(score), "Complete reference pool required")
@@ -140,7 +147,7 @@ def audit_score_portfolio(result, references, calendar, portfolio):
     _require(joined.eligible.map(lambda x: isinstance(x, (bool, np.bool_))).all(), "Boolean eligibility required")
     for key in CLOCKS + ["eligibility_known_at"]:
         joined[key] = timestamps(joined[key]).astype("datetime64[ns, UTC]")
-    _require(joined.decision_at.gt(timestamp(fit["settings"]["fit_cutoff"])).all()
+    _require((fixed or joined.decision_at.gt(timestamp(fit["settings"]["fit_cutoff"])).all())
              and joined.execution_at.gt(joined.decision_at).all()
              and joined.target_end_at.gt(joined.execution_at).all()
              and joined.eligibility_known_at.le(joined.decision_at).all()

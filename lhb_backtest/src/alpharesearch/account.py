@@ -10,6 +10,7 @@ import pandas as pd
 
 from .audit import _require, audit_score_portfolio
 from .learning import LearningResult
+from .fixed_rules import FixedRuleResult
 from .portfolio import ScorePortfolio, build_score_portfolio
 from .registry import implementation_hashes
 from ..technical.artifacts import content_id, digest, verify_artifacts
@@ -71,6 +72,13 @@ def score_account_definition(spec, receipt, *, holding_policy=None):
         target_mismatch_eligible_rows=receipt["target_mismatch_eligible_rows"],
         model_reproduction_scope="保留模型与训练身份声明；本账户核查不重新训练或重放模型数值。",
         endpoint=receipt["terminal_policy"])
+    if receipt.get('source_kind')=='fixed_rule':
+        value.update(momentum='使用固定规则分数；没有拟合模型，原生动量参数不参与评分。',
+            ranking='固定规则分数降序、代码升序处理并列；独立重建top_k和目标权重。',
+            filters='事先声明的历史可知eligible名单；保留全部评分行和排除理由，详情见规则与组合收据。',
+            availability='逐行决策和执行时刻见规则输入；数值和资格须在决策时点已知。',
+            parameter_origin='固定规则、原输入和股票范围已冻结；没有训练或参数优化。',
+            model_reproduction_scope='没有拟合模型；核对规则输入、实际规则计算和账户。')
     if holding_policy is not None:
         value.update(holding_policy=holding_policy.to_dict(),
             ranking='逐费用按信号日真实持仓保留Rank阈值内股票；新买从入场排名范围选取，代码升序处理并列。',
@@ -79,12 +87,12 @@ def score_account_definition(spec, receipt, *, holding_policy=None):
     return value
 
 
-def _code_bundle(result, portfolio):
-    required = dict(result.receipt["fit_identity"]["implementation_hashes"])
+def _code_bundle(result, portfolio, *, holding_policy=None):
+    required = dict(result.receipt["implementation_hashes"] if type(result) is FixedRuleResult else result.receipt["fit_identity"]["implementation_hashes"])
     for name, sha in portfolio.receipt["implementation_hashes"].items():
         _require(name not in required or required[name]==sha, "Learning/portfolio code versions differ")
         required[name] = sha
-    current = dict(implementation_hashes(list(required)+["src/alpharesearch/account.py", "src/alpharesearch/audit.py"]))
+    current = dict(implementation_hashes(list(required)+["src/alpharesearch/account.py", "src/alpharesearch/audit.py"]+(["src/alpharesearch/holding_policy.py","src/alpharesearch/holding_policy_audit.py"] if holding_policy is not None else [])))
     _require(all(current[name]==sha for name, sha in required.items()), "Declared scoring code differs from installed implementation")
     files = {name:dict(sha256=sha, text=(APP/name).read_bytes().replace(b"\r\n",b"\n").decode("utf-8"))
              for name, sha in current.items()}
@@ -108,7 +116,7 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec, 
     spec = _account_spec(spec, cfg)
     if holding_policy is not None:
         from .holding_policy import ActualHoldingPolicy
-        _require(type(holding_policy) is ActualHoldingPolicy and reuse_identity is not None
+        _require(type(holding_policy) is ActualHoldingPolicy and (reuse_identity is not None or type(result) is FixedRuleResult)
                  and holding_policy.max_positions==cfg['top_k'] and holding_policy.allocation==cfg['allocation'],
                  'Dynamic v3 requires explicit policy, completed reuse identity and matching portfolio limits')
     snapshot, sm, tables = _snapshot(snapshot, calendar, cfg)
@@ -120,7 +128,7 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec, 
     market = Market(bars, calendar.copy(), tables["actions"], tables["status"],
                     tables["metadata"], sm["missing_action_files"])
     if reuse_identity is None:
-        bundle = _code_bundle(result, portfolio)
+        bundle = _code_bundle(result, portfolio,holding_policy=holding_policy)
     else:
         from .score_reuse import reuse_code_bundle
         bundle = reuse_code_bundle(result, portfolio, reuse_identity, holding_policy=holding_policy)
@@ -140,9 +148,12 @@ def prepare_score_account(result, references, calendar, policy, snapshot, spec, 
               "alpha_learning_receipt.json":json.loads(json.dumps(result.receipt)),
               "alpha_portfolio_receipt.json":json.loads(json.dumps(portfolio.receipt)),
               "alpha_account_receipt.json":receipt, "alpha_scoring_code.json":bundle}
+    if type(result) is FixedRuleResult:
+        extras['alpha_rule_inputs.parquet']=result.rule_inputs.copy()
+        receipt.update(score_source_kind='fixed_rule',source_rule_id=result.receipt['rule_id'],model_fits=0)
     if holding_policy is not None:
         extras['alpha_holding_policy.json']=holding_policy.to_dict()
-        receipt.update(schema='score-account-input-receipt-v3',holding_policy_id=content_id(holding_policy.to_dict()),
+        receipt.update(schema='score-account-input-receipt-v4' if type(result) is FixedRuleResult else 'score-account-input-receipt-v3',holding_policy_id=content_id(holding_policy.to_dict()),
                        holding_evidence_schema='signal-close-actual-state-v1/actual-holding-selection-v1')
     return dict(holding_policy=holding_policy,snapshot=snapshot, manifest=sm, decisions=portfolio.decisions.copy(),
                 schedule=portfolio.schedule.copy(), market=market, signal_definition=definition, extras=extras)
@@ -153,7 +164,11 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
     _require(EXTRAS.issubset(manifest["artifacts"]), "Native archive missing scored input evidence")
     def read(name):
         return json.loads((folder/name).read_text(encoding="utf-8"))
-    learning = LearningResult(pd.read_parquet(folder/"alpha_predictions.parquet"), read("alpha_learning_receipt.json"))
+    source=read('alpha_learning_receipt.json')
+    if source.get('schema')=='fixed-rule-score-receipt-v1':
+        _require('alpha_rule_inputs.parquet' in manifest['artifacts'],'Fixed-rule input evidence missing')
+        learning=FixedRuleResult(pd.read_parquet(folder/'alpha_predictions.parquet'),source,pd.read_parquet(folder/'alpha_rule_inputs.parquet'))
+    else:learning=LearningResult(pd.read_parquet(folder/'alpha_predictions.parquet'),source)
     portfolio = ScorePortfolio(pd.read_parquet(folder/"decisions.parquet"), read("schedule.json"),
                                read("alpha_portfolio_receipt.json"))
     references = pd.read_parquet(folder/"alpha_references.parquet")
@@ -163,7 +178,7 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
     _reference_prices(portfolio, tables["bars"])
     receipt, bundle = read("alpha_account_receipt.json"), read("alpha_scoring_code.json")
     holding_policy=None
-    if receipt.get('schema')=='score-account-input-receipt-v3':
+    if receipt.get('schema') in {'score-account-input-receipt-v3','score-account-input-receipt-v4'}:
         from .holding_policy import ActualHoldingPolicy
         _require('alpha_holding_policy.json' in manifest['artifacts'], 'Missing dynamic holding policy artifact')
         holding_policy=ActualHoldingPolicy.from_dict(read('alpha_holding_policy.json'))
@@ -183,7 +198,7 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
              and manifest["code_hash"]==result["code_hash"]==content_id(native_code),
              "Native completed identity/code inventory differs")
     _require(result["definition"]==definition, "Result signal definition differs")
-    _require(receipt["schema"] in {"score-account-input-receipt-v1","score-account-input-receipt-v2","score-account-input-receipt-v3"}
+    _require(receipt["schema"] in {"score-account-input-receipt-v1","score-account-input-receipt-v2","score-account-input-receipt-v3","score-account-input-receipt-v4"}
              and receipt["snapshot_id"]==sm["snapshot_id"]
              and receipt["snapshot_manifest_sha256"]==digest(snapshot/"manifest.json")
              and receipt["portfolio_receipt_id"]==content_id(portfolio.receipt)
@@ -211,7 +226,11 @@ def read_score_account_archive(folder, manifest, snapshot, sm):
         for name, value in bundle["files"].items():
             _require(hashlib.sha256(value["text"].encode("utf-8")).hexdigest()==value["sha256"],
                      "Archived scoring source changed")
-        required = dict(learning.receipt["fit_identity"]["implementation_hashes"])
+        required = dict(learning.receipt["implementation_hashes"] if type(learning) is FixedRuleResult else learning.receipt["fit_identity"]["implementation_hashes"])
+        if holding_policy is not None:
+            _require(type(learning) is FixedRuleResult and receipt['schema']=='score-account-input-receipt-v4','Unfitted dynamic source required')
+            _require(receipt.get('holding_policy_id')==content_id(holding_policy.to_dict()) and receipt.get('holding_evidence_schema')=='signal-close-actual-state-v1/actual-holding-selection-v1','Fixed-rule dynamic policy identity differs')
+            required.update(implementation_hashes(['src/alpharesearch/holding_policy.py','src/alpharesearch/holding_policy_audit.py']))
         for name, sha in portfolio.receipt["implementation_hashes"].items():
             _require(name not in required or required[name]==sha, "Archived learning/portfolio code versions differ")
             required[name] = sha
