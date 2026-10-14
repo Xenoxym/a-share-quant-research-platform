@@ -162,3 +162,10 @@ account_step = {"id": "account", "needs": ["learn"],
 输出是原有学习入口认识的五文件矩阵。随后把这个目录交给learning-proposal或v3计划的learning_from_matrix，再接account_from_learning。已存在的目标目录拒绝覆盖；成功后直接复用原矩阵继续计划。写入失败的部分目录保留，没有有效receipt，不自动重试。预算包括Windows换行后的实际receipt字节。
 
 这补了“已完成公式→矩阵文件”的程序接口；公式生成、计算、矩阵保存还没有合并成一份持久计划自动派生。当前保存与合并仍在内存中，只有完整小样本通过，不能把这组默认上限当作大规模内存保证。
+
+
+## 2026-10-14：公式整链、只读诊断与离线证据
+
+`execution-plan-v4`沿用原Store、有限starts和deadline；新增`forecast_from_batch`和`learning_from_expressions`步骤，后者声明原开发/预测步骤、目标matrix_folder、固定学习template和max_rows/max_matrix_cells/max_output_bytes。其余步骤继续使用已有proposal和account_from_learning。完整可运行的小样本见`tests/test_expression_execution_plan.py`；不是新增一套调度系统。登记前恢复只接受与原批次实际内容一致的完整矩阵，部分目录保留且拒绝覆盖；登记后的恢复使用原operation和实验。
+
+同一CLI新增`learning-diagnostics`、`comparison-index`、`backup-plan`、`verify-plan-backup`、`seal-predictions`、`verify-seal`。参数与人话说明见[本轮基础设施](FOUNDATION_EXECUTION_20261014.html)。诊断与副本核对不登记、不fit、不predict、不回测；预测封存没有backdate参数，历史预测整体拒绝补封。备份只支持已完成alpha链的证据检查，不激活搬迁运行；原始输入及副本都留本机。
