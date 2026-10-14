@@ -64,3 +64,63 @@ def learning_from_matrix(research,matrix_folder,template):
     # Close the small metadata-read window with the existing byte verifier.
     verify_inputs(research.project,proposal["inputs"],doc["budget"]["max_input_bytes"])
     return proposal
+
+
+
+def learning_from_expression_batches(research,development_id,forecast_id,matrix_folder,template,*,max_rows,max_matrix_cells,max_output_bytes):
+    """Materialize once, or reuse a complete source-bound matrix before registration.
+
+    Partial directories never get retried or overwritten. A completed matrix
+    is checked against both real frozen producers, not a success flag or mtime.
+    """
+    from .alpha_execution import verify_completed
+    from .matrix_materialization import _output,_budget,matrix_from_registered_expressions
+    validate_learning_template(template)
+    _budget(max_rows=max_rows,max_matrix_cells=max_matrix_cells,max_output_bytes=max_output_bytes)
+    folder=_output(research.project,matrix_folder,allow_existing=True)
+    dev=research.store.experiment(development_id);future=research.store.experiment(forecast_id)
+    if any(x['status']!='completed' or x['proposal'].get('kind')!='alpha_batch' for x in (dev,future)):
+        raise ValueError('Actual completed expression producers required')
+    a=dev['proposal']['spec'];b=future['proposal']['spec']
+    if (a['schema']!='alpha-feature-batch-v4' or b['schema']!='alpha-feature-batch-v6'
+            or len(a['blocks'])!=1 or a['blocks']!=b['blocks'] or a['candidates']!=b['candidates']):
+        raise ValueError('Exact prepared development/forecast declarations required')
+    audits=[verify_completed(research,x) for x in (dev,future)]
+    reused=folder.exists()
+    if not reused:
+        matrix_from_registered_expressions(research,development_id,forecast_id,matrix_folder,
+            max_rows=max_rows,max_matrix_cells=max_matrix_cells,max_output_bytes=max_output_bytes)
+    if not folder.is_dir() or {p.name for p in folder.iterdir()}!=set(MATRIX_FILES.values()):
+        raise ValueError('Complete original five-file matrix required; partial output retained')
+    if sum(p.stat().st_size for p in folder.iterdir())>max_output_bytes:
+        raise ValueError('Existing matrix output byte budget exceeded')
+    proposal=learning_from_matrix(research,matrix_folder,template)
+    meta=json.loads((folder/'definition.json').read_text(encoding='utf-8-sig'))
+    provenance=meta.get('source_provenance',{})
+    if provenance.get('schema')!='prepared-expression-merge-source-v1':raise ValueError('Original expression merge provenance required')
+    for key,ex,audit in zip(('development','forecast'),(dev,future),audits):
+        source=provenance.get(key,{}).get('source_provenance',{})
+        expected=dict(experiment_id=ex['id'],task_id=ex['task_id'],batch_fingerprint=ex['fingerprint'],output_manifest_sha256=audit['manifest_hash'])
+        if any(source.get(k)!=v for k,v in expected.items()):raise ValueError('Saved matrix expression producer differs')
+    record=next(iter(a['blocks'].values()))
+    paths=verify_inputs(research.project,dev['proposal']['inputs'],a['budget']['max_input_bytes'])
+    original=json.loads(paths[record['definition']].read_text(encoding='utf-8-sig'));base_units=original.pop('units')
+    expected_units=dict(base_units,**{'expr.'+c['candidate_id']:'ratio' for c in a['candidates']})
+    original_hashes={k:digest(paths[record[k]]) for k in ('values','missing','definition','source_receipt')}
+    original_hashes.update(registry=digest(paths['registry']),membership=digest(paths['membership']))
+    prepared=json.loads(paths[record['receipt']].read_text(encoding='utf-8-sig'))
+    rows=pq.ParquetFile(paths['membership']).metadata.num_rows
+    if (meta['units']!=expected_units or provenance.get('original_base_metadata')!=original
+            or provenance.get('original_prepared')!=prepared or prepared.get('artifact_hashes')!=original_hashes
+            or rows>max_rows or rows*len(expected_units)>max_matrix_cells
+            or pq.ParquetFile(folder/'assembly_values.parquet').metadata.num_rows!=rows):
+        raise ValueError('Saved matrix base, membership or finite budget differs')
+    if reused:
+        from .matrix_materialization import verify_expression_matrix_content
+        verify_expression_matrix_content(research,development_id,forecast_id,matrix_folder,
+            max_rows=max_rows,max_matrix_cells=max_matrix_cells)
+        # Close comparisons against the same frozen input bytes used above.
+        verify_inputs(research.project,proposal['inputs'],proposal['spec']['budget']['max_input_bytes'])
+    if research.store.experiment(development_id)!=dev or research.store.experiment(forecast_id)!=future:
+        raise ValueError('Expression producer changed during matrix reuse')
+    return proposal

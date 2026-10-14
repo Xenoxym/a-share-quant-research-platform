@@ -23,7 +23,7 @@ def validate_plan(value):
     if not isinstance(value, dict) or set(value) != required:
         raise ValueError("Strict execution plan fields required")
     if (
-        value["schema"] not in {"execution-plan-v1","execution-plan-v2","execution-plan-v3"}
+        value["schema"] not in {"execution-plan-v1","execution-plan-v2","execution-plan-v3","execution-plan-v4"}
         or not isinstance(value["id"], str)
         or not NAME.fullmatch(value["id"])
     ):
@@ -40,8 +40,9 @@ def validate_plan(value):
     seen = set()
     for step in steps:
         forms=({"id","needs","proposal"},{"id","needs","experiment_id"})
-        if value["schema"] in {"execution-plan-v2","execution-plan-v3"}:forms += ({"id","needs","account_from_learning"},)
-        if value["schema"]=="execution-plan-v3":forms += ({"id","needs","learning_from_matrix"},)
+        if value["schema"] in {"execution-plan-v2","execution-plan-v3","execution-plan-v4"}:forms += ({"id","needs","account_from_learning"},)
+        if value["schema"] in {"execution-plan-v3","execution-plan-v4"}:forms += ({"id","needs","learning_from_matrix"},)
+        if value["schema"]=="execution-plan-v4":forms += ({"id","needs","forecast_from_batch"},{"id","needs","learning_from_expressions"})
         if not isinstance(step, dict) or set(step) not in forms:
             raise ValueError("Step needs exactly one proposal or experiment reference")
         if not isinstance(step["id"], str) or not NAME.fullmatch(step["id"]) or step["id"] in seen:
@@ -66,6 +67,24 @@ def validate_plan(value):
             if (not isinstance(adapter,dict) or set(adapter)!={"matrix_folder","template"}
                     or not isinstance(adapter["matrix_folder"],str) or not adapter["matrix_folder"].strip()):
                 raise ValueError("Learning derivation needs a fixed matrix folder and public template")
+            from .learning_proposal import validate_learning_template
+            validate_learning_template(adapter["template"])
+        if "forecast_from_batch" in step:
+            adapter=step["forecast_from_batch"]
+            if (not isinstance(adapter,dict) or set(adapter)!={"development_step","name","timeout_seconds"}
+                    or adapter["development_step"] not in needs or not isinstance(adapter["name"],str)
+                    or not NAME.fullmatch(adapter["name"]) or type(adapter["timeout_seconds"]) is not int
+                    or not 30<=adapter["timeout_seconds"]<=86400):
+                raise ValueError("Forecast derivation requires an earlier development step and fixed bounds")
+        if "learning_from_expressions" in step:
+            adapter=step["learning_from_expressions"]
+            fields={"development_step","forecast_step","matrix_folder","template","max_rows","max_matrix_cells","max_output_bytes"}
+            if (not isinstance(adapter,dict) or set(adapter)!=fields
+                    or adapter["development_step"] not in needs or adapter["forecast_step"] not in needs
+                    or adapter["development_step"]==adapter["forecast_step"]
+                    or not isinstance(adapter["matrix_folder"],str) or not adapter["matrix_folder"].strip()
+                    or any(type(adapter[k]) is not int or not 1<=adapter[k]<=100000000000 for k in ("max_rows","max_matrix_cells","max_output_bytes"))):
+                raise ValueError("Expression learning requires fixed producers, template, folder and budgets")
             from .learning_proposal import validate_learning_template
             validate_learning_template(adapter["template"])
         seen.add(step["id"])
@@ -251,6 +270,15 @@ class ExecutionPlans:
                             adapter=step["account_from_learning"]
                             producer=state[adapter["learning_step"]]["experiment_id"]
                             request={"account_from_learning":adapter,"learning_experiment_id":producer}
+                        elif "forecast_from_batch" in step:
+                            adapter=step["forecast_from_batch"]
+                            producer=state[adapter["development_step"]]["experiment_id"]
+                            request={"forecast_from_batch":adapter,"development_experiment_id":producer}
+                        elif "learning_from_expressions" in step:
+                            adapter=step["learning_from_expressions"]
+                            development=state[adapter["development_step"]]["experiment_id"]
+                            forecast=state[adapter["forecast_step"]]["experiment_id"]
+                            request={"learning_from_expressions":adapter,"development_experiment_id":development,"forecast_experiment_id":forecast}
                         elif "learning_from_matrix" in step:
                             adapter=step["learning_from_matrix"]
                             request={"learning_from_matrix":adapter}
@@ -267,6 +295,14 @@ class ExecutionPlans:
                             if "account_from_learning" in step:
                                 from .account_proposal import account_from_learning
                                 proposal=account_from_learning(self.research,producer,adapter["template"])
+                            elif "forecast_from_batch" in step:
+                                from ..alpharesearch.forecast_handoff import prepare_registered_forecast
+                                proposal=prepare_registered_forecast(self.research,producer,name=adapter["name"],timeout_seconds=adapter["timeout_seconds"])
+                            elif "learning_from_expressions" in step:
+                                from .learning_proposal import learning_from_expression_batches
+                                proposal=learning_from_expression_batches(self.research,development,forecast,
+                                    adapter["matrix_folder"],adapter["template"],max_rows=adapter["max_rows"],
+                                    max_matrix_cells=adapter["max_matrix_cells"],max_output_bytes=adapter["max_output_bytes"])
                             elif "learning_from_matrix" in step:
                                 from .learning_proposal import learning_from_matrix
                                 proposal=learning_from_matrix(self.research,adapter["matrix_folder"],adapter["template"])

@@ -10,7 +10,7 @@ from tests.test_prepared_assembly import case, document, reference
 from src.alpharesearch.assembly import FeatureAssembly
 from src.alpharesearch.dsl import Expr, compile_expression
 from src.alpharesearch.expression_assembly import (
-    assemble_registered_expression_batch, merge_prepared_expression_assemblies,
+    assemble_registered_expression_batch, merge_prepared_expression_assemblies, iter_prepared_expression_assemblies,
 )
 from src.alpharesearch.forecast_handoff import prepare_registered_forecast
 from src.alpharesearch.prepared_assembly import prepared_assembly_receipt
@@ -100,6 +100,15 @@ def test_registered_all_candidate_forecast_and_exact_merge(tmp_path):
     pd.testing.assert_frame_equal(merged.block.values[list(block.values)], block.values)
     pd.testing.assert_frame_equal(merged.block.missing[list(block.missing)], block.missing)
     assert merged.block.values["expr.tiny_candidate"].tolist() == [1.,1.,3.,4.]
+    for batch_rows in (1,3):
+        parts=list(iter_prepared_expression_assemblies(base,dev,future,p,source,receipt,
+            artifact_hashes=hashes,expected_expression_keys=keys,max_rows=4,max_matrix_cells=20,batch_rows=batch_rows))
+        assert max(len(x.block.values) for x in parts)<=batch_rows
+        assert [v for x in parts for v in x.block.values['expr.tiny_candidate']]==[1.,1.,3.,4.]
+        assert parts[-1].block.missing['expr.second_candidate'].iloc[-1]=='source_uncovered'
+        pd.testing.assert_frame_equal(pd.concat([x.block.values for x in parts],ignore_index=True),merged.block.values)
+        pd.testing.assert_frame_equal(pd.concat([x.block.missing for x in parts],ignore_index=True),merged.block.missing)
+        assert all(x.block.metadata==merged.block.metadata and x.registry.to_dict()==merged.registry.to_dict() for x in parts)
     with pytest.raises(ValueError, match="All declared"):
         merge_prepared_expression_assemblies(base, dev, future, p, source, receipt,
             artifact_hashes=hashes, expected_expression_keys=keys[:1], max_rows=4, max_matrix_cells=20)

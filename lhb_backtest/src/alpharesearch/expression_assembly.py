@@ -6,6 +6,7 @@ formula mathematics. The pure constructor accepts declared blocks for testing.
 import json
 from pathlib import Path
 import pandas as pd
+import numpy as np
 from .assembly import FeatureAssembly
 from .contracts import VintagePolicy,timestamps,same_timestamp_instants
 from .features.base import FeatureBlock
@@ -93,7 +94,7 @@ def assemble_registered_expression_batch(research,experiment,membership,*,max_ro
     return result
 
 
-def merge_prepared_expression_assemblies(base, development, forecast, membership, source_receipt,
+def _prepared_expression_merge_parts(base, development, forecast, membership, source_receipt,
     prepared_receipt, *, artifact_hashes, expected_expression_keys, max_rows, max_matrix_cells):
     """Exact-key merge adapted from the existing R33 constructor; no formula evaluation.
 
@@ -143,18 +144,17 @@ def merge_prepared_expression_assemblies(base, development, forecast, membership
         _require(x.block.metadata.get('universe_id')==base.block.metadata['universe_id'] and x.block.metadata.get('registry_version')==x.registry.version_id
             and x.block.metadata.get('source_bindings')==list(x.source_bindings),'Expression merge universe/registry/bindings differ')
         x.registry.resolve_bound_definitions(x.source_bindings,units)
-    expr_values=pd.concat([development.block.values,forecast.block.values],ignore_index=True)
-    expr_missing=pd.concat([development.block.missing,forecast.block.missing],ignore_index=True)
-    _require(not expr_values.sample_id.duplicated().any() and not expr_values.duplicated(['trade_date','stock_code']).any()
-        and len(expr_values)==len(p),'Expression partitions overlap, omit or add membership')
-    joined=p.merge(expr_values,on=KEYS,how='left',validate='one_to_one',indicator=True,sort=False)
-    _require(joined.pop('_merge').eq('both').all(),'Expression partition union must retain full original membership')
+    # Align only immutable keys and clocks, never concatenate both full matrices.
+    columns=KEYS+['known_at','observed_end']
+    index=pd.concat([development.block.values[columns],forecast.block.values[columns]],ignore_index=True)
+    _require(not index.sample_id.duplicated().any() and not index.duplicated(['trade_date','stock_code']).any()
+        and len(index)==len(p),'Expression partitions overlap, omit or add membership')
+    positions=pd.Index(index.sample_id).get_indexer(p.sample_id)
+    _require((positions>=0).all(),'Expression partition union must retain full original membership')
+    aligned=index.iloc[positions].reset_index(drop=True)
+    _require(aligned[KEYS].equals(p[KEYS]),'Expression partition keys differ from original membership')
     for field in ('known_at','observed_end'):
-        _require(same_timestamp_instants(timestamps(joined[field]).reset_index(drop=True),p.decision_at),'Merged expression clock differs')
-    why=p[KEYS].merge(expr_missing,on=KEYS,how='left',validate='one_to_one',sort=False)
-    values=base.block.values.copy();missing=base.block.missing.copy()
-    for key in units:
-        values[key]=joined[key].to_numpy(copy=True);missing[key]=why[key].to_numpy(copy=True)
+        _require(same_timestamp_instants(timestamps(aligned[field]),p.decision_at),'Merged expression clock differs')
     registry=FeatureRegistry(list(base.registry.definitions)+list(development.registry.definitions))
     bindings=tuple(base.source_bindings)+tuple(development.source_bindings)+tuple(forecast.source_bindings)
     registry.resolve_bound_definitions(bindings,list(base.block.units)+list(units))
@@ -168,7 +168,50 @@ def merge_prepared_expression_assemblies(base, development, forecast, membership
         source_provenance=dict(schema='prepared-expression-merge-source-v1',original_prepared=prepared_receipt,
             original_base_metadata=base.block.metadata,development=development.block.metadata,forecast=forecast.block.metadata),
         registered_batch_verified_by_wrapper=False,independent_reproduction_claimed=False,historical_execution_certified=False)
-    return FeatureAssembly(FeatureBlock(values,missing,dict(base.block.units,**units),meta).validate(),registry,bindings)
+    return base,development,forecast,p,positions,units,registry,bindings,meta
+
+
+def iter_prepared_expression_assemblies(base,development,forecast,membership,source_receipt,
+    prepared_receipt,*,artifact_hashes,expected_expression_keys,max_rows,max_matrix_cells,batch_rows=8192):
+    """Yield bounded output blocks after validating the complete declared source.
+
+    Source partitions still reside in memory. This removes full expression
+    concatenations, full value/reason joins and a second complete output matrix.
+    Each yielded block carries the same full-source declaration and registry.
+    """
+    _require(type(batch_rows) is int and 1<=batch_rows<=65536,'Bounded output batch_rows required')
+    base,dev,forecast,p,positions,units,registry,bindings,meta=_prepared_expression_merge_parts(
+        base,development,forecast,membership,source_receipt,prepared_receipt,
+        artifact_hashes=artifact_hashes,expected_expression_keys=expected_expression_keys,
+        max_rows=max_rows,max_matrix_cells=max_matrix_cells)
+    boundary=len(dev.block.values)
+    for start in range(0,len(p),batch_rows):
+        end=min(start+batch_rows,len(p));selected=positions[start:end];left=selected<boundary
+        values=base.block.values.iloc[start:end].reset_index(drop=True).copy()
+        missing=base.block.missing.iloc[start:end].reset_index(drop=True).copy()
+        added_values={};added_missing={}
+        for key in units:
+            for field,collection in (('values',added_values),('missing',added_missing)):
+                a=getattr(dev.block,field)[key].to_numpy();b=getattr(forecast.block,field)[key].to_numpy()
+                merged=np.empty(len(selected),dtype=np.result_type(a.dtype,b.dtype))
+                merged[left]=a[selected[left]];merged[~left]=b[selected[~left]-boundary]
+                collection[key]=merged
+        values=pd.concat([values,pd.DataFrame(added_values)],axis=1)
+        missing=pd.concat([missing,pd.DataFrame(added_missing)],axis=1)
+        block=FeatureBlock(values,missing,dict(base.block.units,**units),dict(meta)).validate()
+        yield FeatureAssembly(block,registry,bindings)
+
+
+def merge_prepared_expression_assemblies(base,development,forecast,membership,source_receipt,
+    prepared_receipt,*,artifact_hashes,expected_expression_keys,max_rows,max_matrix_cells):
+    """Compatibility full-frame constructor using the bounded merge implementation."""
+    parts=list(iter_prepared_expression_assemblies(base,development,forecast,membership,
+        source_receipt,prepared_receipt,artifact_hashes=artifact_hashes,
+        expected_expression_keys=expected_expression_keys,max_rows=max_rows,max_matrix_cells=max_matrix_cells))
+    first=parts[0]
+    block=FeatureBlock(pd.concat([x.block.values for x in parts],ignore_index=True),
+        pd.concat([x.block.missing for x in parts],ignore_index=True),first.block.units,first.block.metadata).validate()
+    return FeatureAssembly(block,first.registry,first.source_bindings)
 
 
 def _same_json(left, right):

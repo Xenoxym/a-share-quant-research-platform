@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 import pandas as pd
+import pyarrow.parquet as pq
 import pytest
 from tests.test_all_candidate_forecast_integration import setup
 from tests.test_prepared_assembly import case
@@ -76,12 +77,12 @@ def test_writer_budget_includes_last_receipt_and_preserves_failure(tmp_path):
 
 
 def test_interrupted_writer_has_no_receipt(tmp_path,monkeypatch):
-    original=pd.DataFrame.to_parquet;calls=[]
-    def interrupted(frame,*args,**kwargs):
+    original=pq.ParquetWriter.write_table;calls=[]
+    def interrupted(writer,*args,**kwargs):
         calls.append(1)
         if len(calls)==2:raise OSError("interrupted second output")
-        return original(frame,*args,**kwargs)
-    monkeypatch.setattr(pd.DataFrame,"to_parquet",interrupted)
+        return original(writer,*args,**kwargs)
+    monkeypatch.setattr(pq.ParquetWriter,"write_table",interrupted)
     with pytest.raises(OSError,match="interrupted"):
         save_learning_matrix(assembly(),tmp_path/"partial",max_output_bytes=1000000)
     assert (tmp_path/"partial/assembly_values.parquet").exists()

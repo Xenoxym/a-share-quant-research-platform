@@ -61,6 +61,31 @@ def main():
     backup.add_argument("--max-bytes",type=int,required=True)
     offline=commands.add_parser("verify-backup",help="Verify copied bytes offline; never activate workers")
     offline.add_argument("--folder",type=Path,required=True)
+    diagnosis=commands.add_parser("learning-diagnostics",help="Read saved post-fit scores; missing train/validation remain explicit")
+    diagnosis.add_argument("--learning",required=True)
+    diagnosis.add_argument("--max-rows",type=int,required=True)
+    diagnosis.add_argument("--output",type=Path,required=True)
+    diagnosis.add_argument("--max-bytes",type=int,required=True)
+    comparison=commands.add_parser("comparison-index",help="Group completed accounts by exact declared comparison conditions")
+    comparison.add_argument("--accounts",nargs="+",required=True)
+    comparison.add_argument("--output",type=Path,required=True)
+    comparison.add_argument("--max-bytes",type=int,required=True)
+    seal=commands.add_parser("seal-predictions",help="Freeze complete real predictions before execution; no backdating")
+    seal.add_argument("--learning",required=True)
+    seal.add_argument("--protocol",type=Path,required=True)
+    seal.add_argument("--output",type=Path,required=True)
+    seal.add_argument("--max-rows",type=int,required=True)
+    seal.add_argument("--max-bytes",type=int,required=True)
+    check_seal=commands.add_parser("verify-seal",help="Offline local seal verification; no external timestamp guarantee")
+    check_seal.add_argument("--folder",type=Path,required=True)
+    check_seal.add_argument("--max-rows",type=int,required=True)
+    check_seal.add_argument("--max-bytes",type=int,required=True)
+    plan_copy=commands.add_parser("backup-plan",help="Copy a selected completed plan with accounts and snapshots; inspection only")
+    plan_copy.add_argument("--plan",required=True)
+    plan_copy.add_argument("--output",type=Path,required=True)
+    plan_copy.add_argument("--max-bytes",type=int,required=True)
+    plan_check=commands.add_parser("verify-plan-backup",help="Verify a complete selected plan offline; never activate workers")
+    plan_check.add_argument("--folder",type=Path,required=True)
     status = commands.add_parser("status")
     status.add_argument("plan_id")
     brief = commands.add_parser("brief", help="Read bounded task facts without running work")
@@ -69,6 +94,14 @@ def main():
     if a.command=="verify-backup":
         from src.researchops.backup import verify_learning_backup
         print(json.dumps({"ok":True,"data":verify_learning_backup(a.folder)},ensure_ascii=False))
+        return 0
+    if a.command=="verify-plan-backup":
+        from src.researchops.plan_backup import verify_plan_backup
+        print(json.dumps({"ok":True,"data":verify_plan_backup(a.folder)},ensure_ascii=False))
+        return 0
+    if a.command=="verify-seal":
+        from src.researchops.prediction_seal import verify_prediction_seal
+        print(json.dumps({"ok":True,"data":verify_prediction_seal(a.folder,max_bytes=a.max_bytes,max_rows=a.max_rows)},ensure_ascii=False))
         return 0
     research = Research(a.project, a.root, readonly=a.command not in {"run", "register"})
     if a.command in {"account-proposal","learning-proposal"}:
@@ -94,6 +127,17 @@ def main():
     elif a.command=="backup-learning":
         from src.researchops.backup import backup_learning_experiment
         value=backup_learning_experiment(research,a.learning,a.output,max_bytes=a.max_bytes)
+    elif a.command=="backup-plan":
+        from src.researchops.plan_backup import backup_plan_evidence
+        value=backup_plan_evidence(research,a.plan,a.output,max_bytes=a.max_bytes)
+    elif a.command in {"learning-diagnostics","comparison-index"}:
+        from src.researchops.result_tools import diagnose_registered_learning,account_comparison_index,write_result_report
+        report=(diagnose_registered_learning(research,a.learning,max_rows=a.max_rows) if a.command=="learning-diagnostics"
+            else account_comparison_index(research,a.accounts))
+        value=write_result_report(research,a.output,report,max_bytes=a.max_bytes)
+    elif a.command=="seal-predictions":
+        from src.researchops.prediction_seal import seal_registered_predictions
+        value=seal_registered_predictions(research,a.learning,_strict_json(a.protocol),a.output,max_bytes=a.max_bytes,max_rows=a.max_rows)
     elif a.command == "register":
         ex = research.register(_strict_json(a.session), _strict_json(a.file))
         value = dict(experiment_id=ex["id"], task_id=ex["task_id"], status=ex["status"],
